@@ -16,7 +16,7 @@
 | 2  | Review Spec                     | ✅ Complete | 2026-11-14T18:49:31Z | 2026-11-14T18:51:30Z | 2 |
 | 3  | Implement Product               | ✅ Complete | 2026-11-14T18:53:07Z | 2026-11-14T21:10:52Z | 137 |
 | 4  | Documentation and User Docs     | ✅ Complete | 2026-11-14T21:10:52Z | 2026-11-14T21:19:50Z | 9 |
-| 5  | Code and Design Review          | ⬜ Pending | — | — | — |
+| 5  | Code and Design Review          | ✅ Complete | 2026-11-14T21:23:41Z | 2026-11-14T21:32:42Z | 9 |
 | 6  | Prepare Review PRD              | ⬜ Pending | — | — | — |
 | 7  | Archive Original Spec           | ⬜ Pending | — | — | — |
 | 8  | Spec Review Fixes               | ⬜ Pending | — | — | — |
@@ -36,3 +36,4 @@
 - Step 2: `/review-spec` verdict **Needs revision** (no Fail; Warnings on acceptance criteria, technical approach, component coverage and edge cases). All gaps resolved in the spec (R-1 to R-9, see spec.md *Spec review log*) → **Implementation-ready**. Next: Step 3, Implement Product.
 - Step 3: workstreams A to H done (52 tasks + T-D9). `make check` green, coverage 96.6% (domain 100%, usecase ≥ 97.2%). The real-Homebrew integration tests skip in the cloud container (root, no Homebrew); their first real run is macOS CI. Deviations I-1 to I-53 in implementation-notes.md.
 - Step 4: README, INTENT.md ("Where it stands"), product summary and details, technical details and ADR describe the Increment 1 build; design bumped to v0.4 for the points the build settled; user-docs getting-started and configuration rewritten for the real binary, usage-examples added, every user-doc linked from README; folder README audit clean. macOS CI then failed on `TestApplyDecline/ctrl-c` (exit 4): a racy test plus a real bug (Ctrl+C before consent during the scan exited 4). Fixed (I-54) before closing Step 4. Next: Step 5, Code and Design Review.
+- Step 5: `/review-code` over `origin/main...HEAD` (226 files). Verdict **Request changes** (no blocker): 19 findings, 0 P0, 3 P1 (catalog values unvalidated into argv/paths/terminal, relative PATH entries resolved, clean-machine bootstrap never run against real Homebrew), 16 P2. Import directions checked mechanically with `go list`: no violations. Written to `software-factory-manager-auto-review-PRD.md` at the repo root; no fixes implemented.
