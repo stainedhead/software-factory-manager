@@ -2,7 +2,7 @@
 
 **Feature:** software-factory-manager (`facman`)
 **Date:** 2026-11-14
-**Status:** Planning
+**Status:** Reviewed (2026-11-14), ready for implementation
 
 ## Progress Summary
 
@@ -142,7 +142,7 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream E — Use cases (parallel with B, C, D; start first after A)
 
-**T-E1 — Ports and fakes.** *Depends:* A · *Est:* 2 h
+**T-E1 — Ports and fakes.** *Depends:* T-A2–T-A10 · *Est:* 2 h · **Lands in workstream A's commit (R-5)** so B, C, D and E can start in parallel against fixed ports.
 - **Test first:** compile-time checks that the in-memory fakes in each use case's `_test.go` satisfy the ports (data-dictionary §3).
 - **Done when:** port interfaces declared in their consuming packages; `internal/usecase/README.md` lists them.
 
@@ -195,11 +195,11 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 - **Done when:** README updated.
 
 **T-F4 — `cmd/facman` wiring.** *Depends:* T-F2, B, C, D · *Est:* 2 h
-- **Test first:** `run(args, stdio)` with `defaultOptions()` still passes existing `--version`/`--about` tests; `newApp(options)` builds every adapter from options (prefixes, app dirs, file paths, installer URL, clock, user); no-arg with non-terminal stdout prints `--about` text + hint, exit 0 (AD-14).
+- **Test first:** `run(args, stdio)` with `defaultOptions()` still passes existing `--version`/`--about` tests; `newApp(options)` builds every adapter from options (platform probe, UID, known prefixes, app dirs, `/etc/os-release` and `/proc/version` paths, installer URL, clock, user, stdio) (R-3); no-arg with non-terminal stdout prints `--about` text + hint, exit 0 (AD-14); root `--profile`/`--with`/`--catalog` reach the TUI (R-6).
 - **Done when:** `main.go` + `wire.go` only wire; `cmd/facman/README.md` updated.
 
 **T-F5 — End-to-end tests.** *Depends:* T-F4, T-A11 · *Est:* 6 h
-- **Test first:** `cmd/facman/e2e_test.go`, in-process with fixtures: I1-2 (scan `--json` schema-valid, read-only invocations, < 5 s), I1-4 (`--catalog`, unknown ID exit 3, pins exit 3), I1-5 (no brew: scan/plan report and install nothing; apply lists installer first, decline changes nothing; UID 0 via injected UID → 4; linuxbrew prefix found; glibc warning in `--dry-run`), I1-6, I1-7 (pty consent, op rows, second apply runs nothing exit 0), I1-9 (dangling `claude` symlink, exit 1, doctor exit 2), I1-10, I1-12; I1-11 as a subprocess (fake `brew install` sleeps; test SIGKILLs facman after the `in_progress` row appears; next run marks it interrupted and finishes); `testkit.AssertSafeInvocations` after every test (I1-8).
+- **Test first:** `cmd/facman/e2e_test.go`, in-process with fixtures: I1-2 (scan `--json` schema-valid, read-only invocations, < 5 s), I1-4 (`--catalog`, unknown ID exit 3, pins exit 3), I1-5 (no brew: scan/plan report and install nothing; apply lists installer first, decline changes nothing; consent with an `httptest` installer that creates a fake brew in the injected prefix → `homebrew` row `managed`, `bootstrap = 1`, later commands get `HOMEBREW_PREFIX` from `shellenv` (R-1); UID 0 via injected UID → 4; linuxbrew prefix found; glibc warning in `--dry-run`), Linux-no-display and WSL fixtures: GUI items `unavailable-here`, WSL `winget` hint (R-9), `doctor` clean → 0 and untrusted Orca tap → 2 (R-2), `apply --json` keeps the prompt on stderr (R-8), I1-6, I1-7 (pty consent, op rows, second apply runs nothing exit 0), I1-9 (dangling `claude` symlink, exit 1, doctor exit 2), I1-10, I1-12; I1-11 as a subprocess (fake `brew install` sleeps; test SIGKILLs facman after the `in_progress` row appears; next run marks it interrupted and finishes); `testkit.AssertSafeInvocations` after every test (I1-8).
 - **Done when:** all green on Linux and macOS without Homebrew access.
 
 **T-F6 — Performance smoke tests.** *Depends:* T-F5 · *Est:* 1 h
@@ -223,7 +223,7 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 - **Done when:** README updated.
 
 **T-G4 — Run screen.** *Depends:* T-G3 · *Est:* 3 h
-- **Test first:** `Progress` messages update per-item spinner/status and a log tail; `NeedsSudo` commands produce a `tea.ExecProcess` command (asserted on the returned `tea.Cmd` type via an injected exec factory); `Ctrl+C` asks for confirmation, then stops after the current command; `q` ignored during Run; goldens with deterministic spinner frame.
+- **Test first:** `Progress` messages update per-item spinner/status and a log tail; a `NeedsSudo` command arrives as an `execRequest` message and the model returns a `tea.ExecProcess` command built by an injected exec factory, whose callback writes the exit code to the request's reply channel (R-4, AD-16); `Ctrl+C` asks for confirmation, then stops after the current command; `q` ignored during Run; goldens with deterministic spinner frame.
 - **Done when:** README updated.
 
 **T-G5 — Summary screen.** *Depends:* T-G4, T-E9 · *Est:* 1.5 h

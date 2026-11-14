@@ -2,7 +2,7 @@
 
 **Feature:** software-factory-manager (`facman`)
 **Date:** 2026-11-14
-**Status:** Draft
+**Status:** Reviewed (2026-11-14)
 
 ## Architecture Overview
 
@@ -54,7 +54,7 @@ cmd/facman ──► internal/adapter/* ──► internal/usecase/* ──► i
 | `internal/adapter/cli` | adapter (driving) | cobra command tree, flags, exit-code mapping, text output, `[y/N]` prompt, signal handling, launching the TUI | use cases, `report`, `tui` |
 | `internal/adapter/tui` | adapter (driving) | Bubble Tea model: Scan → Plan → Review → Run → Summary | use cases |
 | `internal/testkit` | test support | Build `testdata/fakecmd`, temp HOME/PATH/state, invocation-log assertions | — (imported only by `_test.go`) |
-| `cmd/facman` | entry | Wiring; keeps `var version` for `-ldflags` | everything |
+| `cmd/facman` | entry | Wiring (`main.go`, `wire.go` with injectable `options`: platform probe, UID, known prefixes, app dirs, file paths, installer URL, clock, user, stdio); keeps `var version` for `-ldflags` | everything |
 
 ### Driving adapters live in `internal/adapter`, not `cmd`
 
@@ -106,7 +106,9 @@ Steps 1–4 → scan → `conflicts.Check` for **every** catalog brew item avail
 
 ### `facman` (TUI)
 
-Steps 1–4 → TUI starts on Scan (scan runs as a `tea.Cmd`) → Plan (profile `agentic-factory` unless the user picks another in a later increment; Increment 1 accepts `--profile` on the root command too) → Review (`Enter` = consent) → Run (execute with a `Progress` sink that sends `tea.Msg`s; `NeedsSudo` commands via `tea.ExecProcess`) → Summary.
+Steps 1–4 → TUI starts on Scan (scan runs as a `tea.Cmd`) → Plan (profiles from the root `--profile`, default `agentic-factory`; `--with` and `--catalog` as for `plan`) → Review (`Enter` = consent) → Run → Summary.
+
+**Run and sudo hand-off (R-4).** `execute.Run` runs in a goroutine started by a `tea.Cmd`, with a `Progress` sink that sends `tea.Msg`s to the program. The TUI wraps the system runner: a non-interactive command runs directly; an interactive (`NeedsSudo`) command sends an `execRequest{cmd, reply chan Result}` message, the model returns `tea.ExecProcess(cmd, …)`, and the callback writes the exit code to `reply`, on which `execute` is blocked. So the terminal is handed to the child and `facman` never sees the password. Headless, the same command runs with inherited stdio.
 
 ## Sequence Diagrams
 
@@ -177,3 +179,5 @@ AD-8 resolves the corner case: if an interrupted `install` operation's package i
 | AD-12 | Testing through fakes: in-memory port fakes for unit tests; one `fakecmd` binary on PATH for e2e; real Homebrew only behind `integration` tag | PRD "How it is tested"; Linux CI makes no real installs | Mocks; network installs in CI |
 | AD-13 | Detection makes no network calls (`HOMEBREW_NO_AUTO_UPDATE=1` on read calls; `brew info --installed` is local) | NFR performance and "no network during detection" | — |
 | AD-14 | `facman` with no args opens the TUI only when stdout is a terminal; otherwise prints `--about` text and a hint (exit 0) | Keeps `facman \| cat` and CI smoke uses harmless | Always opening the TUI (hangs in pipes) |
+| AD-15 | Environment facts are injected only through `cmd/facman/wire.go` options; no test-only flags or env vars in the binary (R-3) | Lets e2e tests run darwin, Linux-no-display and WSL fixtures on any CI runner without exposing hidden knobs | `FACMAN_TEST_*` variables |
+| AD-16 | TUI sudo hand-off through an exec-request message and `tea.ExecProcess`, with `execute` blocked on a reply channel (R-4) | One `execute` use case for TUI and headless; credentials never pass through `facman` | Separate TUI executor; suspending the TUI by hand |

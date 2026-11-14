@@ -12,9 +12,9 @@ Back to [specs/](../README.md). Source of intent: [INTENT.md](../../INTENT.md); 
 | [software-factory-manager-status.md](software-factory-manager-status.md) | Dev-flow orchestration dashboard (`/implm-frm-prd` steps and timings) |
 | [research.md](research.md) | Research questions and findings (brew JSON, tap trust, installer, platform probes, testing) |
 | [data-dictionary.md](data-dictionary.md) | Domain entities, ports, SQLite schema, catalog YAML, report schema v1 |
-| [architecture.md](architecture.md) | Package map across domain/usecase/adapter, data flow, sequences, decisions AD-1 to AD-14 |
+| [architecture.md](architecture.md) | Package map across domain/usecase/adapter, data flow, sequences, decisions AD-1 to AD-16 |
 | [plan.md](plan.md) | Workstreams, parallelism, critical path, testing strategy, rollout |
 | [tasks.md](tasks.md) | 52 TDD-ordered tasks in workstreams A to H |
-| [implementation-notes.md](implementation-notes.md) | Decisions (D-*), edge cases, deviations, measurements, lessons |
+| [implementation-notes.md](implementation-notes.md) | Decisions (D-*, review R-*), edge cases, deviations, measurements, lessons |
 
 How it fits: this directory drives the code under `cmd/facman` and `internal/`. When Increment 1 is complete in `status.md`, `/archive-spec` moves it to `specs/archive/`.

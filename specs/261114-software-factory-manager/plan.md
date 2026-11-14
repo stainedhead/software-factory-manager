@@ -2,7 +2,7 @@
 
 **Feature:** software-factory-manager (`facman`)
 **Date:** 2026-11-14
-**Status:** Planning
+**Status:** Reviewed (2026-11-14), ready for implementation
 
 ## Development Approach
 
@@ -16,7 +16,7 @@
 
 | WS | Name | Tasks | Depends on | Commit(s) |
 |---|---|---|---|---|
-| A | Foundation: domain model, failure kinds, `fakecmd`, Makefile | 11 | — | `Add Increment 1 domain model and test harness` |
+| A | Foundation: domain model, failure kinds, `fakecmd`, Makefile; **plus T-E1 (ports and fakes)** | 11 (+ T-E1) | — | `Add Increment 1 domain model, ports and test harness` |
 | B | Catalog v1 data and YAML loader | 4 | A | `Add embedded catalog v1, profiles and YAML loader` |
 | C | Infrastructure adapters: runner, platform, state dir, SQLite | 5 | A | `Add runner, platform, state dir and SQLite inventory adapters` |
 | D | Detection and Homebrew adapters | 8 | A (C1 for the runner interface shape only) | `Add detectors, Homebrew backends and conflict probe` |
@@ -35,7 +35,7 @@ A ──┬──► B ──┐
     └──► E ──┴──► G ──┘
 ```
 
-- **After A, B, C, D and E run in parallel** (four or five worktrees). They meet only through domain types (from A) and port interfaces (declared in E). D implements ports declared in E: to avoid waiting, E1–E2 (ports) are written first in E, or D codes to the port shapes in [data-dictionary.md §3](data-dictionary.md#3-use-case-ports-interfaces-declared-where-consumed) and the integration commit reconciles names.
+- **After A, B, C, D and E run in parallel** (four worktrees: B, C, D, E). They meet only through domain types and the port interfaces. **T-E1 (ports and fakes) lands in workstream A's commit** (R-5), so the ports are fixed before the split and every adapter carries compile-time assertions such as `var _ scan.Detector = (*PathDetector)(nil)` from its first commit.
 - **F and G run in parallel** once E is merged (F also needs B, C, D).
 - **H is last.**
 - **Merge order:** A → (C, B, E, D in any order; each rebased and `go mod tidy`-ed on the integration branch) → F → G → H. `go.mod`/`go.sum` conflicts are resolved by re-running `go mod tidy` after each merge, never by hand.

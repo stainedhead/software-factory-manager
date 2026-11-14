@@ -31,6 +31,22 @@ Decisions made while creating the spec (`/create-spec`, 2026-11-14, unattended).
 | D-16 | UID 0 is refused (exit 4) for every command except `--version`, `--about`, `--help`. | Homebrew refuses root, and a root scan would write state into root's home. | spec.md FR-056, Edge cases |
 | D-17 | YAML library `go.yaml.in/yaml/v3` (the maintained successor of `gopkg.in/yaml.v3`). | Line/column info through the node API; maintained. | spec.md Dependencies |
 
+## Spec Review Decisions (2026-11-14)
+
+Made during `/review-spec` (dev-flow Step 2, unattended). Details and the verdict table are in [spec.md, Spec review log](spec.md#spec-review-log-2026-11-14).
+
+| ID | Decision | Why | Reflected in |
+|---|---|---|---|
+| R-1 | Acceptance coverage for the `homebrew` bootstrap record and `shellenv` reaching children | FR-053/FR-055 had no criterion | spec.md I1-5, tasks T-F5 |
+| R-2 | `doctor` exit 0 when clean, 2 with the exact trust fix for an untrusted needed tap | FR-018's tap half had no criterion | spec.md I1-9, tasks T-F5 |
+| R-3 | Environment facts injected only via `cmd/facman/wire.go` options | e2e must cover darwin, Linux-no-display and WSL on any runner without hidden knobs | spec.md Scope, architecture.md AD-15, tasks T-F4 |
+| R-4 | TUI sudo hand-off via exec-request message + `tea.ExecProcess`, `execute` blocked on a reply channel | The mechanism was unspecified; credentials must never pass through `facman` | architecture.md AD-16, tasks T-G4 |
+| R-5 | T-E1 (ports) lands with workstream A | Lets B–E start in parallel against fixed ports | plan.md, tasks T-E1 |
+| R-6 | Root command takes `--profile` (default `agentic-factory`), `--with`, `--catalog` | The TUI needs the same inputs as `plan` | spec.md FR-026, tasks T-F4 |
+| R-7 | Eight extra edge cases (unset `HOME`, empty resolution, duplicate flags, signal during download, log write failure, narrow terminal, entries with no install block, `--json` with prompt) | Gaps found in review | spec.md Edge Cases |
+| R-8 | `apply --json`: prompt and command list on stderr, report on stdout | Keeps stdout machine-readable | spec.md Edge Cases, tasks T-F5 |
+| R-9 | Linux-no-display and WSL e2e fixtures | FR-044/FR-045 were only unit-tested | spec.md I1-13, tasks T-F5 |
+
 ## Edge Cases & Solutions
 
 See [spec.md, Edge Cases and Error Handling](spec.md#edge-cases-and-error-handling) for the agreed behaviour. Add entries here as implementation finds new ones.

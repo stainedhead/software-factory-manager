@@ -4,7 +4,7 @@
 **Spec directory:** `specs/261114-software-factory-manager/`
 **Created:** 2026-11-14
 **Source PRD:** [software-factory-manager-PRD.md](software-factory-manager-PRD.md) (reviewed 2026-11-14, Appendix L)
-**Status:** Draft (created by `/create-spec`, 2026-11-14)
+**Status:** Reviewed (`/review-spec`, 2026-11-14): implementation-ready. See [Spec review log](#spec-review-log-2026-11-14).
 
 > **Scope of this spec: Increment 1 only.** The PRD describes the whole product and splits delivery into increments (PRD, *Delivery plan*). This spec covers **Increment 1 = Phase 0 + Phase 1 (MVP)** and nothing else. Every requirement the Delivery plan does not put in Increment 1 is listed under [Deferred requirements](#deferred-requirements-out-of-scope-for-increment-1) and gets its own spec later. Where this spec and the PRD's full-product text differ, the Delivery plan's Increment 1 scope and the decisions in this spec win for this increment.
 
@@ -76,7 +76,7 @@ Requirement numbers are the PRD's, so they trace one to one. "Full" means the wh
 | FR | Scope | Increment 1 requirement |
 |---|---|---|
 | FR-025 | Full | Every mutation is a list of concrete commands (argv, never shell strings), shown before consent; the same list is printed by `--dry-run` and `plan`. |
-| FR-026 | Partial | TUI flow Scan → Plan → Review → Run → Summary, **install only**. Keys: `space`, `i`, `/`, `Enter`, `Esc`, `↑`/`↓`/`k`/`j`, `?`, `q`, `Ctrl+C` (PRD Appendix C). Not yet: `a`, `r`, `s`, Manage and Files tabs (`Tab` shows "available in a later increment"). |
+| FR-026 | Partial | TUI flow Scan → Plan → Review → Run → Summary, **install only**. Keys: `space`, `i`, `/`, `Enter`, `Esc`, `↑`/`↓`/`k`/`j`, `?`, `q`, `Ctrl+C` (PRD Appendix C). Not yet: `a`, `r`, `s`, Manage and Files tabs (`Tab` shows "available in a later increment"). The root command accepts `--profile` (repeatable, default `agentic-factory`), `--with` and `--catalog` with the same rules as `plan` **[review]**. |
 | FR-027 | Full | Consent is recorded on every `operations` row as `consent_by = <os user>@<RFC 3339 UTC time>` for both the TUI and headless `apply --profile`. |
 | FR-028 | Full | `requires:` dependencies are ordered first (stable topological order; ties broken by catalog order). A requires cycle is a catalog validation error (exit 3). |
 | FR-029 | Partial | `Backend` port with `brew-formula` and `brew-cask` adapters, plus the `report` and `host-report` pseudo-backends (never mutate, produce `unavailable-here` with hint). |
@@ -183,6 +183,7 @@ Summary only; full design in [architecture.md](architecture.md).
 | Path | Change |
 |---|---|
 | `cmd/facman/main.go`, `main_test.go`, `README.md` | Wire the CLI adapter; keep `--version`/`--about` behaviour and tests |
+| `cmd/facman/wire.go` (new) | `options` struct (platform probe, UID, known brew prefixes, app dirs, `/etc/os-release` and `/proc/version` paths, installer URL, clock, user, stdio) with `defaultOptions()`; builds every adapter. The only place tests inject environment facts **[review]** |
 | `Makefile` | `CGO_ENABLED=0` in `build`; add `build-all` and `integration` targets |
 | `.github/workflows/ci.yml`, `.github/README.md` | Integration step uses `make integration`; macOS sets `FACMAN_INTEGRATION_MUTATE=1` |
 | `go.mod`, `go.sum` | New dependencies (below) |
@@ -237,6 +238,14 @@ Summary only; full design in [architecture.md](architecture.md).
 | Package already trusted/tapped | The tap or trust step is omitted from the plan; nothing recorded. |
 | Version command hangs or prints garbage | Version is `unknown`; the package is still classified by presence. Version commands run with a 5 s timeout and never through a shell. |
 | Secrets in logs | Child environments are logged by variable name only. |
+| `HOME` unset or state path unresolvable **[review]** | Exit 4 naming the missing variable. |
+| Profile resolves to zero packages, or every package is already present **[review]** | Same as empty plan: "Nothing to install", exit 0. |
+| Same `--with` or `--profile` given twice **[review]** | De-duplicated silently. |
+| `--json` with `apply` **[review]** | The command list and `Proceed? [y/N]` go to stderr; stdout carries only the report. Non-terminal stdin is still exit 64. |
+| Signal during the Homebrew installer download **[review]** | Download aborted, temp file removed, nothing recorded (no command ran yet), exit 1. |
+| Log file cannot be written mid-run **[review]** | The command is not started; its operation row is finished `failed` with the error; dependents skipped; exit 1. |
+| Terminal narrower than 80 columns or resized **[review]** | The TUI re-renders on `tea.WindowSizeMsg`, truncates long cells with `…`, and never panics; `i` shows full text. |
+| Catalog entry with no install block for any platform **[review]** | Valid; never offered (not shown as wanted). |
 
 ## Success Criteria and Acceptance Criteria
 
@@ -246,15 +255,15 @@ Increment 1 is done when every criterion I1-1 to I1-15 passes in CI and I1-16 is
 - [ ] **I1-2 Scan.** `facman scan --json` against a fixture machine reports every catalog package with state, provenance, path and version, and validates against report schema v1. The fake `brew` records only read-only invocations. The scan finishes in under 5 s (FR-007, FR-010, FR-011).
 - [ ] **I1-3 Ownership states.** Table-driven tests produce each of `absent`, `foreign`, `managed`, `adopted`, `drifted`, `duplicate`, `conflict` and `unavailable-here` from detections plus inventory. With `xcode-select -p` failing, `/usr/bin/git` is never executed, and OS-bundled git, sqlite and jq show as "present (OS)" (FR-011, FR-014, FR-020, FR-061).
 - [ ] **I1-4 Catalog and profiles.** The embedded catalog loads and validates. `agentic-factory` resolves to its packages plus `base-dev` (git, gh, tmux, visual-studio-code, iterm2 on darwin, sqlite, node, awscli). Optional items are off unless `--with` names them. An unknown ID or conflicting pins exit 3. `--profile` repeats and unions. `--catalog <dir>` replaces the embedded catalog (FR-040 to FR-043, FR-079).
-- [ ] **I1-5 Bootstrap.** With no Homebrew, `scan` and `plan` report it and install nothing. `apply --profile` lists the installer (temp file, never piped, marked unverified) as the first command, and declining leaves the machine unchanged. UID 0 exits 4 with a fix. Homebrew at `/home/linuxbrew/.linuxbrew` is found when it is not on PATH. glibc below 2.39 warns in `--dry-run` (FR-030, FR-050 to FR-053, FR-055, FR-056). [Known prefixes are injectable in tests so the e2e test needs no root-owned paths.]
+- [ ] **I1-5 Bootstrap.** With no Homebrew, `scan` and `plan` report it and install nothing. `apply --profile` lists the installer (temp file, never piped, marked unverified) as the first command, and declining leaves the machine unchanged. UID 0 exits 4 with a fix. Homebrew at `/home/linuxbrew/.linuxbrew` is found when it is not on PATH. glibc below 2.39 warns in `--dry-run` (FR-030, FR-050 to FR-053, FR-055, FR-056). [Known prefixes are injectable in tests so the e2e test needs no root-owned paths. **[review]** After a consented installer step (fake installer served over `httptest`), the `packages` table holds `homebrew` as `managed` with `bootstrap = 1`, later commands see `HOMEBREW_PREFIX` and the brew `bin` on PATH from `brew shellenv`, and only consented commands run.]
 - [ ] **I1-6 Plan and dry run.** `facman plan --profile agentic-factory` prints the exact ordered commands, with dependencies first (for example `awscli` before `session-manager-plugin` when it is selected). `apply --dry-run` prints the same list and writes no `packages` or `operations` rows, and the fake `brew` records no mutating call (FR-025, FR-028, FR-074).
 - [ ] **I1-7 Apply and audit.** After consent, `apply --profile` runs exactly the listed commands in order. Each is recorded `in_progress` before it runs and with its exit code and log path after. `consent_by` is `<os user>@<RFC 3339 time>`, and installed packages are `managed`. A second `apply` proposes and runs nothing and exits 0 (FR-027, FR-032, FR-076 behaviour for `--profile`).
 - [ ] **I1-8 Hands off foreign.** Across all tests, no command touches a `foreign`, `duplicate` or `drifted` package, and no `upgrade` or `uninstall` is ever issued (FR-012, FR-013). [Enforced by a shared invocation-log assertion run at the end of every e2e test.]
-- [ ] **I1-9 Conflict refusal.** A dangling symlink at `{brew_prefix}/bin/claude` makes `claude-code` a `conflict`, classed `orphan`, with full evidence in `i` and in `--json`. It gets no brew command, the other packages install, and the run exits 1. `doctor` lists it and exits 2. No recorded invocation in the whole suite contains `--force` or `--overwrite` (FR-015 to FR-018).
+- [ ] **I1-9 Conflict refusal.** A dangling symlink at `{brew_prefix}/bin/claude` makes `claude-code` a `conflict`, classed `orphan`, with full evidence in `i` and in `--json`. It gets no brew command, the other packages install, and the run exits 1. `doctor` lists it and exits 2. No recorded invocation in the whole suite contains `--force` or `--overwrite` (FR-015 to FR-018). [**[review]** `doctor` on a clean machine exits 0, and with `stablyai/orca` untapped or untrusted it reports the exact `brew trust --cask stablyai/orca/orca` fix and exits 2.]
 - [ ] **I1-10 Tap trust.** With Orca in the plan, Review and `plan` show `brew tap stablyai/orca` and `brew trust --cask stablyai/orca/orca` as separate steps before its install, and the grant is recorded in `tap_trust`. Whole-tap trust is never requested, and `HOMEBREW_NO_REQUIRE_TAP_TRUST` is never set in any child environment (FR-047).
 - [ ] **I1-11 Crash recovery.** A run killed after an `in_progress` row is reconciled on next launch (the row is marked interrupted and the package re-detected), and the next `apply` finishes the remaining work (FR-032).
 - [ ] **I1-12 Exit codes and usage.** Exit codes are 0, 1, 3, 4 and 64 as in Appendix H. `--profile` with no value, a missing `--profile` on `plan` or `apply`, and `apply` with non-terminal stdin all exit 64 with a hint (FR-006, FR-075). [Also: a deferred command name exits 64.]
-- [ ] **I1-13 TUI.** Golden tests cover Scan → Plan → Review → Run → Summary. Required missing items are pre-checked and optional ones are not. Foreign items cannot be selected. `unavailable-here` rows are greyed with a reason (Paperclip: npm backend), and `conflict` rows show evidence on `i`. Only `Enter` on Review consents, `Esc` goes back, and `q` quits with nothing changed. Summary shows sign-in next steps (FR-026, FR-044, FR-112).
+- [ ] **I1-13 TUI.** Golden tests cover Scan → Plan → Review → Run → Summary. Required missing items are pre-checked and optional ones are not. Foreign items cannot be selected. `unavailable-here` rows are greyed with a reason (Paperclip: npm backend), and `conflict` rows show evidence on `i`. Only `Enter` on Review consents, `Esc` goes back, and `q` quits with nothing changed. Summary shows sign-in next steps (FR-026, FR-044, FR-112). [**[review]** An e2e test on a Linux fixture with no `DISPLAY` shows every `gui` item as `unavailable-here` in `plan --json` and lists it as skipped with a warning; a WSL fixture shows the `winget` hint (FR-044, FR-045).]
 - [ ] **I1-14 Real Homebrew (integration, macOS CI).** `scan --json`, `plan` and `doctor` succeed against the runner's Homebrew, and installing one absent small formula records it as `managed`. [Formula: GNU `hello`, through a one-entry `--catalog`. The install runs only when `FACMAN_INTEGRATION_MUTATE=1`, which CI sets on macOS only; elsewhere the test skips. Read-only checks skip when no Homebrew is found or when running as root.]
 - [ ] **I1-15 Quality gates.** `make check` passes, coverage is at least 80% with new code fully covered, every new folder has a README, and the root README, `docs/technical-details.md`, `docs/product-details.md` and `user-docs/` describe the shipped commands.
 - [ ] **I1-16 Field check (manual, J, after shipping).** `facman scan --json` on 3 to 5 lab Macs, with findings fed back into the catalog's provenance rules (Phase 0). Does not gate the increment.
@@ -265,18 +274,18 @@ Increment 1 is done when every criterion I1-1 to I1-15 passes in CI and I1-16 is
 |---|---|
 | FR-001, FR-002, FR-003 | I1-1 |
 | FR-004 (partial), FR-006, FR-075 | I1-12 |
-| FR-007 (partial) | I1-2, plus `--json` schema tests for `plan`, `apply`, `status`, `doctor` (T-F1) |
+| FR-007 (partial) | I1-2, plus `--json` schema tests for `plan`, `apply`, `status`, `doctor` (T-F1, T-F5) |
 | FR-010, FR-011 | I1-2, I1-3 |
 | FR-012, FR-013 (partial), FR-014 | I1-3, I1-8 |
-| FR-015, FR-016, FR-017 (partial), FR-018 | I1-9 |
+| FR-015, FR-016, FR-017 (partial), FR-018 | I1-9 (conflict and tap-trust parts) |
 | FR-020 | I1-3 |
 | FR-025, FR-028, FR-074 (partial) | I1-6 |
 | FR-026 (partial) | I1-13 |
 | FR-027, FR-032, FR-076 (partial) | I1-7, I1-11 |
 | FR-029 (partial), FR-031 | I1-7, I1-14, sudo hand-off unit tests (T-C1, T-G4) |
-| FR-030 (partial), FR-050 to FR-056 (partial/full as above) | I1-5 |
+| FR-030 (partial), FR-050 to FR-056 (partial/full as above) | I1-5 (including the `homebrew` bootstrap record and `shellenv` for children) |
 | FR-040 to FR-043, FR-079 (partial) | I1-4 |
-| FR-044, FR-045 (partial) | I1-13, platform and classification unit tests (T-A6, T-A7) |
+| FR-044, FR-045 (partial) | I1-13 (TUI and the Linux/WSL e2e fixtures), platform and classification unit tests (T-A6, T-A10) |
 | FR-047 | I1-10 |
 | FR-060 to FR-062 | I1-3, I1-7, I1-11 |
 | FR-112 (partial) | I1-13 |
@@ -328,3 +337,32 @@ Increment 1 is done when every criterion I1-1 to I1-15 passes in CI and I1-16 is
 - Design: [docs/design/software-factory-installer-design.md](../../docs/design/software-factory-installer-design.md) (§3, §3a, §3b, §4, §4a, §5, §6, §7, §8)
 - [docs/architecture-decision-record.md](../../docs/architecture-decision-record.md)
 - Spec files: [research.md](research.md), [data-dictionary.md](data-dictionary.md), [architecture.md](architecture.md), [plan.md](plan.md), [tasks.md](tasks.md), [implementation-notes.md](implementation-notes.md), [status.md](status.md)
+
+## Spec review log (2026-11-14)
+
+`/review-spec` was run unattended (dev-flow `/implm-frm-prd` Step 2) while J was away. Every gap was resolved here from the PRD, INTENT.md, AGENTS.md and the design's safest-default and consent-first rules; decisions R-1 to R-9 are also in [implementation-notes.md](implementation-notes.md#spec-review-decisions-2026-11-14). J can overturn any of them.
+
+**Verdict before:** Needs revision (no Fail, four Warnings). **Verdict after:** Implementation-ready.
+
+| Dimension | Before | After | Note |
+|---|---|---|---|
+| Acceptance criteria | ⚠️ Warn | ✅ Pass | I1-1 to I1-16 numbered and testable, but three in-scope behaviours had no criterion: the `homebrew` bootstrap record and `shellenv` for children (FR-053, FR-055), `doctor` exit 2 for an untrusted needed tap (FR-018), and GUI `unavailable-here` on headless Linux and WSL (FR-044, FR-045). Added as bracketed clarifications to I1-5, I1-9, I1-13 and to the traceability table |
+| Technical approach | ⚠️ Warn | ✅ Pass | Three choices were implicit: how the TUI hands a sudo command to `tea.ExecProcess` while `execute` runs it (R-4), how e2e tests fake darwin/WSL on a Linux runner (R-3), and how D can implement ports before E lands (R-5). Now decided |
+| Component coverage | ⚠️ Warn | ✅ Pass | `cmd/facman/wire.go` and its injected options were missing from the file list. Added; every file and folder to create or change is named |
+| Edge case handling | ⚠️ Warn | ✅ Pass | External failures, concurrency, crashes and permissions were covered. Missing: unset `HOME`, empty resolution, duplicate flags, `--json` with the prompt, signal during download, log write failure, narrow terminals, entries with no install block. Added to Edge Cases |
+| Open questions | ✅ Pass | ✅ Pass | OQ-1 to OQ-11 and OQ-13 (J, defaults in force), S-1 to S-3 with owners |
+| Out-of-scope clarity | ✅ Pass | ✅ Pass | Deferred-requirements table by increment |
+| Status initialization | ✅ Pass | ✅ Pass | Phase 0 was In Progress, the rest Not Started; updated after this review |
+
+**Resolutions:**
+
+1. **R-1** Added acceptance coverage for the `homebrew` bootstrap record (`managed`, `bootstrap = 1`) and `brew shellenv` reaching children (I1-5).
+2. **R-2** Added `doctor` clean → 0 and untrusted `stablyai/orca` → 2 with the exact fix (I1-9).
+3. **R-3** Environment facts (platform, UID, prefixes, app dirs, file paths) are injected only through `cmd/facman/wire.go` options, so e2e tests can run darwin, Linux-no-display and WSL fixtures on any runner; nothing is exposed as a flag or env var (extends D-11).
+4. **R-4** TUI sudo hand-off: the TUI wraps the runner so an interactive command sends an exec request to the Bubble Tea program, which runs it with `tea.ExecProcess` and returns the exit code on a channel; `execute` blocks on it. Headless mode runs the same command with inherited stdio.
+5. **R-5** T-E1 (ports and fakes) lands in workstream A's commit, so B, C, D and E start in parallel against fixed port interfaces, and adapters carry compile-time interface assertions from the start.
+6. **R-6** The root command takes `--profile` (default `agentic-factory`), `--with` and `--catalog` for the TUI.
+7. **R-7** Eight extra edge cases specified (Edge Cases, marked **[review]**).
+8. **R-8** `--json` with `apply`: prompt and command list on stderr, report on stdout.
+9. **R-9** Linux-no-display and WSL fixtures added to the e2e suite (I1-13), so FR-044/FR-045 are tested beyond unit level.
+

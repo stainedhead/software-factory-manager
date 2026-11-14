@@ -8,7 +8,7 @@ Active feature specs live here; completed ones move to `specs/archive/` (via `/a
 
 | Spec | Scope | Status |
 |---|---|---|
-| [261114-software-factory-manager/](261114-software-factory-manager/) | `facman` Increment 1 (Phase 0 + Phase 1 MVP): detect, plan and install brew packages safely, from the TUI and the CLI | Spec drafted, implementation not started |
+| [261114-software-factory-manager/](261114-software-factory-manager/) | `facman` Increment 1 (Phase 0 + Phase 1 MVP): detect, plan and install brew packages safely, from the TUI and the CLI | Spec reviewed (implementation-ready), implementation not started |
 
 ## Naming
 
