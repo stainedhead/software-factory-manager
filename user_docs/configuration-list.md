@@ -57,6 +57,9 @@ policy:
   prune: false                      # true: uninstall managed tools no longer listed
   config_drift: keep                # keep | overwrite | fail: setup files a user edited
   format_mismatch: fail             # fail | warn: installed tool newer than the schema
+  conflicts: fail                   # fail | move_aside: stray files where a package installs
+  tap_trust:                        # required for packages from third-party taps
+    - cask:stablyai/orca/orca        # item-level only; whole taps need allow_whole_tap_trust
 bootstrap:
   homebrew: auto                    # auto | never
   node: auto
@@ -120,6 +123,9 @@ jobs:
 | 64 | Usage error (e.g. `-cl` with no filename) |
 
 ## Troubleshooting
+
+- **"It seems there is already a Binary at /opt/homebrew/bin/…".** A file that Homebrew doesn't own (often a leftover npm global launcher) is in the way. Run `sfi doctor` to see what it is. Then either remove it through its owner (`npm uninstall -g …`), or set `policy.conflicts: move_aside` so `sfi` moves it to its backups folder before installing.
+- **"needs tap trust".** Add the item to `policy.tap_trust`, for example `cask:stablyai/orca/orca`.
 
 - **"Homebrew refuses to run as root".** Container jobs often run as root. Use a non-root user with passwordless sudo, or the `homebrew/brew` image.
 - **"choice group container-runtime needs a pick".** Add `choice: colima` (or `orbstack` / `docker-desktop`).

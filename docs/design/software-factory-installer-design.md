@@ -1,6 +1,8 @@
 # Software Factory Installer: Design (v0.1 draft)
 
-*Status: draft v0.2 for review by J · 2026-11-14 · Working name: `sfi` (rename freely)*
+*Status: draft v0.3 for review by J · 2026-11-14 · Working name: `sfi` (rename freely)*
+
+*v0.3 changes (from J's own Mac): a `conflict` state for files Homebrew doesn't own sitting where a package installs (§3a), and item-level tap trust under Homebrew 6 (§3b).*
 
 *v0.2 changes: Homebrew on macOS, Linux and WSL (§2a). Corrected: hermes has a Homebrew formula (`hermes-agent`). Confirmed: paperclip has none. Gemini CLI replaced by Antigravity CLI. Single-user machines. Paperclip runs as a managed service, with network exposure chosen at install time (§6a). Added AWS CLI. Node.js is now an explicit catalog entry. Added Codex CLI, uv, jq and ripgrep (default on), and a container runtime, the AWS Session Manager plugin, gcloud and az (optional, default off). Added saved configuration lists and `--configuration-list`/`-cl` for prompt-free build machines (§7a), and install and usage docs including running from the repo (§13). Added the startup bootstrap for Homebrew and npm: prompted in the TUI, automatic with `-cl` (§4a). `-cl` is designed Linux-CI-first (§7a). Added seeding of agents and configuration from files (§6b), and per-tool setup flags `--hermes-setup`/`-hs`, `--paperclip-setup`/`-ps` and `--orca-setup`/`-os` and `--t3-setup`/`-ts` (§7a). Added `sfi template` and `sfi validate`, the format-contract rule for every build (§7b), and user docs for each file (`user_docs/`).*
 
@@ -106,7 +108,7 @@ J's direction (2026-11-14) is to use Homebrew everywhere. Homebrew on Linux is T
 - **Linux bootstrap needs the distro package manager once.** Homebrew on Linux requires `build-essential`/`gcc`, `procps`, `curl`, `file` and `git` first, which means one `sudo apt install …` step (or dnf). `sfi` shows that step in Review like any other command.
 - **Prefix differs**: `/opt/homebrew` (Apple Silicon), `/usr/local` (Intel Mac), `/home/linuxbrew/.linuxbrew` (Linux and WSL). Detection templates use `{brew_prefix}`.
 - **WSL filesystem.** Keep `sfi` state and Homebrew on the Linux filesystem, never under `/mnt/c`, for performance and permission correctness.
-- **Homebrew 6 tap trust.** Third-party taps such as `stablyai/orca` must be **explicitly trusted** before Homebrew evaluates them. `sfi` treats "trust tap X" as its own consented action and records it in the inventory, on every platform.
+- **Homebrew 6 tap trust.** Third-party taps such as `stablyai/orca` need explicit trust. `sfi` trusts only the specific item it installs, with consent, and records it in the inventory, on every platform (§3b).
 - **git and sqlite on Linux**: the distro copies (`/usr/bin/git`, `/usr/bin/sqlite3`) count as "present (OS)", just like Apple's on macOS. There is no CLT-shim problem on Linux.
 
 ---
@@ -123,6 +125,41 @@ The central rule is *"only manage what we installed."* Each package on each mach
 | `adopted` | Was `foreign`, and the developer explicitly handed it to `sfi` | Same as `managed`, but uninstall needs an extra confirmation because the developer originally owned it |
 | `drifted` | Recorded as managed, but no longer detected, or detected through a different backend | Flag it. Offer **Reinstall** or **Forget**. |
 | `duplicate` | Detected through two or more sources (for example claude-code by brew and natively) | Report which one wins on PATH. Never auto-resolve. |
+| `conflict` | A file or symlink that the chosen backend doesn't own sits at the path the backend will write to (for example `/opt/homebrew/bin/claude` when no cask is installed) | Show what it is (§3a). Offer an explicit **move aside, then install**. Never overwrite or `--force`. |
+
+### 3a. Conflicting files that no package manager owns (found on J's Mac, 2026-11-14)
+
+What happened: `brew install --cask claude-code` failed with *"It seems there is already a Binary at '/opt/homebrew/bin/claude'"*, yet `brew rm claude` and `brew rm claude-code` both said nothing was installed, and running the file gave "permission denied". A likely cause is an earlier `npm install -g @anthropic-ai/claude-code` using Homebrew's Node. That writes its launcher into `/opt/homebrew/bin`, which Homebrew doesn't track, and it goes stale once the npm package or that Node is removed. A hand-made symlink or an old installer can leave the same kind of file.
+
+How `sfi` handles it:
+
+- **Pre-flight, before planning.** For every brew item in the plan, `sfi` lists the paths the formula or cask will link (`binary`, `app`, and `bin/` links from `brew info --json=v2`) and checks each one. If something is already there, it classifies it:
+  - **owned by this package** (fine)
+  - **owned by another brew item** (a real brew conflict, for example `docker-desktop` against `rancher`)
+  - **owned by npm** (it resolves into `{brew_prefix}/lib/node_modules/...` or the npm prefix, and is listed by `npm ls -g`)
+  - **owned by another installer** (native Claude, the Copilot script, a `.pkg` receipt through `pkgutil --file-info`)
+  - **orphan**: no owner found
+- **Shown in full.** The Plan screen marks the item `conflict`, and `i` shows the evidence: `ls -l` output, the file type (`file`), the symlink target and whether it still exists (dangling or not), the executable bit, size and modification time, the owner `sfi` found, and the exact command that failed or would fail.
+- **The fix is a separate, consented action.** **Move aside, then install** (`r` on the item) moves the file into `~/Library/Application Support/sfi/backups/<timestamp>/` (or the XDG equivalent) rather than deleting it, records the move, and then installs. If the old file belongs to a known owner (an npm global, a native install), `sfi` offers to remove it **through that owner** instead (`npm uninstall -g …`), which is cleaner. `sfi` never passes `--force` or `--overwrite` to brew.
+- **Undo.** `sfi restore <id>` puts a moved-aside file back.
+- **With `-cl`:** `policy.conflicts: fail | move_aside` defaults to `fail`. `move_aside` must be written in the configuration list, and it applies only to `orphan` and `owned by npm or another installer` files, never to files another brew item owns. `--dry-run` lists every conflict, so it can be fixed in the image instead.
+- **Run on its own:** `sfi doctor` runs the same scan (plus untrusted taps, §3b) for the whole catalog, without planning an install.
+
+### 3b. Homebrew tap trust (Homebrew 6+, verified against docs.brew.sh/Tap-Trust)
+
+Since Homebrew 6.0.0, **non-official taps need explicit trust**. Official taps are always trusted. What matters for `sfi`:
+
+- Commands that need an untrusted tap or item **fail** until it's trusted. Commands that walk all formulae or casks, such as `upgrade`, `outdated` and listings, **skip** untrusted items. J's Mac shows the second case: brew warns that `elastic/tap`, `localstack/tap`, `mongodb/brew` and `oven-sh/bun` are ignored, so the already-installed `bun`, `mongodb-community` and others **silently stop upgrading**.
+- Trust can be granted per item (`brew trust --formula|--cask|--command user/repo/name`) or per whole tap (`brew trust user/repo`, which covers all current and *future* items). Homebrew recommends per item. Installing a fully qualified name (`brew install --cask user/repo/cask`) trusts only that item.
+- `brew trust` with no arguments lists what is trusted, `brew untrust` with no arguments lists what isn't, and `brew untrust …` revokes.
+- The opt-out variables (`HOMEBREW_NO_REQUIRE_TAP_TRUST`) are **deprecated**. `sfi` never sets them.
+
+How `sfi` handles it:
+
+- **Catalog items from third-party taps** (today only Orca, `stablyai/orca/orca`) declare `tap:` and `trust: item`. The plan includes **`brew trust --cask stablyai/orca/orca`** as its own step, which Review shows next to the install. `sfi` **never grants whole-tap trust**.
+- **Inventory:** each trust grant is recorded with the package that needed it. Uninstalling that package offers to `brew untrust` the item and `brew untap` the tap, if `sfi` tapped it and nothing else uses it.
+- **With `-cl`:** trust must be declared in the configuration list, `policy.tap_trust: [cask:stablyai/orca/orca]`. `sfi validate` fails if a listed package needs trust that isn't declared, so trust is reviewed in the pull request like everything else. Whole-tap entries (`tap:user/repo`) are rejected unless `policy.allow_whole_tap_trust: true`.
+- **Foreign untrusted taps** (J's four) aren't `sfi`'s to change. `sfi doctor` and the Scan screen list them as **info**, naming the installed items that brew is now skipping and the exact `brew trust --formula …` command, so the developer can decide. `sfi` never runs that command for them unless they adopt those items.
 
 **Adoption** matters for labs. Without it, a machine where the developer had already installed `gh` through brew can never be brought under fleet version policy. Adoption is opt-in for each package and is recorded with who adopted it and when.
 
