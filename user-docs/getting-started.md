@@ -115,6 +115,16 @@ The TUI walks through five screens:
 | **Run** | Progress for each command. A command that needs `sudo` gets the terminal so you can type your password into it directly. `Ctrl+C` asks, then stops after the current command. `facman` never kills a running command; a `sudo` step that has the terminal receives `Ctrl+C` itself, like any program you run. |
 | **Summary** | What was installed, which tools need a sign-in, any line to add to your shell profile, and where the logs are. Press `q` to quit. |
 
+![The Plan screen: 18 of 23 missing packages ticked, grouped as a choose-one container runtime, absent packages marked required or optional, and Paperclip greyed out as unavailable here](../docs/images/facman-plan.png)
+
+*Plan: required packages start ticked, optional ones do not.*
+
+![The Review screen: the Homebrew path and the 20 numbered brew commands in run order, with the tap, trust and sudo notes, then the consent line](../docs/images/facman-review.png)
+
+*Review: the exact commands, in order. `Enter` here is your consent.*
+
+Both screenshots come from the real `facman` binary in a 100×40 terminal, run against a simulated Homebrew on an empty machine, so every package shows as absent. The Homebrew path shows `/opt/homebrew`, the Apple silicon default.
+
 Review names the Homebrew it uses (`Homebrew: /opt/homebrew/bin/brew`): every `brew` command it lists runs that program, even if another `brew` comes first on your `PATH`.
 
 `?` shows help on every screen. `q` quits with nothing changed at any point before Review. When stdout is not a terminal (for example `facman | cat`), `facman` prints its about text and exits 0 instead of opening the TUI.

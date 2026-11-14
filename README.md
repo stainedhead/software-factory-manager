@@ -4,6 +4,10 @@
 
 > **Status:** Increment 1 (MVP) is built: the TUI (`facman`) and the headless commands `scan`, `plan`, `apply`, `status` and `doctor`, each with `--json`, on macOS, Linux and WSL 2 through Homebrew. Upgrades, uninstall, adoption, the npm backend, configuration lists (`-cl`), templates and per-tool setup flags arrive in later increments; see [What works today](#what-works-today). The spec is [specs/archive/261114-software-factory-manager/](specs/archive/261114-software-factory-manager/).
 
+![The facman Review screen: the header "facman · Agentic Software Factory Manager", the step bar Scan > Plan > [Review] > Run > Summary, the Homebrew path, and the 20 numbered brew commands it will run in order, with notes on the third-party tap, the single-cask trust and the sudo prompt, then "Pressing enter is your consent"](docs/images/facman-review.png)
+
+*The TUI's Review screen: every command it will run, in order, before you consent. Rendered from the real binary against a simulated Homebrew; see [docs/images](docs/images/).*
+
 ## Overview
 
 `software-factory-manager` builds **`facman`**, the **Agentic Software Factory Manager**: a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
