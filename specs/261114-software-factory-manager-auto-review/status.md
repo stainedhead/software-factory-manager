@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md, plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 26 tasks (T-1a to T-19) |
-| 5 | Implementation | In Progress | 5 / 26 tasks closed (done or deferred) |
+| 5 | Implementation | In Progress | 8 / 26 tasks closed (done or deferred) |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -35,15 +35,15 @@
 | T-1c | FR-001c | P1 | ✅ Done | `Command.String` escapes non-printables; TUI golden `review-escaped`, headless test (RF-5) |
 | T-2 | FR-002 | P1 | ✅ Done | Relative/empty PATH entries skipped in `execrunner`, `detect` and `brew.Locate`; `path-relative-entry` warning; e2e `TestRelativePathEntryNeverRuns` (RF-6, RF-7) |
 | T-3 | FR-003 | P1 | 🟡 Partial (rest deferred) | Shape checker + read-only real-brew contract test (CI logs, `FACMAN_CAPTURE_DIR`); `user-docs/field-check.md` clean-machine and capture steps. Container bootstrap job and captured fixtures deferred (RF-8, RF-9) |
-| T-1d | FR-001d | P2 | ⬜ Not started | |
+| T-1d | FR-001d | P2 | ✅ Done | `statedir.LogPath` sanitizes the package ID; `TestLogPathStaysInLogs` |
 | T-4 | FR-004 | P2 | ⬜ Not started | |
 | T-5a | FR-005a | P2 | ⬜ Not started | |
-| T-5b | FR-005b | P2 | ⬜ Not started | |
+| T-5b | FR-005b | P2 | ✅ Done | `inventory.HolderLabel`: "PID unknown" in all three lock messages (RF-10) |
 | T-6 | FR-006 | P2 | ⬜ Not started | |
 | T-7a | FR-007a | P2 | ⬜ Not started | |
 | T-7b | FR-007b | P2 | ⬜ Not started | |
 | T-8 | FR-008 | P2 | ⬜ Not started | |
-| T-9 | FR-009 | P2 | ⬜ Not started | |
+| T-9 | FR-009 | P2 | ✅ Done | 4 MiB limit is an error, https-only redirects, SHA-256 and size in the log and `results[].installer` (RF-11) |
 | T-10a | FR-010a | P2 | ⬜ Not started | |
 | T-10b | FR-010b | P2 | ⬜ Not started | |
 | T-10c | FR-010c | P2 | ⬜ Not started | |

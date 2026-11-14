@@ -122,3 +122,12 @@ func TestInstallRef(t *testing.T) {
 		})
 	}
 }
+
+// Review FR-005b: a lock holder whose PID could not be read is "PID unknown".
+func TestHolderLabel(t *testing.T) {
+	for pid, want := range map[int]string{0: "PID unknown", -1: "PID unknown", 4242: "PID 4242"} {
+		if got := HolderLabel(pid); got != want {
+			t.Errorf("HolderLabel(%d) = %q, want %q", pid, got, want)
+		}
+	}
+}

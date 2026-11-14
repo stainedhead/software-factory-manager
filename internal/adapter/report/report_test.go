@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -154,6 +155,7 @@ func TestPlanApplyDocuments(t *testing.T) {
 	// a run: consent, results, next steps, an operation error.
 	in.Outcome = &execute.Outcome{Plan: p, Consent: plan.NewConsent("j", t0), Results: []execute.ActionResult{
 		{ActionID: 1, PackageID: "orca", Status: execute.ActionSucceeded, LogPath: "/s/logs/1.log", OperationID: 1},
+		{ActionID: 3, PackageID: "homebrew", Status: execute.ActionSucceeded, OperationID: 3, Installer: &execute.InstallerScript{Path: "/tmp/i.sh", SHA256: "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881", Size: 42}},
 		{ActionID: 2, PackageID: "gh", Status: execute.ActionFailed, ExitCode: 1, OperationID: 2, Detail: "brew install gh exited 1"},
 	}}
 	in.Summary = &summary.Summary{
@@ -163,8 +165,16 @@ func TestPlanApplyDocuments(t *testing.T) {
 	}
 	in.Err = failure.Operation("not everything was installed").WithDetails("action 2 (gh) failed")
 	m = validate(t, s, Build(in))
-	if m["consent_by"] != "j@2026-11-14T19:00:00Z" || len(m["results"].([]any)) != 2 {
+	if m["consent_by"] != "j@2026-11-14T19:00:00Z" || len(m["results"].([]any)) != 3 {
 		t.Errorf("apply = %v", m)
+	}
+	// Review FR-009: the installer fingerprint is on its result only.
+	res := m["results"].([]any)
+	if inst, _ := res[1].(map[string]any)["installer"].(map[string]any); inst["sha256"] != "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881" || fmt.Sprint(inst["bytes"]) != "42" {
+		t.Errorf("installer = %v", res[1])
+	}
+	if _, ok := res[0].(map[string]any)["installer"]; ok {
+		t.Errorf("a brew result has installer data: %v", res[0])
 	}
 	steps := m["next_steps"].([]any)
 	if len(steps) != 3 || steps[0].(map[string]any)["package_id"] != "claude-code" || steps[1].(map[string]any)["package_id"] != "homebrew" || steps[2].(map[string]any)["package_id"] != "node" {

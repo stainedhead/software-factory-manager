@@ -230,7 +230,8 @@ func (r *run) action(ctx context.Context, a plan.Action) (ActionResult, bool) {
 	res := ActionResult{ActionID: a.ID, PackageID: a.PackageID, Status: ActionFailed}
 	cmds := a.Commands
 	if a.Kind == plan.ActionBootstrapHomebrew {
-		cmd, err := r.installerCommand(ctx, a)
+		cmd, script, err := r.installerCommand(ctx, a)
+		res.Installer = script
 		if err != nil {
 			if ctx.Err() != nil {
 				return res, true
@@ -258,6 +259,13 @@ func (r *run) action(ctx context.Context, a plan.Action) (ActionResult, bool) {
 		res.Detail = fmt.Sprintf("opening the log (nothing was run): %v", err)
 		r.finishOp(ctx, &res, inventory.StatusFailed)
 		return res, false
+	}
+	if s := res.Installer; s != nil {
+		// Which installer ran: Homebrew publishes no checksum, so record
+		// the fingerprint of the exact bytes (review FR-009).
+		if _, err := fmt.Fprintf(log, "# installer: sha256=%s bytes=%d\n", s.SHA256, s.Size); err != nil {
+			r.out.Warnings = append(r.out.Warnings, fmt.Sprintf("writing %s: %v", res.LogPath, err))
+		}
 	}
 	status := inventory.StatusSucceeded
 	res.ExitCode = 0
@@ -293,18 +301,18 @@ func (r *run) action(ctx context.Context, a plan.Action) (ActionResult, bool) {
 
 // installerCommand downloads the installer and checks that the command
 // built for the file runs the consented program.
-func (r *run) installerCommand(ctx context.Context, a plan.Action) (plan.Command, error) {
-	path, err := r.s.Installer.Download(ctx)
+func (r *run) installerCommand(ctx context.Context, a plan.Action) (plan.Command, *InstallerScript, error) {
+	script, err := r.s.Installer.Download(ctx)
 	if err != nil {
-		return plan.Command{}, fmt.Errorf("downloading the Homebrew installer: %w", err)
+		return plan.Command{}, nil, fmt.Errorf("downloading the Homebrew installer: %w", err)
 	}
-	cmd := r.s.Installer.Command(path)
+	cmd := r.s.Installer.Command(script.Path)
 	if len(a.Commands) != 1 || len(cmd.Argv) == 0 || len(cmd.Argv) != len(a.Commands[0].Argv) || cmd.Argv[0] != a.Commands[0].Argv[0] {
-		return plan.Command{}, fmt.Errorf("the installer command %q is not the consented one", cmd.String())
+		return plan.Command{}, nil, fmt.Errorf("the installer command %q is not the consented one", cmd.String())
 	}
 	planned := a.Commands[0]
 	cmd.NeedsSudo, cmd.Interactive, cmd.Unverified, cmd.Mutating = planned.NeedsSudo, planned.Interactive, planned.Unverified, planned.Mutating
-	return cmd, nil
+	return cmd, &script, nil
 }
 
 func (r *run) withEnvNames(cmds []plan.Command) []plan.Command {

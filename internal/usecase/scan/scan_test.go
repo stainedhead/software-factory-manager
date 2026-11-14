@@ -95,6 +95,7 @@ func (m *memInventory) SaveDetections(_ context.Context, s []inventory.Detection
 
 type lock struct {
 	holder   int
+	held     bool // held by a process whose PID could not be read
 	err      error
 	unlocked bool
 }
@@ -103,7 +104,7 @@ func (l *lock) TryLock() (func(), int, error) {
 	if l.err != nil {
 		return nil, 0, l.err
 	}
-	if l.holder != 0 {
+	if l.holder != 0 || l.held {
 		return nil, l.holder, nil
 	}
 	return func() { l.unlocked = true }, 0, nil
@@ -242,6 +243,18 @@ func TestScanWithoutLockWritesNothing(t *testing.T) {
 	res, err = newService(inv, &lock{holder: 4242}).Run(context.Background(), Input{Catalog: testCatalog(), Env: Env{Platform: darwin}, HoldsLock: true})
 	if err != nil || !res.Wrote || !inv.marked {
 		t.Errorf("holds lock: %+v %v", res, err)
+	}
+}
+
+// Review FR-005b: an unreadable lock holder (empty or garbage lock file,
+// read as 0) is reported as "PID unknown", never "PID 0".
+func TestScanLockHolderUnknown(t *testing.T) {
+	res, err := newService(&memInventory{}, &lock{held: true}, &fakeDet{id: ownership.DetectorPath}).Run(context.Background(), Input{Catalog: testCatalog(), Env: Env{Platform: darwin}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Findings) == 0 || !strings.Contains(res.Findings[0].Message, "PID unknown") || strings.Contains(res.Findings[0].Message, "PID 0") {
+		t.Errorf("findings = %+v", res.Findings)
 	}
 }
 

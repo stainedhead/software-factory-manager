@@ -229,3 +229,13 @@ func InstallRef(cmds []plan.Command) (backend catalog.BackendID, ref string, ok 
 	}
 	return "", "", false
 }
+
+// HolderLabel names the process that holds the state lock for a message:
+// "PID 4242", or "PID unknown" when the lock file's PID could not be read
+// (an empty or garbage file reads as 0; review FR-005b).
+func HolderLabel(pid int) string {
+	if pid <= 0 {
+		return "PID unknown"
+	}
+	return fmt.Sprintf("PID %d", pid)
+}

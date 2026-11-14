@@ -18,6 +18,7 @@ import (
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/catalog"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
+	"github.com/stainedhead/software-factory-manager/internal/domain/inventory"
 	"github.com/stainedhead/software-factory-manager/internal/domain/ownership"
 	"github.com/stainedhead/software-factory-manager/internal/domain/plan"
 	"github.com/stainedhead/software-factory-manager/internal/domain/platform"
@@ -277,7 +278,7 @@ func (r *Run) start(ctx context.Context) error {
 			return failure.Bootstrap("taking the state lock: %w", err)
 		}
 		if unlock == nil {
-			return failure.Bootstrap("another facman (PID %d) is changing this machine", holder).
+			return failure.Bootstrap("another facman (%s) is changing this machine", inventory.HolderLabel(holder)).
 				WithFix("wait for it to finish, then run facman again")
 		}
 		r.unlock = unlock

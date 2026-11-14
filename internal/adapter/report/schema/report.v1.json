@@ -280,7 +280,16 @@
         "exit_code": { "type": "integer" },
         "log_path": { "type": "string" },
         "operation_id": { "type": "integer", "minimum": 1 },
-        "detail": { "type": "string" }
+        "detail": { "type": "string" },
+        "installer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sha256", "bytes"],
+          "properties": {
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "bytes": { "type": "integer", "minimum": 1 }
+          }
+        }
       }
     }
   }

@@ -139,11 +139,14 @@ type fakeInstaller struct {
 	hook  func()
 }
 
-func (f *fakeInstaller) Download(context.Context) (string, error) {
+func (f *fakeInstaller) Download(context.Context) (InstallerScript, error) {
 	if f.hook != nil {
 		f.hook()
 	}
-	return f.path, f.err
+	if f.err != nil {
+		return InstallerScript{}, f.err
+	}
+	return InstallerScript{Path: f.path, SHA256: "ab12", Size: 42}, nil
 }
 
 func (f *fakeInstaller) Command(path string) plan.Command {
@@ -436,6 +439,28 @@ func consented(p plan.Plan, installerPath string) []string {
 		out = append(out, strings.Join(argv, " "))
 	}
 	return out
+}
+
+// Review FR-009: the installer's SHA-256 and size are in the operation log
+// header and on the action result.
+func TestInstallerFingerprintRecorded(t *testing.T) {
+	h := newHarness()
+	out, err := h.svc.Run(context.Background(), bootstrapPlan(), consent)
+	if err != nil && failure.ExitCode(err) != 1 {
+		t.Fatal(err)
+	}
+	r := out.Results[0]
+	if r.PackageID != plan.HomebrewPackageID || r.Installer == nil || r.Installer.SHA256 != "ab12" || r.Installer.Size != 42 {
+		t.Fatalf("bootstrap result = %+v", r)
+	}
+	if log := h.state.logs[r.LogPath].String(); !strings.HasPrefix(log, "# installer: sha256=ab12 bytes=42\n") {
+		t.Errorf("log = %q", log)
+	}
+	for _, r := range out.Results[1:] {
+		if r.Installer != nil {
+			t.Errorf("%s has installer data", r.PackageID)
+		}
+	}
 }
 
 func TestBootstrapReplan(t *testing.T) {

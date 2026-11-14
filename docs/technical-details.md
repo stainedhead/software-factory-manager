@@ -65,7 +65,7 @@ Application logic. Each package declares the small interfaces it consumes, and i
 | `brew` | Locating brew, `shellenv`, parsing `brew info --json=v2`, the brew detector, the `brew-formula` and `brew-cask` backends, link paths, and tap and trust state. |
 | `detect` | PATH (with the CLT `git` shim rule), app-bundle (Spotlight, then a directory scan) and npm global detectors. |
 | `fsprobe` | Conflict evidence (`ls -l` line, file type, symlink target, dangling) and the owner class of a path. |
-| `installer` | Downloads the Homebrew installer to a `0600` temp file (3 tries with backoff), never piped to a shell. Runs it as `/bin/bash <file>`. |
+| `installer` | Downloads the Homebrew installer to a `0600` temp file (3 tries with backoff), never piped to a shell. Runs it as `/bin/bash <file>`. A body over 4 MiB is an error (never a truncated script), redirects must stay on `https`, and the SHA-256 and size of the saved bytes go into the operation log (`# installer: sha256=… bytes=…`) and `apply --json` (`results[].installer`). |
 | `report` | Report schema v1 (`schema/report.v1.json`, embedded) and the JSON encoding for every command. |
 
 `internal/testkit` and `testdata/fakecmd` provide the fake multi-call `brew` (and `mdfind`, `getconf`, …) used by the end-to-end tests. They are imported only by tests.

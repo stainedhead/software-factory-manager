@@ -122,7 +122,9 @@ func (r *fakeRunner) Run(_ context.Context, c process.Cmd) (process.Result, erro
 
 type fakeInstaller struct{ cleaned bool }
 
-func (*fakeInstaller) Download(context.Context) (string, error) { return "/tmp/i.sh", nil }
+func (*fakeInstaller) Download(context.Context) (execute.InstallerScript, error) {
+	return execute.InstallerScript{Path: "/tmp/i.sh"}, nil
+}
 func (*fakeInstaller) Command(p string) plan.Command {
 	return plan.Command{Argv: []string{"/bin/bash", p}, NeedsSudo: true, Interactive: true, Unverified: true, Mutating: true}
 }

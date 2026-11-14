@@ -17,6 +17,7 @@ import (
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/appinfo"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
+	"github.com/stainedhead/software-factory-manager/internal/domain/inventory"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/execute"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/scan"
 )
@@ -99,9 +100,27 @@ func (d *Dir) LockPath() string { return filepath.Join(d.root, LockFile) }
 func (d *Dir) LogsPath() string { return filepath.Join(d.root, LogsDir) }
 
 // LogPath returns logs/<YYYYMMDD-HHMMSS>-<opID>-<pkgID>.log, with t in UTC.
+// Every byte of pkgID outside [A-Za-z0-9._+@-] becomes "_", so the file is
+// always directly inside logs/ (review FR-001d; catalog IDs are validated
+// at load, this is defence in depth).
 func (d *Dir) LogPath(opID int64, pkgID string, t time.Time) string {
-	name := fmt.Sprintf("%s-%d-%s.log", t.UTC().Format("20060102-150405"), opID, pkgID)
+	name := fmt.Sprintf("%s-%d-%s.log", t.UTC().Format("20060102-150405"), opID, logSafe(pkgID))
 	return filepath.Join(d.LogsPath(), name)
+}
+
+// logSafe replaces every byte outside [A-Za-z0-9._+@-] with "_". With no
+// separator left, the joined name cannot leave logs/ ("." and ".." are
+// impossible because the name always has the time prefix).
+func logSafe(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', strings.IndexByte("._+@-", c) >= 0:
+		default:
+			b[i] = '_'
+		}
+	}
+	return string(b)
 }
 
 // OpenLog opens the log at path for appending (0600), creating its
@@ -146,7 +165,8 @@ func (d *Dir) PruneLogs(now time.Time) error {
 }
 
 // TryLock takes the exclusive lock without waiting. When another process
-// holds it, unlock is nil and holder is that process's PID (0 if unknown).
+// holds it, unlock is nil and holder is that process's PID (0 if unknown;
+// messages show it with inventory.HolderLabel).
 func (d *Dir) TryLock() (unlock func(), holder int, err error) {
 	f, err := os.OpenFile(d.LockPath(), os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
@@ -179,7 +199,7 @@ func (d *Dir) Lock(ctx context.Context) (func(), error) {
 		}
 		select {
 		case <-ctx.Done():
-			return nil, failure.Bootstrap("another %s run (PID %d) holds %s: %w", appinfo.Name, holder, d.LockPath(), ctx.Err()).
+			return nil, failure.Bootstrap("another %s run (%s) holds %s: %w", appinfo.Name, inventory.HolderLabel(holder), d.LockPath(), ctx.Err()).
 				WithFix("wait for it to finish, then run again")
 		case <-time.After(lockPoll):
 		}

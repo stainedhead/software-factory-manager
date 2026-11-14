@@ -2,6 +2,8 @@ package installer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -33,10 +35,11 @@ func TestDownloadWritesTempFileNeverPiped(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(script)) }))
 	defer srv.Close()
 	in, sleeps := newInstaller(t, srv.URL)
-	path, err := in.Download(context.Background())
+	s, err := in.Download(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
+	path := s.Path
 	b, err := os.ReadFile(path)
 	if err != nil || string(b) != script {
 		t.Fatalf("file %s = %q, %v", path, b, err)
@@ -150,4 +153,58 @@ func TestDefaults(t *testing.T) {
 	if _, err := New(Options{URL: "://bad", Sleep: func(context.Context, time.Duration) error { return nil }}).Download(context.Background()); err == nil {
 		t.Error("want an error for a bad URL")
 	}
+}
+
+// Review FR-009: a body over the limit fails (no truncated script runs), a
+// redirect to a non-https URL is refused, and the saved bytes are
+// fingerprinted.
+func TestDownloadHardening(t *testing.T) {
+	t.Run("over the limit", func(t *testing.T) {
+		big := strings.Repeat("x", maxScript+1)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(big)) }))
+		defer srv.Close()
+		in, _ := newInstaller(t, srv.URL)
+		if _, err := in.Download(context.Background()); err == nil || !strings.Contains(err.Error(), "larger than") {
+			t.Fatalf("Download = %v, want a too-large error", err)
+		}
+		if left, _ := filepath.Glob(filepath.Join(in.opts.TempDir, "*")); len(left) != 0 {
+			t.Errorf("left %v behind", left)
+		}
+	})
+	t.Run("exactly the limit", func(t *testing.T) {
+		body := strings.Repeat("x", maxScript)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(body)) }))
+		defer srv.Close()
+		in, _ := newInstaller(t, srv.URL)
+		s, err := in.Download(context.Background())
+		if err != nil || s.Size != maxScript {
+			t.Fatalf("Download = %+v, %v", s, err)
+		}
+	})
+	t.Run("redirect to http", func(t *testing.T) {
+		target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(script)) }))
+		defer target.Close()
+		redir := httptest.NewServer(http.RedirectHandler(target.URL, http.StatusFound))
+		defer redir.Close()
+		for _, c := range []*http.Client{nil, {Timeout: time.Second}} {
+			in := New(Options{URL: redir.URL, Client: c, TempDir: t.TempDir(), Sleep: func(context.Context, time.Duration) error { return nil }})
+			if _, err := in.Download(context.Background()); err == nil || !strings.Contains(err.Error(), "non-https") {
+				t.Errorf("Download = %v, want the redirect refused", err)
+			}
+		}
+	})
+	t.Run("fingerprint", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(script)) }))
+		defer srv.Close()
+		in, _ := newInstaller(t, srv.URL)
+		s, err := in.Download(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		// sha256 of "#!/bin/bash\necho installing homebrew\n"
+		sum := sha256.Sum256([]byte(script))
+		if s.SHA256 != hex.EncodeToString(sum[:]) || s.Size != int64(len(script)) || s.Path == "" {
+			t.Errorf("script = %+v", s)
+		}
+	})
 }

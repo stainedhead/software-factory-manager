@@ -6,6 +6,8 @@ package installer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -59,10 +61,27 @@ func New(opts Options) *Installer {
 	if opts.Client == nil {
 		opts.Client = &http.Client{Timeout: 60 * time.Second}
 	}
+	if opts.Client.CheckRedirect == nil {
+		c := *opts.Client
+		c.CheckRedirect = httpsOnly
+		opts.Client = &c
+	}
 	if opts.Sleep == nil {
 		opts.Sleep = sleepCtx
 	}
 	return &Installer{opts: opts}
+}
+
+// httpsOnly refuses a redirect to anything but https, and more than 10
+// redirects (review FR-009).
+func httpsOnly(req *http.Request, via []*http.Request) error {
+	if req.URL.Scheme != "https" {
+		return fmt.Errorf("refusing a redirect to non-https URL %s", req.URL.Redacted())
+	}
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	return nil
 }
 
 func sleepCtx(ctx context.Context, d time.Duration) error {
@@ -85,60 +104,68 @@ func (*Installer) Command(path string) plan.Command {
 }
 
 // Download fetches the installer into a new temp file (0600) and returns
-// its path. It tries Attempts times with a growing backoff; a cancel stops
+// its path, SHA-256 and size. A body over 4 MiB is an error, never a
+// truncated script. It tries Attempts times with a growing backoff; a cancel stops
 // it at once. On failure no file is left behind.
-func (in *Installer) Download(ctx context.Context) (string, error) {
+func (in *Installer) Download(ctx context.Context) (execute.InstallerScript, error) {
 	var last error
 	for i := range Attempts {
 		if i > 0 {
 			if err := in.opts.Sleep(ctx, time.Duration(i)*2*time.Second); err != nil {
-				return "", fmt.Errorf("downloading %s: %w", in.opts.URL, err)
+				return execute.InstallerScript{}, fmt.Errorf("downloading %s: %w", in.opts.URL, err)
 			}
 		}
-		path, err := in.fetch(ctx)
+		script, err := in.fetch(ctx)
 		if err == nil {
-			return path, nil
+			return script, nil
 		}
 		if ctx.Err() != nil {
-			return "", fmt.Errorf("downloading %s: %w", in.opts.URL, ctx.Err())
+			return execute.InstallerScript{}, fmt.Errorf("downloading %s: %w", in.opts.URL, ctx.Err())
 		}
 		last = err
 	}
-	return "", fmt.Errorf("downloading %s failed %d times (install Homebrew by hand from https://brew.sh, then run facman again): %w", in.opts.URL, Attempts, last)
+	return execute.InstallerScript{}, fmt.Errorf("downloading %s failed %d times (install Homebrew by hand from https://brew.sh, then run facman again): %w", in.opts.URL, Attempts, last)
 }
 
-func (in *Installer) fetch(ctx context.Context) (string, error) {
+func (in *Installer) fetch(ctx context.Context) (execute.InstallerScript, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, in.opts.URL, http.NoBody)
 	if err != nil {
-		return "", fmt.Errorf("building the request: %w", err)
+		return execute.InstallerScript{}, fmt.Errorf("building the request: %w", err)
 	}
 	resp, err := in.opts.Client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("fetching: %w", err)
+		return execute.InstallerScript{}, fmt.Errorf("fetching: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetching: HTTP %s", resp.Status)
+		return execute.InstallerScript{}, fmt.Errorf("fetching: HTTP %s", resp.Status)
 	}
 	f, err := os.CreateTemp(in.opts.TempDir, "facman-homebrew-install-*.sh")
 	if err != nil {
-		return "", fmt.Errorf("creating the temp file: %w", err)
+		return execute.InstallerScript{}, fmt.Errorf("creating the temp file: %w", err)
 	}
-	n, err := io.Copy(f, io.LimitReader(resp.Body, maxScript))
+	sum := sha256.New()
+	// Read one byte past the limit, so a larger body is an error rather
+	// than a silently truncated script.
+	n, err := io.Copy(io.MultiWriter(f, sum), io.LimitReader(resp.Body, maxScript+1))
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}
-	if err == nil && n == 0 {
+	switch {
+	case err != nil:
+	case n == 0:
 		err = errors.New("the server sent an empty script")
+	case n > maxScript:
+		err = fmt.Errorf("the script is larger than %d bytes", maxScript)
 	}
 	if err != nil {
 		_ = os.Remove(f.Name())
-		return "", fmt.Errorf("saving the script: %w", err)
+		return execute.InstallerScript{}, fmt.Errorf("saving the script: %w", err)
 	}
 	in.mu.Lock()
 	in.files = append(in.files, f.Name())
 	in.mu.Unlock()
-	return f.Name(), nil
+	return execute.InstallerScript{Path: f.Name(), SHA256: hex.EncodeToString(sum.Sum(nil)), Size: n}, nil
 }
 
 // Cleanup removes every file Download saved.

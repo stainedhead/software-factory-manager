@@ -111,8 +111,8 @@ What `facman` sets for the commands it runs:
 | File | Contents |
 |---|---|
 | `state.db` | SQLite (WAL). `packages` holds what `facman` manages, with backend, version, path and the consent string. `operations` is the append-only audit log of every action: command, status, exit code, consent and log path. Recent detections are kept too: the last 10 scans. |
-| `facman.lock` | Held by `apply` and the TUI for the whole run. A second mutating run exits 4 and names the PID that holds it. Read-only commands skip their DB writes while it is held and print a warning. |
-| `logs/<YYYYMMDD-HHMMSS>-<operation id>-<package id>.log` | The full output of each command. The header lists the names of the environment variables, never their values. Logs older than 90 days are deleted at launch. `operations` rows are kept forever. |
+| `facman.lock` | Held by `apply` and the TUI for the whole run. A second mutating run exits 4 and names the PID that holds it (or says "PID unknown" when the lock file cannot be read). Read-only commands skip their DB writes while it is held and print a warning. |
+| `logs/<YYYYMMDD-HHMMSS>-<operation id>-<package id>.log` | The full output of each command. The header lists the names of the environment variables, never their values. Logs older than 90 days are deleted at launch. `operations` rows are kept forever. Any character of the package ID outside `A-Z a-z 0-9 . _ + @ -` is written as `_`, so a log is always directly in `logs/`. The Homebrew installer's log starts with `# installer: sha256=<hex> bytes=<n>`, the fingerprint of the exact script that ran (Homebrew publishes no checksum); `apply --json` has the same in `results[].installer`. |
 
 `facman` never deletes or migrates down a state DB. A DB written by a newer `facman`, or one that is corrupt, is exit 4 with the path. Move the file aside yourself if you want a fresh start.
 

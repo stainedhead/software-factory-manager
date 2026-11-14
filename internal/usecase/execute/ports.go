@@ -35,8 +35,19 @@ type Inventory interface {
 // piped; 3 attempts with backoff) and builds its command. Implemented by
 // adapter/installer.
 type HomebrewInstaller interface {
-	Download(ctx context.Context) (path string, err error)
+	Download(ctx context.Context) (InstallerScript, error)
 	Command(path string) plan.Command
+}
+
+// InstallerScript is the downloaded installer: where it was saved and the
+// fingerprint of the exact bytes that run (review FR-009).
+type InstallerScript struct {
+	// Path is the temp file.
+	Path string
+	// SHA256 is the hex SHA-256 of the file.
+	SHA256 string
+	// Size is the file size in bytes.
+	Size int64
 }
 
 // StateDir is the subset of the state directory execute uses.
@@ -121,6 +132,9 @@ type ActionResult struct {
 	OperationID int64
 	// Detail explains a failure or skip.
 	Detail string
+	// Installer is the downloaded Homebrew installer, for the bootstrap
+	// action only (nil otherwise).
+	Installer *InstallerScript
 }
 
 // Progress receives run events. Implemented by adapter/cli (text) and

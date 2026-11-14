@@ -4,7 +4,7 @@ The state directory (PRD Appendix J), implementing `scan.StateDir` and `execute.
 
 | File | Contents |
 |---|---|
-| `statedir.go` | `Resolve(goos, getenv)`, `Open(root)`, `Dir` with `Root`, `DBPath`, `LockPath`, `LogsPath`, `LogPath`, `OpenLog` (append, 0600, recreates `logs/`), `PruneLogs`, `TryLock`, `Lock` |
+| `statedir.go` | `Resolve(goos, getenv)`, `Open(root)`, `Dir` with `Root`, `DBPath`, `LockPath`, `LogsPath`, `LogPath` (package ID sanitized to `[A-Za-z0-9._+@-]`, so the file is always in `logs/`), `OpenLog` (append, 0600, recreates `logs/`), `PruneLogs`, `TryLock`, `Lock` |
 
 | Item | macOS | Linux / WSL |
 |---|---|---|
@@ -15,6 +15,6 @@ The state directory (PRD Appendix J), implementing `scan.StateDir` and `execute.
 
 - `HOME` unset or relative, an uncreatable or unwritable directory: bootstrap error (exit 4) naming the variable or path.
 - `PruneLogs(now)` deletes regular files in `logs/` older than 90 days and nothing else.
-- `TryLock()` never waits: when another process holds the lock it returns a nil unlock and the holder's PID (AD-9, D-10). `Lock(ctx)` waits until ctx is done, then fails with exit 4 naming the PID.
+- `TryLock()` never waits: when another process holds the lock it returns a nil unlock and the holder's PID (AD-9, D-10). `Lock(ctx)` waits until ctx is done, then fails with exit 4 naming the PID. An unreadable PID (empty or garbage lock file) is 0 and is shown as "PID unknown" (`inventory.HolderLabel`).
 
 **Architecture.** Adapter; imports domain `appinfo` and `failure`. Back to [internal/adapter](../README.md).

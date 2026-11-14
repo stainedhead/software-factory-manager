@@ -140,7 +140,7 @@ func (s *Service) Run(ctx context.Context, in Input) (Result, error) {
 		}
 		if unlock == nil {
 			res.Findings = append(res.Findings, platform.Finding{Code: platform.CodeStateLocked, Severity: platform.SeverityWarning,
-				Message: fmt.Sprintf("another facman (PID %d) is running; this scan does not save its results", holder)})
+				Message: fmt.Sprintf("another facman (%s) is running; this scan does not save its results", inventory.HolderLabel(holder))})
 		} else {
 			defer unlock()
 			write = true

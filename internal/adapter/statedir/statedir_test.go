@@ -278,3 +278,27 @@ func TestOpenLog(t *testing.T) {
 		t.Error("opening a directory as a log must fail")
 	}
 }
+
+// Review FR-001d: the package-ID part of a log name can never leave logs/.
+func TestLogPathStaysInLogs(t *testing.T) {
+	d, err := Open(filepath.Join(t.TempDir(), "facman"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 11, 14, 19, 0, 0, 0, time.UTC)
+	tests := []struct{ id, want string }{
+		{"../../x", "20261114-190000-1-.._.._x.log"},
+		{"a/b", "20261114-190000-1-a_b.log"},
+		{"x\x00y", "20261114-190000-1-x_y.log"},
+		{"x\x1b[2K", "20261114-190000-1-x__2K.log"},
+		{"..", "20261114-190000-1-...log"},
+		{"node@24+x_y.z-w", "20261114-190000-1-node@24+x_y.z-w.log"},
+		{"é", "20261114-190000-1-__.log"},
+	}
+	for _, tt := range tests {
+		p := d.LogPath(1, tt.id, at)
+		if filepath.Dir(p) != d.LogsPath() || filepath.Base(p) != tt.want {
+			t.Errorf("LogPath(%q) = %s, want %s in %s", tt.id, p, tt.want, d.LogsPath())
+		}
+	}
+}

@@ -256,6 +256,14 @@ type Result struct {
 	LogPath     string `json:"log_path,omitempty"`
 	OperationID int64  `json:"operation_id,omitempty"`
 	Detail      string `json:"detail,omitempty"`
+	// Installer is the Homebrew installer that ran (bootstrap only).
+	Installer *Installer `json:"installer,omitempty"`
+}
+
+// Installer fingerprints the downloaded Homebrew installer (review FR-009).
+type Installer struct {
+	SHA256 string `json:"sha256"`
+	Bytes  int64  `json:"bytes"`
 }
 
 // NextStep is a sign-in or shell-profile step after apply.
@@ -511,8 +519,12 @@ func planOf(p plan.Plan) *Plan {
 func results(rs []execute.ActionResult) []Result {
 	out := make([]Result, 0, len(rs))
 	for _, r := range rs {
-		out = append(out, Result{ActionID: r.ActionID, PackageID: r.PackageID, Status: string(r.Status), ExitCode: r.ExitCode,
-			LogPath: r.LogPath, OperationID: r.OperationID, Detail: r.Detail})
+		res := Result{ActionID: r.ActionID, PackageID: r.PackageID, Status: string(r.Status), ExitCode: r.ExitCode,
+			LogPath: r.LogPath, OperationID: r.OperationID, Detail: r.Detail}
+		if r.Installer != nil {
+			res.Installer = &Installer{SHA256: r.Installer.SHA256, Bytes: r.Installer.Size}
+		}
+		out = append(out, res)
 	}
 	return out
 }
