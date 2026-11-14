@@ -73,6 +73,10 @@ func run() int {
 	}
 	fmt.Fprint(os.Stdout, res.Stdout)
 	fmt.Fprint(os.Stderr, res.Stderr)
+	if matched && rule.KillSelf > 0 {
+		_ = syscall.Kill(os.Getpid(), syscall.Signal(rule.KillSelf))
+		time.Sleep(10 * time.Second) // the signal arrives first
+	}
 	return res.Exit
 }
 

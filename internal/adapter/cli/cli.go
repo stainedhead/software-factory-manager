@@ -26,6 +26,7 @@ import (
 	"github.com/stainedhead/software-factory-manager/internal/adapter/session"
 	"github.com/stainedhead/software-factory-manager/internal/domain/appinfo"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
+	"github.com/stainedhead/software-factory-manager/internal/domain/plan"
 	"github.com/stainedhead/software-factory-manager/internal/domain/platform"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/execute"
 )
@@ -308,6 +309,17 @@ func (a *App) run(ctx context.Context, cmd platform.Command, fl *flags) error {
 		err, res.Outcome = nil, &execute.Outcome{Declined: true}
 	}
 	err = asTyped(err)
+	if errors.Is(err, plan.ErrInvariant) && res.Plan != nil {
+		// Never show a plan that broke a safety rule, not even as text
+		// (review FR-011): JSON keeps an empty action list, text shows
+		// only the error.
+		p := *res.Plan
+		p.Actions = nil
+		res.Plan = &p
+		if !fl.json {
+			res.Plan = nil
+		}
+	}
 	if fl.json {
 		doc := report.Build(reportInput(cmd, a.Version, a.now(), res, err))
 		if werr := report.Encode(stdout, doc); werr != nil {

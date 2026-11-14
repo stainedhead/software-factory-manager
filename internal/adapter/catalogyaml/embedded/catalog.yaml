@@ -213,12 +213,10 @@ packages:
     install:
       darwin:
         - backend: npm             # no Homebrew path; npm backend arrives in Increment 2
-          id: paperclipai
-          hint: "Paperclip is installed by the npm backend in Increment 2"
+          id: paperclipai           # no hint: "needs the npm backend (Increment 2)" already says it (review FR-016)
       linux:
         - backend: npm
           id: paperclipai
-          hint: "Paperclip is installed by the npm backend in Increment 2"
     requires:
       - { package: node, min_version: "24.11" }
     service:                       # kept opaque until Increment 2 (design §6a)

@@ -198,32 +198,74 @@ func (r *Runner) Run(ctx context.Context, cmd process.Cmd) (process.Result, erro
 		c.Stdout = io.MultiWriter(&stdout, log)
 		c.Stderr = io.MultiWriter(&stderr, log)
 	}
+	start := time.Now()
 	runErr := c.Run()
 	res := process.Result{Stdout: stdout.String(), Stderr: stderr.String()}
 	if c.ProcessState != nil {
 		res.ExitCode = c.ProcessState.ExitCode()
+		setSignal(&res, c.ProcessState.Sys())
 	}
 	var exitErr *exec.ExitError
+	var outcome string
 	switch {
 	case runErr == nil:
 	case runCtx.Err() != nil && ctx.Err() == nil:
-		res.ExitCode = -1
-		return res, fmt.Errorf("running %s: %w after %s", cmd.Argv[0], process.ErrTimeout, cmd.Timeout)
+		res.ExitCode, res.Signal = -1, ""
+		runErr = fmt.Errorf("running %s: %w after %s", cmd.Argv[0], process.ErrTimeout, cmd.Timeout)
+		outcome = fmt.Sprintf("timed out after %s; killed", cmd.Timeout)
 	case ctx.Err() != nil:
-		res.ExitCode = -1
-		return res, fmt.Errorf("running %s: %w", cmd.Argv[0], ctx.Err())
+		res.ExitCode, res.Signal = -1, ""
+		runErr = fmt.Errorf("running %s: %w", cmd.Argv[0], ctx.Err())
+		outcome = "cancelled; killed"
 	case errors.As(runErr, &exitErr):
-		// a non-zero exit is reported in the result
+		runErr = nil // a non-zero exit is reported in the result
 	default:
 		res.ExitCode = -1
-		return res, fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+		runErr = fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+		outcome = "error: " + runErr.Error()
 	}
-	if cmd.Log != nil {
-		if _, err := fmt.Fprintf(log, "# exit %d\n", res.ExitCode); err != nil {
-			return res, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+	if err := writeFooter(log, res, outcome, start); err != nil && runErr == nil {
+		return res, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+	}
+	return res, runErr
+}
+
+// setSignal records a death by signal as 128+signo with the signal's name.
+func setSignal(res *process.Result, sys any) {
+	if ws, ok := sys.(syscall.WaitStatus); ok && ws.Signaled() {
+		res.ExitCode = 128 + int(ws.Signal())
+		res.Signal = signalName(ws.Signal())
+	}
+}
+
+// signalNames are the signals a child is commonly killed by.
+var signalNames = map[syscall.Signal]string{
+	syscall.SIGHUP: "SIGHUP", syscall.SIGINT: "SIGINT", syscall.SIGQUIT: "SIGQUIT", syscall.SIGILL: "SIGILL",
+	syscall.SIGABRT: "SIGABRT", syscall.SIGBUS: "SIGBUS", syscall.SIGFPE: "SIGFPE", syscall.SIGKILL: "SIGKILL",
+	syscall.SIGSEGV: "SIGSEGV", syscall.SIGPIPE: "SIGPIPE", syscall.SIGALRM: "SIGALRM", syscall.SIGTERM: "SIGTERM",
+	syscall.SIGUSR1: "SIGUSR1", syscall.SIGUSR2: "SIGUSR2",
+}
+
+func signalName(s syscall.Signal) string {
+	if n, ok := signalNames[s]; ok {
+		return n
+	}
+	return fmt.Sprintf("signal %d", int(s))
+}
+
+// writeFooter ends a log with how the command ended and when (review
+// FR-007a). outcome overrides the exit line for timeouts and errors.
+func writeFooter(w io.Writer, res process.Result, outcome string, start time.Time) error {
+	if outcome == "" {
+		outcome = fmt.Sprintf("exit %d", res.ExitCode)
+		if res.Signal != "" {
+			outcome = fmt.Sprintf("killed by signal %s (exit %d)", res.Signal, res.ExitCode)
 		}
 	}
-	return res, nil
+	end := time.Now()
+	_, err := fmt.Fprintf(w, "# result: %s\n# time: started %s, ended %s, took %s\n", outcome,
+		start.UTC().Format(time.RFC3339), end.UTC().Format(time.RFC3339), end.Sub(start).Round(time.Millisecond))
+	return err
 }
 
 // Handoff prepares an interactive command for a front end that hands the
@@ -256,6 +298,7 @@ func (r *Runner) Handoff(cmd process.Cmd) (c *exec.Cmd, finish func(runErr error
 	c.Args[0] = cmd.Argv[0]
 	c.Env = r.Environ(cmd.Env)
 	c.Dir = cmd.Dir
+	start := time.Now()
 	finish = func(runErr error) (process.Result, error) {
 		var res process.Result
 		var exitErr *exec.ExitError
@@ -263,10 +306,14 @@ func (r *Runner) Handoff(cmd process.Cmd) (c *exec.Cmd, finish func(runErr error
 		case runErr == nil:
 		case errors.As(runErr, &exitErr):
 			res.ExitCode = exitErr.ExitCode()
+			setSignal(&res, exitErr.Sys())
 		default:
-			return process.Result{ExitCode: -1}, fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+			res.ExitCode = -1
+			err := fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+			_ = writeFooter(log, res, "error: "+err.Error(), start)
+			return res, err
 		}
-		if _, err := fmt.Fprintf(log, "# exit %d\n", res.ExitCode); err != nil {
+		if err := writeFooter(log, res, "", start); err != nil {
 			return res, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
 		}
 		return res, nil

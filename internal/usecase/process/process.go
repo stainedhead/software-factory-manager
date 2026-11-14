@@ -46,6 +46,10 @@ type Result struct {
 	Stdout string
 	// Stderr is the captured standard error (empty when Interactive).
 	Stderr string
+	// Signal names the signal that killed the child (for example
+	// "SIGTERM"), or "". ExitCode is then 128 plus the signal number, as
+	// shells report it, so it never equals a "not run" code (review FR-007b).
+	Signal string
 }
 
 // Success reports whether the command exited 0.

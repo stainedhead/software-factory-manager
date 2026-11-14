@@ -17,7 +17,9 @@ import (
 )
 
 // NotRunExitCode is the exit code recorded for an operation whose command
-// could not be started (or whose log could not be opened).
+// could not be started (or whose log could not be opened). A command killed
+// by a signal records 128+signo instead (process.Result.Signal, review
+// FR-007b), so the two never meet.
 const NotRunExitCode = -1
 
 // Service runs consented plans (FR-026 to FR-031, FR-050).
@@ -275,11 +277,11 @@ func (r *run) action(ctx context.Context, a plan.Action) (ActionResult, bool) {
 			res.Detail = fmt.Sprintf("cancelled before command %d of %d", i+1, len(cmds))
 			break
 		}
-		code, err := r.command(ctx, a, c, log)
-		res.ExitCode = code
-		if err != nil || code != 0 {
+		pr, err := r.command(ctx, a, c, log)
+		res.ExitCode = pr.ExitCode
+		if err != nil || pr.ExitCode != 0 {
 			status = inventory.StatusFailed
-			res.Detail = commandDetail(c, code, err)
+			res.Detail = commandDetail(c, pr, err)
 			break
 		}
 	}
@@ -329,7 +331,7 @@ func (r *run) withEnvNames(cmds []plan.Command) []plan.Command {
 
 // command runs c to completion: the context it runs under is never
 // cancelled, so a cancel cannot kill it half-way.
-func (r *run) command(ctx context.Context, a plan.Action, c plan.Command, log io.Writer) (int, error) {
+func (r *run) command(ctx context.Context, a plan.Action, c plan.Command, log io.Writer) (process.Result, error) {
 	lines := &lineWriter{emit: func(line string) { r.s.output(a, line) }}
 	res, err := r.s.Runner.Run(context.WithoutCancel(ctx), process.Cmd{
 		Argv: c.Argv, Env: maps.Clone(r.out.Env), Interactive: c.NeedsSudo || c.Interactive,
@@ -337,16 +339,19 @@ func (r *run) command(ctx context.Context, a plan.Action, c plan.Command, log io
 	})
 	lines.flush()
 	if err != nil && res.ExitCode == 0 {
-		return NotRunExitCode, err
+		res.ExitCode = NotRunExitCode
 	}
-	return res.ExitCode, err
+	return res, err
 }
 
-func commandDetail(c plan.Command, code int, err error) string {
-	if err != nil {
+func commandDetail(c plan.Command, res process.Result, err error) string {
+	switch {
+	case err != nil:
 		return fmt.Sprintf("%s: %v", c.String(), err)
+	case res.Signal != "":
+		return fmt.Sprintf("%s killed by signal %s (exit %d)", c.String(), res.Signal, res.ExitCode)
 	}
-	return fmt.Sprintf("%s exited %d", c.String(), code)
+	return fmt.Sprintf("%s exited %d", c.String(), res.ExitCode)
 }
 
 func (r *run) finishOp(ctx context.Context, res *ActionResult, status inventory.OperationStatus) {

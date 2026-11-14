@@ -4,7 +4,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
+
+	"github.com/stainedhead/software-factory-manager/internal/testkit/fakeworld"
 )
 
 // writeCatalog writes a one-package catalog dir with the given package
@@ -114,5 +117,44 @@ func TestRelativePathEntryNeverRuns(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("no path-relative-entry warning in %s", f.stdout.String())
+	}
+}
+
+// Review FR-016: Paperclip's unavailable reason is printed once, in plan
+// and scan text, on Linux and macOS.
+func TestPaperclipReasonOnce(t *testing.T) {
+	const want = "paperclip: unavailable-here; needs the npm backend (Increment 2)\n"
+	for _, goos := range []string{"linux", "darwin"} {
+		t.Run(goos, func(t *testing.T) {
+			f := newFixture(t, machine{goos: goos})
+			f.want(0, f.run("plan", "--profile", "agentic-factory"))
+			out := f.stdout.String()
+			if !strings.Contains(out, "  "+want) || strings.Count(out, "Increment 2") != 1 {
+				t.Errorf("plan text:\n%s\nwant the line %q once", out, want)
+			}
+		})
+	}
+}
+
+// Review FR-007: a brew install killed by SIGTERM is recorded with exit
+// 143 and its signal, and its log ends with the outcome footer.
+func TestSignalKilledInstallIsRecorded(t *testing.T) {
+	f := newFixture(t, machine{}, func(w *fakeworld.World) {
+		w.Rules = append([]fakeworld.Rule{{Cmd: "brew", Args: []string{"install", "jq"}, Stdout: "==> Downloading jq\n", KillSelf: int(syscall.SIGTERM)}}, w.Rules...)
+	})
+	f.want(1, f.runTTY("y\n", "apply", "--profile", "e2e", "--catalog", "../../testdata/catalogs/e2e"))
+	ops := f.operations()
+	if len(ops) != 1 || ops[0].ExitCode == nil || *ops[0].ExitCode != 128+int(syscall.SIGTERM) {
+		t.Fatalf("operations = %+v", ops)
+	}
+	if !strings.Contains(f.stdout.String()+f.stderr.String(), "killed by signal SIGTERM") {
+		t.Errorf("output does not name the signal:\n%s\n%s", f.stdout.String(), f.stderr.String())
+	}
+	b, err := os.ReadFile(ops[0].LogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), "# result: killed by signal SIGTERM (exit 143)\n# time: started ") {
+		t.Errorf("log:\n%s", b)
 	}
 }

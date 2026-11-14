@@ -54,6 +54,9 @@ type Rule struct {
 	Exit int `json:"exit,omitempty"`
 	// SleepMS delays the answer.
 	SleepMS int `json:"sleep_ms,omitempty"`
+	// KillSelf, when set, makes fakecmd kill itself with this signal
+	// number after printing (a command killed by a signal).
+	KillSelf int `json:"kill_self,omitempty"`
 	// Builtin runs the built-in brew emulation after SleepMS instead of
 	// printing Stdout/Stderr/Exit (for slow installs).
 	Builtin bool `json:"builtin,omitempty"`

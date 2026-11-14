@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -335,6 +336,32 @@ func TestRenderPlanEscapesControlCharacters(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "\x1b") || !strings.Contains(out.String(), `brew install "jq\x1b7x"`) {
 		t.Errorf("plan output = %q", out.String())
+	}
+}
+
+// Review FR-011: a plan that broke a safety rule is never printed, in text
+// or JSON; only the error is.
+func TestInvalidPlanIsNeverPrinted(t *testing.T) {
+	inv := failure.Operation("internal error (a bug in facman; please report it): %w", fmt.Errorf("%w: action 1: forbidden flag -f", plan.ErrInvariant))
+	res := session.Result{Bootstrap: boot(), Plan: &plan.Plan{Profiles: []string{"p"}, Actions: []plan.Action{
+		{ID: 1, PackageID: "jq", Commands: []plan.Command{{Argv: []string{"brew", "install", "-f", "jq"}}}}}}}
+	a, out, errOut := newApp(&fakeEngine{res: res, err: inv})
+	if got := a.Execute(context.Background(), []string{"plan", "--profile", "p"}); got != 1 {
+		t.Fatalf("exit %d", got)
+	}
+	if strings.Contains(out.String(), "brew install") || strings.Contains(out.String(), "Nothing to install") || !strings.Contains(errOut.String(), "bug in facman") {
+		t.Errorf("stdout = %q, stderr = %q", out.String(), errOut.String())
+	}
+	a, out, _ = newApp(&fakeEngine{res: res, err: inv})
+	if got := a.Execute(context.Background(), []string{"plan", "--json", "--profile", "p"}); got != 1 {
+		t.Fatalf("json exit %d", got)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if acts := doc["plan"].(map[string]any)["actions"].([]any); len(acts) != 0 || doc["error"] == nil {
+		t.Errorf("json = %s", out.String())
 	}
 }
 

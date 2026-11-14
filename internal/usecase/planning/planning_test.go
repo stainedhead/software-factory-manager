@@ -334,9 +334,17 @@ func TestBuildErrors(t *testing.T) {
 	if _, err := svc(brewLike{err: errors.New("boom")}).Build(context.Background(), in); err == nil {
 		t.Error("backend error must be returned")
 	}
-	_, err := svc(brewLike{forbidden: true}).Build(context.Background(), in)
+	// Review FR-011: a plan that fails its safety check is never returned
+	// with commands, and the error says it is a bug to report.
+	bad, err := svc(brewLike{forbidden: true}).Build(context.Background(), in)
 	if failure.ExitCode(err) != 1 || !errors.Is(err, plan.ErrInvariant) {
 		t.Errorf("invariant violation = %v", err)
+	}
+	if len(bad.Actions) != 0 || len(bad.Commands()) != 0 {
+		t.Errorf("an invalid plan kept its actions: %+v", bad.Actions)
+	}
+	if !strings.Contains(err.Error(), "bug in facman") || !strings.Contains(err.Error(), "report") {
+		t.Errorf("error = %v, want it to say it is a bug to report", err)
 	}
 	cyc := testCatalog()
 	cyc.Entries[3].Requires = []catalog.Requirement{{Package: "awscli"}}

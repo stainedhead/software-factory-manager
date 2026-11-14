@@ -36,8 +36,9 @@ func (j *journal) index(t *testing.T, event string) int {
 
 type fakeRunner struct {
 	j     *journal
-	exit  map[string]int   // argv string -> exit code
-	errs  map[string]error // argv string -> error
+	exit  map[string]int    // argv string -> exit code
+	errs  map[string]error  // argv string -> error
+	sigs  map[string]string // argv string -> killing signal (exit 128+n)
 	hook  func(process.Cmd)
 	cmds  []process.Cmd
 	ctxOK []bool // the run context was not cancelled
@@ -54,7 +55,7 @@ func (r *fakeRunner) Run(ctx context.Context, cmd process.Cmd) (process.Result, 
 	if cmd.Log != nil {
 		_, _ = io.WriteString(cmd.Log, "==> "+key+"\r\npartial")
 	}
-	return process.Result{ExitCode: r.exit[key]}, r.errs[key]
+	return process.Result{ExitCode: r.exit[key], Signal: r.sigs[key]}, r.errs[key]
 }
 
 func (r *fakeRunner) argvs() []string {
@@ -348,6 +349,25 @@ func TestRunRecordsOperations(t *testing.T) {
 	}
 	if _, ok := out.Result(9); ok {
 		t.Error("Result(9) found")
+	}
+}
+
+// Review FR-007b: a signal-killed command is recorded with 128+signo and
+// "killed by signal <NAME>", never as the not-run code.
+func TestSignalKilledCommand(t *testing.T) {
+	h := newHarness()
+	h.runner.exit["brew install gh"] = 143
+	h.runner.sigs = map[string]string{"brew install gh": "SIGTERM"}
+	out, err := h.svc.Run(context.Background(), basePlan(), consent)
+	if failure.ExitCode(err) != 1 {
+		t.Fatalf("err = %v", err)
+	}
+	r := out.Results[0]
+	if r.Status != ActionFailed || r.ExitCode != 143 || r.ExitCode == NotRunExitCode || !strings.Contains(r.Detail, "killed by signal SIGTERM") {
+		t.Errorf("result = %+v", r)
+	}
+	if h.inv.done[1].exit != 143 || h.inv.done[1].status != inventory.StatusFailed {
+		t.Errorf("finish = %+v", h.inv.done[1])
 	}
 }
 

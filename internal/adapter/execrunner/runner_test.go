@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"syscall"
@@ -41,6 +42,9 @@ func TestHelperProcess(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	case "pgid":
 		fmt.Println(syscall.Getpgrp())
+	case "selfterm":
+		_ = syscall.Kill(os.Getpid(), syscall.SIGTERM)
+		time.Sleep(10 * time.Second)
 	case "cat":
 		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		_, _ = fmt.Fprint(os.Stdout, "got "+line)
@@ -78,7 +82,7 @@ func TestRunCapturesOutputAndExitCode(t *testing.T) {
 		t.Errorf("stderr = %q", res.Stderr)
 	}
 	logText := log.String()
-	for _, want := range []string{`$ "` + os.Args[0] + `"`, "# env: " + helperEnv + " SECRET_TOKEN\n", "a b|$HOME", "to stderr", "# exit 3"} {
+	for _, want := range []string{`$ "` + os.Args[0] + `"`, "# env: " + helperEnv + " SECRET_TOKEN\n", "a b|$HOME", "to stderr", "# result: exit 3\n"} {
 		if !strings.Contains(logText, want) {
 			t.Errorf("log %q does not contain %q", logText, want)
 		}
@@ -320,7 +324,7 @@ func TestHandoff(t *testing.T) {
 	if err != nil || res.ExitCode != 3 || !strings.Contains(out.String(), "a b") {
 		t.Errorf("result = %+v, %v, out %q", res, err, out.String())
 	}
-	if l := log.String(); !strings.Contains(l, "# interactive") || !strings.HasSuffix(l, "# exit 3\n") {
+	if l := log.String(); !strings.Contains(l, "# interactive") || !strings.Contains(l, "# result: exit 3\n") {
 		t.Errorf("log = %q", l)
 	}
 
@@ -395,5 +399,74 @@ func TestPathLookupSkipsRelativeEntries(t *testing.T) {
 	}
 	if p, err := lookPath("brew", "."+sep+"bin"+sep+abs); err != nil || p != filepath.Join(abs, "brew") {
 		t.Errorf("lookPath with an absolute entry after relative ones = %q, %v", p, err)
+	}
+}
+
+var footerTime = regexp.MustCompile(`# time: started \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ, ended \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ, took \S+\n$`)
+
+// Review FR-007: every operation log ends with an outcome footer (exit code
+// or signal, start and end times in UTC, duration), through Run and
+// Handoff; a signal-killed child records 128+signo and its signal name.
+func TestLogFooterAndSignals(t *testing.T) {
+	tests := []struct {
+		name, mode string
+		code       int
+		signal     string
+		result     string
+	}{
+		{"exit 0", "env", 0, "", "# result: exit 0\n"},
+		{"exit 3", "echo", 3, "", "# result: exit 3\n"},
+		{"killed by SIGTERM", "selfterm", 128 + int(syscall.SIGTERM), "SIGTERM", "# result: killed by signal SIGTERM (exit 143)\n"},
+	}
+	for _, tt := range tests {
+		t.Run("run "+tt.name, func(t *testing.T) {
+			var log bytes.Buffer
+			cmd := helperCmd(tt.mode)
+			cmd.Log = &log
+			res, err := newRunner().Run(context.Background(), cmd)
+			if err != nil || res.ExitCode != tt.code || res.Signal != tt.signal {
+				t.Fatalf("Run = %+v, %v", res, err)
+			}
+			assertFooter(t, log.String(), tt.result)
+		})
+		t.Run("handoff "+tt.name, func(t *testing.T) {
+			var log bytes.Buffer
+			cmd := helperCmd(tt.mode)
+			cmd.Log, cmd.Interactive = &log, true
+			c, finish, err := newRunner().Handoff(cmd)
+			if err != nil {
+				t.Fatal(err)
+			}
+			res, err := finish(c.Run())
+			if err != nil || res.ExitCode != tt.code || res.Signal != tt.signal {
+				t.Fatalf("Handoff = %+v, %v", res, err)
+			}
+			assertFooter(t, log.String(), tt.result)
+		})
+	}
+	t.Run("timeout", func(t *testing.T) {
+		var log bytes.Buffer
+		cmd := helperCmd("sleep")
+		cmd.Log, cmd.Timeout = &log, 50*time.Millisecond
+		if _, err := newRunner().Run(context.Background(), cmd); !errors.Is(err, process.ErrTimeout) {
+			t.Fatalf("err = %v", err)
+		}
+		assertFooter(t, log.String(), "# result: timed out after 50ms; killed\n")
+	})
+}
+
+func assertFooter(t *testing.T, log, result string) {
+	t.Helper()
+	i := strings.LastIndex(log, "# result: ")
+	if i < 0 || !strings.HasPrefix(log[i:], result) || !footerTime.MatchString(log[i+len(result):]) {
+		t.Errorf("log footer = %q, want %q then the times", log[max(i, 0):], result)
+	}
+}
+
+func TestSignalName(t *testing.T) {
+	for sig, want := range map[syscall.Signal]string{syscall.SIGTERM: "SIGTERM", syscall.SIGKILL: "SIGKILL", syscall.SIGINT: "SIGINT", syscall.Signal(77): "signal 77"} {
+		if got := signalName(sig); got != want {
+			t.Errorf("signalName(%d) = %q, want %q", sig, got, want)
+		}
 	}
 }

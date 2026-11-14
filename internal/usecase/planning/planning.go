@@ -154,7 +154,11 @@ func (s *Service) Build(ctx context.Context, in Input) (plan.Plan, error) {
 		return in.Statuses[id].State == ownership.StateAbsent
 	}
 	if err := p.Validate(absent); err != nil {
-		return p, failure.Operation("internal error: the plan breaks a safety rule: %w", err)
+		// The plan is not returned with its commands, so nothing can show
+		// or run them (review FR-011). Catalog-caused problems are exit 3
+		// at load time (catalog.Validate), so reaching this is a bug.
+		p.Actions = nil
+		return p, failure.Operation("internal error (a bug in facman; please report it at https://github.com/stainedhead/software-factory-manager/issues): the plan breaks a safety rule: %w", err)
 	}
 	return p, nil
 }
