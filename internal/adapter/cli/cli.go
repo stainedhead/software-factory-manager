@@ -57,6 +57,13 @@ type TUIRunner interface {
 	Run(ctx context.Context, req TUIRequest) error
 }
 
+// TUIFunc adapts a function to TUIRunner; cmd/facman uses it to wire
+// adapter/tui without either front end importing the other (FR-010b).
+type TUIFunc func(ctx context.Context, req TUIRequest) error
+
+// Run calls f.
+func (f TUIFunc) Run(ctx context.Context, req TUIRequest) error { return f(ctx, req) }
+
 // Stdio is the process's standard streams.
 type Stdio struct {
 	In  io.Reader

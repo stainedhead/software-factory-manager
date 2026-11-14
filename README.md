@@ -79,7 +79,11 @@ Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](sp
 | `make integration` | The `TestIntegration*` tests with the `integration` build tag, verbose: read-only checks against real Homebrew (skip without it or as root); `FACMAN_INTEGRATION_MUTATE=1` runs the GNU `hello` install and turns those skips into failures |
 | `make lint` | Run golangci-lint |
 | `make cover` | Tests with a coverage report (target ≥ 80% overall; Increment 1 is at about 96%) |
-| `make check` | fmt + lint + test (run before every commit) |
+| `make fmt` | `gofmt -w .` |
+| `make archcheck` | Check the Clean Architecture import rules ([scripts/archcheck](scripts/archcheck/)) |
+| `make doccheck` | Check that AGENTS.md lists every make target and later-increment guides carry their status note ([scripts/doccheck](scripts/doccheck/)) |
+| `make fuzz` | Fuzz the parsers of external input, 10 s each (`FUZZTIME=…` to change) |
+| `make check` | fmt + lint + archcheck + doccheck + test (run before every commit) |
 
 Contributor and AI-agent rules — architecture, TDD, and documentation standards — are in [AGENTS.md](AGENTS.md).
 
@@ -92,6 +96,7 @@ docs/       product and technical documentation (docs/design/ holds the full des
 user-docs/  user-facing guides: setup, configuration, adoption
 specs/      feature specifications (active and archived)
 testdata/   test-only fixtures and the fake command used by tests
+scripts/    repo checks run by make (archcheck, doccheck); not shipped
 ```
 
 Each folder has its own `README.md` describing its purpose and contents.

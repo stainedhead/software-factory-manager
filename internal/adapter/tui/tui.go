@@ -11,12 +11,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"sync"
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/stainedhead/software-factory-manager/internal/adapter/cli"
 	"github.com/stainedhead/software-factory-manager/internal/adapter/session"
 	"github.com/stainedhead/software-factory-manager/internal/domain/catalog"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
@@ -79,12 +79,25 @@ type Options struct {
 	ProgramOptions []tea.ProgramOption
 }
 
-// Runner opens the TUI. It implements cli.TUIRunner.
+// Runner opens the TUI. cmd/facman adapts it to cli.TUIRunner, so the two
+// front ends never import each other (review FR-010b).
 type Runner struct {
 	o Options
 }
 
-var _ cli.TUIRunner = (*Runner)(nil)
+// Request is what the TUI starts with: the root command's flags and the
+// terminal.
+type Request struct {
+	// Profiles default to agentic-factory.
+	Profiles []string
+	// With are optional packages and choice picks to pre-select.
+	With []string
+	// CatalogDir is --catalog; empty means embedded.
+	CatalogDir string
+	// In and Out are the terminal.
+	In  io.Reader
+	Out io.Writer
+}
 
 // New returns a Runner over o.
 func New(o Options) *Runner { return &Runner{o: o} }
@@ -93,9 +106,9 @@ func New(o Options) *Runner { return &Runner{o: o} }
 // error that decides the exit code: nil when nothing was changed or
 // everything was installed, the session's error otherwise. A run in
 // progress when the program ends is stopped after its current command.
-func (r *Runner) Run(ctx context.Context, req cli.TUIRequest) error {
+func (r *Runner) Run(ctx context.Context, req Request) error {
 	m := NewModel(ctx, r.config(req))
-	opts := append([]tea.ProgramOption{tea.WithContext(ctx), tea.WithInput(req.Stdio.In), tea.WithOutput(req.Stdio.Out)}, r.o.ProgramOptions...)
+	opts := append([]tea.ProgramOption{tea.WithContext(ctx), tea.WithInput(req.In), tea.WithOutput(req.Out)}, r.o.ProgramOptions...)
 	final, err := tea.NewProgram(m, opts...).Run()
 	if fm, ok := final.(*Model); ok && fm != nil {
 		m = fm
@@ -107,7 +120,7 @@ func (r *Runner) Run(ctx context.Context, req cli.TUIRequest) error {
 	return m.Err()
 }
 
-func (r *Runner) config(req cli.TUIRequest) Config {
+func (r *Runner) config(req Request) Config {
 	user := ""
 	if r.o.User != nil {
 		user = r.o.User()

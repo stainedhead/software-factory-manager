@@ -1,5 +1,7 @@
 # Hermes Agent setup (`--hermes-setup` / `-hs`)
 
+> **Status: planned for Increment 5.** This guide describes a designed feature that does not ship yet: `-hs`/`--hermes-setup` exits 64 until then, with a message naming Increment 5. See [user-docs](README.md) for what ships today.
+
 Use a Hermes setup spec to give every machine the same Hermes configuration: model and provider, toolsets, MCP servers, the agent's identity (`SOUL.md`), skills and profiles.
 
 ## What Hermes reads

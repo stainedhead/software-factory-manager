@@ -3,7 +3,6 @@ package tui
 import (
 	"bytes"
 	"context"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/stainedhead/software-factory-manager/internal/adapter/cli"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/execute"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/process"
@@ -63,7 +61,7 @@ func runProgram(t *testing.T, eng Engine, handoff Handoff) *program {
 		ProgramOptions: []tea.ProgramOption{tea.WithWindowSize(120, 60), tea.WithoutSignals()}})
 	p.start = time.Now()
 	go func() {
-		p.errc <- r.Run(context.Background(), cli.TUIRequest{Profiles: []string{"agentic-factory"}, Stdio: cli.Stdio{In: inR, Out: p.out, Err: io.Discard}})
+		p.errc <- r.Run(context.Background(), Request{Profiles: []string{"agentic-factory"}, In: inR, Out: p.out})
 	}()
 	t.Cleanup(func() { _ = inW.Close(); _ = inR.Close() })
 	return p

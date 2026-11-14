@@ -4,7 +4,7 @@ The interactive driving adapter: a Bubble Tea v2 program (`charm.land/bubbletea/
 
 | File | Contents |
 |---|---|
-| `tui.go` | `Runner` (implements `cli.TUIRunner`), `Options`, the `Engine`/`Steps` ports (`SessionEngine` adapts `*session.Session`; `*session.Run` is the `Steps`), the `bridge` that carries run events, `progress` (`execute.Progress`), `handoffRunner` (`execute.CommandRunner`) and `consent` (`execute.Confirmer`) |
+| `tui.go` | `Runner` and its `Request` (cmd/facman adapts it to `cli.TUIRunner` through `cli.TUIFunc`; `adapter/tui` never imports `adapter/cli`, review FR-010b), `Options`, the `Engine`/`Steps` ports (`SessionEngine` adapts `*session.Session`; `*session.Run` is the `Steps`), the `bridge` that carries run events, `progress` (`execute.Progress`), `handoffRunner` (`execute.CommandRunner`) and `consent` (`execute.Confirmer`) |
 | `model.go` | `Model`: screens, keys, the step commands (start, plan, run), Ctrl+C during Run and the sudo hand-off through `tea.ExecProcess` |
 | `rows.go` | The Plan table: rows grouped by ownership state, choice groups as single-select rows, what can be ticked and why not, the filter and the cursor; `toggle` turns space into a `catalog.Selection` |
 | `view.go` | Rendering of each screen, the help overlay, the `i` info panel and the conflict evidence; lines are cut to the terminal width with `…` |

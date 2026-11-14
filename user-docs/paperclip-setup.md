@@ -1,5 +1,7 @@
 # Paperclip setup (`--paperclip-setup` / `-ps`)
 
+> **Status: planned for Increment 5.** This guide describes a designed feature that does not ship yet: `-ps`/`--paperclip-setup` exits 64 until then, with a message naming Increment 5. See [user-docs](README.md) for what ships today.
+
 Use a Paperclip setup to load a **company package** (the company, its agents, projects, skills and tasks) into a Paperclip instance that `facman` runs as a service.
 
 ## What Paperclip reads

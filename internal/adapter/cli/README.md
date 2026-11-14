@@ -15,6 +15,6 @@ The command-line driving adapter: the cobra command tree, flag validation, the h
 - **Validation before I/O.** `--catalog` must be a local directory, `--profile` / `--with` values are trimmed and de-duplicated, and `apply` without `--dry-run` needs a terminal on stdin (else 64).
 - **`--json`.** The report (schema v1, [../report/](../report/)) goes to stdout; the prompt and progress go to stderr.
 - **Signals.** The first SIGINT/SIGTERM cancels the run (execute stops after the current command); later ones are ignored until it returns.
-- **TUI seam.** `facman` with no command calls `TUIRunner` ([../tui/](../tui/)) when stdout and stdin are terminals. Stdout not a terminal prints the about text and a hint (exit 0, AD-14). Stdout a terminal but stdin not is a usage error (64): keys, and with them consent, only come from a terminal.
+- **TUI seam.** `facman` with no command calls `TUIRunner` (declared here; cmd/facman wires [../tui/](../tui/) to it through `TUIFunc`, so neither front end imports the other) when stdout and stdin are terminals. Stdout not a terminal prints the about text and a hint (exit 0, AD-14). Stdout a terminal but stdin not is a usage error (64): keys, and with them consent, only come from a terminal.
 
 **Architecture.** Adapter; imports `adapter/session` (requests and results), `adapter/report`, `adapter/catalogyaml` (directory check), `domain/...` and cobra. Wired in [cmd/facman](../../../cmd/facman/). Back to [internal/adapter](../README.md).

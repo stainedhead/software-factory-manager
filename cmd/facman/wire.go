@@ -184,7 +184,10 @@ func newApp(o options) *cli.App {
 	})
 	tuiRunner := o.TUI
 	if tuiRunner == nil {
-		tuiRunner = tui.New(tui.Options{Engine: tui.SessionEngine{Session: sess}, Runner: runner, Handoff: runner.Handoff, User: o.User})
+		t := tui.New(tui.Options{Engine: tui.SessionEngine{Session: sess}, Runner: runner, Handoff: runner.Handoff, User: o.User})
+		tuiRunner = cli.TUIFunc(func(ctx context.Context, req cli.TUIRequest) error {
+			return t.Run(ctx, tui.Request{Profiles: req.Profiles, With: req.With, CatalogDir: req.CatalogDir, In: req.Stdio.In, Out: req.Stdio.Out})
+		})
 	}
 	return &cli.App{Engine: sess, TUI: tuiRunner, Stdio: cli.Stdio{In: o.Stdin, Out: o.Stdout, Err: o.Stderr},
 		Version: version, Now: o.Now, Signals: o.Signals}

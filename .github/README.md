@@ -4,7 +4,7 @@ Repository automation and agent instructions.
 
 | Path | Purpose |
 |---|---|
-| `workflows/ci.yml` | On every PR and push to `main`, on Linux and macOS: `go mod tidy` check, lint (`golangci-lint`, which also lints the `integration`-tagged files), `make cover`, `make integration`, `make build` and a `bin/facman --version` smoke test |
+| `workflows/ci.yml` | On every PR and push to `main`, on Linux and macOS: `go mod tidy` check, lint (`golangci-lint`, which also lints the `integration`-tagged files), `make cover`, `make integration`, `make archcheck`, `make build` and a `bin/facman --version` smoke test; on Linux also `make fuzz` (10 s per parser) and `make build-all` with a check that the four release binaries exist |
 | `workflows/release.yml` | On a `v*` tag: runs `make check`, then GoReleaser publishes binaries and checksums to GitHub Releases |
 | `copilot-instructions.md` | Points Copilot at [../AGENTS.md](../AGENTS.md) |
 
