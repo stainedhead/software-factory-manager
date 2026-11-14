@@ -14,14 +14,14 @@ func (fakeBackend) LinkPaths(context.Context, catalog.Entry, catalog.InstallStep
 	return nil, nil
 }
 
-type fakeProbe struct{}
+type stubProbe struct{}
 
-func (fakeProbe) Inspect(context.Context, string) (*plan.ConflictEvidence, error) { return nil, nil }
-func (fakeProbe) Owner(context.Context, string, catalog.Entry) (plan.OwnerClass, string, error) {
+func (stubProbe) Inspect(context.Context, string) (*plan.ConflictEvidence, error) { return nil, nil }
+func (stubProbe) Owner(context.Context, string, catalog.Entry) (plan.OwnerClass, string, error) {
 	return plan.OwnerOrphan, "", nil
 }
 
 var (
 	_ Backend   = fakeBackend{}
-	_ PathProbe = fakeProbe{}
+	_ PathProbe = stubProbe{}
 )

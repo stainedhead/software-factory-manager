@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 29 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C and D done; next E, then F, G, H |
+| 5 | Implementation | In Progress | 33 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C and D done; E in progress (E2 to E5 done); then F, G, H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -61,6 +61,10 @@
 | T-D7 npm detector | ✅ Done | |
 | T-D8 `adapter/fsprobe` | ✅ Done | Evidence and owner classes; I-23 |
 | T-D9 Detection-only `gemini-cli` | ✅ Done | `superseded_by`; scan finding lands with T-E3 (I-16) |
+| T-E2 `usecase/bootstrap` | ✅ Done | `Check`, `ChildEnv`; 100% coverage |
+| T-E3 `usecase/scan` | ✅ Done | Parallel detectors, `Covers`, AD-8 reconcile, superseded finding; I-26 |
+| T-E4 `usecase/conflicts` | ✅ Done | `Check`, `CheckAll` (unreadable → `Failed`); 100% coverage |
+| T-E5 `usecase/planning` | ✅ Done | Installer first, tap/trust chain, exclusions, choice groups; I-27 |
 
 ## Blockers
 

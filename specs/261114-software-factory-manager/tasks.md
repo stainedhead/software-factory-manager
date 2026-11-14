@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**29 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8, E 1/9, F 0/6, G 0/5, H 0/4)
+**33 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 5/9, F 0/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -150,19 +150,19 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 - **Test first:** compile-time checks that the in-memory fakes in each use case's `_test.go` satisfy the ports (data-dictionary §3).
 - **Done when:** port interfaces declared in their consuming packages; `internal/usecase/README.md` lists them.
 
-**T-E2 — `usecase/bootstrap`.** *Depends:* T-E1 · *Est:* 3 h
+**✅ T-E2 — `usecase/bootstrap`.** *Depends:* T-E1 · *Est:* 3 h
 - **Test first (I1-5 unit part):** UID 0 → fatal `uid0` with fix; brew missing → warning `brew-missing` (not fatal for scan/plan/apply); brew at prefix not on PATH → found + `shellenv` applied; CLT missing on darwin → warning; Linux prerequisites missing on ubuntu → finding with `sudo apt-get update && sudo apt-get install -y build-essential procps curl file git`, fatal for apply; fedora → dnf command; unknown distro + missing prereqs → fatal for apply; glibc 2.35 → `glibc-old` warning; Node 24.11 via nvm → satisfies, `foreign`; prefix owned by another user → fatal for apply.
 - **Done when:** README.
 
-**T-E3 — `usecase/scan`.** *Depends:* T-E1 · *Est:* 3 h
+**✅ T-E3 — `usecase/scan`.** *Depends:* T-E1 · *Est:* 3 h
 - **Test first:** detectors run concurrently (fake detectors block until all started); one detector exceeding the timeout (fake clock/context) → `unknown` with reason and `Incomplete` on its packages, scan still completes; reconcile: with lock → `MarkInterrupted`, AD-8 (interrupted install now detected via its backend → record `managed`; not detected → stays absent); without lock → no writes, warning; detections snapshot saved; every catalog entry classified.
 - **Done when:** README.
 
-**T-E4 — `usecase/conflicts`.** *Depends:* T-E1 · *Est:* 2 h
+**✅ T-E4 — `usecase/conflicts`.** *Depends:* T-E1 · *Est:* 2 h
 - **Test first:** for each selected `absent` brew item, `LinkPaths` checked via `PathProbe`; `this-package` → no conflict; anything else → `Conflict` with evidence, owner, failing command (`brew install --cask claude-code`) and fix hint; Orca before tap: paths from catalog `detect.commands` and bundle name (D-9).
 - **Done when:** README.
 
-**T-E5 — `usecase/planning`.** *Depends:* T-E3, T-E4 · *Est:* 4 h
+**✅ T-E5 — `usecase/planning`.** *Depends:* T-E3, T-E4 · *Est:* 4 h
 - **Test first (I1-6, I1-10, part of I1-5/I1-9):** brew missing → first action `bootstrap-homebrew` (installer command, `Unverified`, `NeedsSudo`), every brew action depends on it; Orca → `tap`, `trust`, `install` actions in that order; already tapped/trusted → omitted; dependencies first (`awscli` before `session-manager-plugin` when `--with session-manager-plugin`); `conflict` → excluded with dependents; `unavailable-here`, `foreign`, `duplicate`, `drifted`, `managed`, `adopted`, `Incomplete` → no action (exclusion reasons where wanted); choice group satisfied when any member present; empty plan; `plan.Validate` passes on every produced plan.
 - **Done when:** README.
 

@@ -119,6 +119,22 @@ const (
 	// CodeSuperseded marks a found tool the catalog says is replaced by
 	// another (Gemini CLI by Antigravity CLI); info only.
 	CodeSuperseded = "superseded"
+	// CodeBrewShellenv means brew shellenv could not be read.
+	CodeBrewShellenv = "brew-shellenv"
+	// CodeStateLocked means another facman holds the state lock, so a
+	// read-only command did not save its detections.
+	CodeStateLocked = "state-locked"
+	// CodeConflict is a doctor finding: a path a brew item would write is
+	// held by something else.
+	CodeConflict = "conflict"
+	// CodeUntrustedTap is a doctor finding: a catalog tap item is not
+	// trusted although its tap is added or the item is installed.
+	CodeUntrustedTap = "untrusted-tap"
+	// CodeTapPending is a doctor info: a catalog tap is not added yet;
+	// apply adds and trusts it as reviewed steps.
+	CodeTapPending = "tap-not-added"
+	// CodeCheckFailed is a doctor info: a check could not be completed.
+	CodeCheckFailed = "check-failed"
 )
 
 // Finding is one bootstrap or doctor observation.
