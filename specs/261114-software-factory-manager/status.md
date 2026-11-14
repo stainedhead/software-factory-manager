@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 21 / 52 tasks. Workstreams A (with T-E1), B and C done; next D, E (parallel), then F, G, H |
+| 5 | Implementation | In Progress | 29 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C and D done; next E, then F, G, H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -52,6 +52,15 @@
 | T-C3 `adapter/statedir` | ✅ Done | Cross-process flock test with holder PID; I-10 |
 | T-C4 `adapter/sqlite` open and migrations | ✅ Done | Newer schema and garbage file → exit 4, file untouched; CGO_ENABLED=0 |
 | T-C5 `adapter/sqlite` inventory repository | ✅ Done | Implements scan/execute/status `Inventory`; last 10 scans kept; I-11 |
+| T-D1 Locate brew and `shellenv` | ✅ Done | `adapter/brew` `Locator`; shellenv parsed without a shell |
+| T-D2 Parse `brew info --json=v2` | ✅ Done | Fixtures shaped from research.md, **not captured from real Homebrew**: confirm in I1-16/I1-14 (I-18) |
+| T-D3 Brew detector | ✅ Done | One `info --installed` call, read-only env, 10 s |
+| T-D4 `brew-formula`/`brew-cask` backends | ✅ Done | Tap/trust as separate actions; sudo default when artifacts unreadable (I-19, I-20) |
+| T-D5 PATH detector | ✅ Done | `/usr/bin/git` never run without CLT (fakecmd log); I-22 |
+| T-D6 App-bundle detector | ✅ Done | mdfind, fallback scan via plutil |
+| T-D7 npm detector | ✅ Done | |
+| T-D8 `adapter/fsprobe` | ✅ Done | Evidence and owner classes; I-23 |
+| T-D9 Detection-only `gemini-cli` | ✅ Done | `superseded_by`; scan finding lands with T-E3 (I-16) |
 
 ## Blockers
 
@@ -66,3 +75,4 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | Step 3, workstream A: domain model (version, failure, platform, catalog, plan, inventory, ownership), use case ports (T-E1), fakecmd and testkit, Makefile targets. Deviations I-1 to I-14 in implementation-notes.md. |
 | 2026-11-14 | Step 3, workstream B: YAML loader (`adapter/catalogyaml`), embedded catalog v1 and profiles, `--catalog <dir>` source. |
 | 2026-11-14 | Step 3, workstream C: `execrunner`, `platform`, `statedir` and `sqlite` adapters. Coverage: 94.7% overall, 100% domain. |
+| 2026-11-14 | Step 3, workstream D: `brew` (locator, shellenv, info parsing, detector, formula/cask backends, tap/trust state), `detect` (PATH, bundle, npm), `fsprobe`; detection-only `gemini-cli` entry (T-D9). Coverage: 95.6% overall. Deviations I-16 to I-24. |

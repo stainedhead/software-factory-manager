@@ -1,0 +1,24 @@
+{
+  "formulae": [
+    { "name": "jq", "full_name": "jq", "tap": "homebrew/core",
+      "installed": [ { "version": "1.7", "installed_on_request": false }, { "version": "1.7.1", "installed_on_request": true } ],
+      "linked_keg": "1.7.1", "keg_only": false },
+    { "name": "node@24", "full_name": "node@24", "tap": "homebrew/core",
+      "installed": [ { "version": "24.11.1", "installed_on_request": true } ],
+      "linked_keg": null, "keg_only": true },
+    { "name": "gh", "full_name": "gh", "tap": "homebrew/core",
+      "installed": [ { "version": "2.62.0", "installed_on_request": true } ],
+      "linked_keg": null, "keg_only": false }
+  ],
+  "casks": [
+    { "token": "claude-code", "full_token": "claude-code", "tap": "homebrew/cask",
+      "installed": "2.1.4",
+      "artifacts": [ { "binary": [ "claude" ] }, { "zap": [ { "trash": "~/.claude" } ] } ] },
+    { "token": "orca", "full_token": "stablyai/orca/orca", "tap": "stablyai/orca",
+      "installed": "1.4.0",
+      "artifacts": [ { "app": [ "Orca.app" ] }, { "binary": [ "$APPDIR/Orca.app/Contents/Resources/bin/orca", { "target": "orca" } ] } ] },
+    { "token": "visual-studio-code", "full_token": "visual-studio-code", "tap": "homebrew/cask",
+      "installed": "1.95.3",
+      "artifacts": [ { "app": [ "Visual Studio Code.app" ] }, { "binary": [ "$APPDIR/Visual Studio Code.app/Contents/Resources/app/bin/code", { "target": "code" } ] } ] }
+  ]
+}

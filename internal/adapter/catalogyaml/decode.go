@@ -249,6 +249,8 @@ func (d *decoder) entry(id string, n *yaml.Node, path string) catalog.Entry {
 			e.SignInRequired = d.boolean(f.value, fp)
 		case "service":
 			e.Service = &catalog.ServiceSpec{Raw: d.opaque(f.value, fp)}
+		case "superseded_by":
+			e.SupersededBy = d.str(f.value, fp)
 		default:
 			d.unknown(f, path)
 		}

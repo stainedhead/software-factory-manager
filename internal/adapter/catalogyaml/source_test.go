@@ -44,12 +44,22 @@ func TestEmbeddedCatalogContents(t *testing.T) {
 	fr040 := []string{"claude-code", "claude-desktop", "copilot-cli", "github-copilot-app", "antigravity-cli", "codex",
 		"hermes-agent", "orca", "t3-code", "paperclip", "git", "gh", "tmux", "visual-studio-code", "iterm2", "sqlite",
 		"node", "awscli", "uv", "jq", "ripgrep", "container-runtime", "session-manager-plugin", "gcloud-cli", "azure-cli"}
-	extras := []string{"orbstack", "colima", "docker-desktop", "docker", "docker-compose"}
+	extras := []string{"orbstack", "colima", "docker-desktop", "docker", "docker-compose", "gemini-cli"}
 	for _, id := range append(fr040, extras...) {
 		entry(t, c, id)
 	}
 	if len(c.Entries) != len(fr040)+len(extras) {
 		t.Errorf("catalog has %d entries, want %d", len(c.Entries), len(fr040)+len(extras))
+	}
+	gemini := entry(t, c, "gemini-cli")
+	if gemini.SupersededBy != "antigravity-cli" || len(gemini.Install) != 0 || gemini.Detect.NPMPackage != "@google/gemini-cli" ||
+		!slices.Equal(gemini.Detect.Commands, []string{"gemini"}) {
+		t.Errorf("gemini-cli = %+v, want detection-only, superseded by antigravity-cli", gemini)
+	}
+	for _, p := range []platform.Platform{{OS: "darwin"}, {OS: "linux", Display: true}, {OS: "linux", WSL: true}} {
+		if a := catalog.SelectInstall(gemini, p, increment1); a.Offered || a.Available {
+			t.Errorf("gemini-cli offered on %s: %+v", p.Key(), a)
+		}
 	}
 	if _, ok := c.Entry("hermes"); ok {
 		t.Error("bare hermes must not be a catalog entry")

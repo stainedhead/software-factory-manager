@@ -1,0 +1,1 @@
+{ "formulae": [ { "name": "sqlite", "full_name": "sqlite", "tap": "homebrew/core", "installed": [], "linked_keg": null, "keg_only": true } ], "casks": [] }

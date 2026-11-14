@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**21 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 0/8, E 1/9, F 0/6, G 0/5, H 0/4)
+**29 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8, E 1/9, F 0/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -106,39 +106,43 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream D — Detection and Homebrew adapters (parallel with B, C, E)
 
-**T-D1 — Locate brew and `shellenv`.** *Depends:* T-C1 (runner shape), T-A3 · *Est:* 2 h
+**✅ T-D1 — Locate brew and `shellenv`.** *Depends:* T-C1 (runner shape), T-A3 · *Est:* 2 h
 - **Test first:** brew on PATH found; not on PATH but at an injected known prefix found with `OnPATH=false`; none → not found; `brew shellenv` output (`export HOMEBREW_PREFIX="…"; export PATH="…"`) parsed into a map without a shell; prefix owned by another UID flagged (temp dir + injected owner lookup).
 - **Done when:** `adapter/brew` README.
 
-**T-D2 — Parse `brew info --json=v2`.** *Depends:* T-D1 · *Est:* 3 h
+**✅ T-D2 — Parse `brew info --json=v2`.** *Depends:* T-D1 · *Est:* 3 h
 - **Test first:** fixtures captured from real Homebrew (formulae with/without linked keg, keg-only, casks with `app`, `binary` (plain and with `target`), `pkg`, `installer`), the empty case, invalid JSON → `unknown` detection with reason; `brew trust` and `brew tap` listing parsers (unknown format → "not trusted").
 - **Done when:** fixtures in `internal/adapter/brew/testdata/` with a note on the Homebrew version they came from.
 
-**T-D3 — Brew detector.** *Depends:* T-D2 · *Est:* 2 h
+**✅ T-D3 — Brew detector.** *Depends:* T-D2 · *Est:* 2 h
 - **Test first:** one `brew info --json=v2 --installed` call (asserted in the fakecmd log) with `HOMEBREW_NO_AUTO_UPDATE=1`; maps installed formulae/casks to catalog entries by install `id` (tap items by full name); provenance `brew`/`brew-cask`; version; 10 s timeout → `unknown`.
 - **Done when:** implements `Detector`.
 
-**T-D4 — `brew-formula` and `brew-cask` backends.** *Depends:* T-D2, T-A8 · *Est:* 3 h
+**✅ T-D4 — `brew-formula` and `brew-cask` backends.** *Depends:* T-D2, T-A8 · *Est:* 3 h
 - **Test first:** `InstallCommands`: `brew install jq`; `brew install --cask claude-code`; Orca: `brew tap stablyai/orca` and `brew trust --cask stablyai/orca/orca` as separate `TapTrustStep`s, omitted when `TapState` says tapped/trusted, then `brew install --cask stablyai/orca/orca`; `NeedsSudo` for casks with `pkg`/`installer`; `LinkPaths`: cask `binary` → `{prefix}/bin/<name>`, `app` → `/Applications/<App>.app`, formula → `detect.commands` under `{prefix}/bin`; no output ever contains `--force`/`--overwrite`/`link`.
 - **Done when:** implements `Backend`; README.
 
-**T-D5 — PATH detector.** *Depends:* T-A10, T-C1 · *Est:* 3 h
+**✅ T-D5 — PATH detector.** *Depends:* T-A10, T-C1 · *Est:* 3 h
 - **Test first:** temp dirs with symlinks: brew Caskroom path → `brew-cask`; `~/.local/share/claude/versions/…` → `native`; npm global path → `npm`; nvm path → `nvm`; `/usr/bin/jq` → `os`; two `claude` on PATH → both detections, first is `PathWinner`; version probe via argv with 5 s timeout and regex; garbage output → version unknown; **`git` on darwin with `xcode-select -p` failing: `/usr/bin/git` is never executed** (asserted through the fakecmd log) and not reported present.
 - **Done when:** implements `Detector`; README.
 
-**T-D6 — App-bundle detector.** *Depends:* T-A10 · *Est:* 2.5 h
+**✅ T-D6 — App-bundle detector.** *Depends:* T-A10 · *Est:* 2.5 h
 - **Test first:** `mdfind` (fakecmd) returns a path → found with version from `plutil`; `mdfind` empty → fallback scan of injected app dirs reading `Info.plist` via `plutil`; T3 matched by bundle ID despite "(Beta)" name; not darwin → detector returns nothing; timeout → `unknown`.
 - **Done when:** implements `Detector`.
 
-**T-D7 — npm detector.** *Depends:* T-A10 · *Est:* 1.5 h
+**✅ T-D7 — npm detector.** *Depends:* T-A10 · *Est:* 1.5 h
 - **Test first:** `npm ls -g --json --depth=0` fixture maps `paperclipai`, `@anthropic-ai/claude-code`, `@openai/codex` to catalog entries (via `detect.npm_package`); npm absent → no detections, no error; bad JSON → `unknown`.
 - **Done when:** implements `Detector`.
 
-**T-D8 — `adapter/fsprobe` conflict evidence and owners.** *Depends:* T-A8 · *Est:* 3 h
+**✅ T-D8 — `adapter/fsprobe` conflict evidence and owners.** *Depends:* T-A8 · *Est:* 3 h
 - **Test first (I1-9 unit part):** real temp files: dangling symlink → `IsSymlink`, `Dangling`, target, `orphan`; regular non-executable file; symlink into `{prefix}/Caskroom/other/…` → `other-brew` with detail; into `{prefix}/Cellar/<this pkg>` → `this-package`; into `{prefix}/lib/node_modules/@anthropic-ai/claude-code` → `npm`; into `~/.local/share/claude` → `other-installer`; missing path → nil; `LsLine` formatted in Go (mode, size, mtime, `-> target`); `file -b` used when available, Go-derived type otherwise.
 - **Done when:** implements `PathProbe`; README.
 
 ---
+
+**✅ T-D9 — Detection-only `gemini-cli` entry (gap from C).** *Depends:* T-B2 · *Est:* 1 h
+- **Test first:** catalog entry `gemini-cli` (`gemini`, npm `@google/gemini-cli`) with `superseded_by: antigravity-cli`, no install block, offered nowhere; validation rejects an unknown `superseded_by`, an install block on a superseded entry, and a profile that wants it; scan reports a found Gemini CLI `foreign` with an info finding `superseded` (T-E3).
+- **Done when:** PRD FR-040 notes and Appendix C Scan satisfied; README updated.
 
 ## Workstream E — Use cases (parallel with B, C, D; start first after A)
 

@@ -11,6 +11,8 @@
 #   - tap items use the full tap path as id, the tap, and trust: item.
 #   - provenance globs use {brew_prefix}, {npm_prefix} and ~.
 #   - link: force is not supported (D-3).
+#   - superseded_by marks a detection-only entry: no install block, never in
+#     a profile; when found it is reported foreign with an info finding.
 # Facts marked "unverified" are checked in the I1-16 field run.
 apiVersion: facman/v1
 packages:
@@ -113,6 +115,19 @@ packages:
           id: antigravity-cli
     version_policy: track
     sign_in_required: true
+
+  gemini-cli:
+    display: Gemini CLI (superseded by Antigravity CLI)
+    category: agent-cli
+    kind: cli
+    superseded_by: antigravity-cli   # detection-only: never installed (PRD FR-040, Appendix C Scan)
+    detect:
+      commands: [gemini]
+      npm_package: "@google/gemini-cli"
+      version: { cmd: [gemini, --version], regex: '(\d+\.\d+\.\d+\S*)' }
+      provenance:
+        npm: "{npm_prefix}/lib/node_modules/@google/gemini-cli/**"
+        brew: "{brew_prefix}/Cellar/gemini-cli/**"
 
   codex:
     display: OpenAI Codex CLI

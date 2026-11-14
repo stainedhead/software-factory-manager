@@ -120,6 +120,14 @@ func (c Catalog) entryProblems(e Entry, ids map[string]bool) []string {
 			add("unknown requires %q", r.Package)
 		}
 	}
+	if e.SupersededBy != "" {
+		if !ids[e.SupersededBy] {
+			add("unknown superseded_by %q", e.SupersededBy)
+		}
+		if len(e.Install) > 0 {
+			add("a superseded entry is detection-only and must not have an install block")
+		}
+	}
 	return problems
 }
 
@@ -187,6 +195,10 @@ func (c Catalog) profileProblems(ids map[string]bool) []string {
 		for _, pkg := range p.Packages {
 			if !ids[pkg.ID] {
 				problems = append(problems, fmt.Sprintf("profiles/%s: unknown package %q", name, pkg.ID))
+				continue
+			}
+			if e, _ := c.Entry(pkg.ID); e.SupersededBy != "" {
+				problems = append(problems, fmt.Sprintf("profiles/%s: package %q is superseded by %q and cannot be wanted", name, pkg.ID, e.SupersededBy))
 			}
 		}
 		if cycle := c.includeCycle(name, nil); cycle != nil {

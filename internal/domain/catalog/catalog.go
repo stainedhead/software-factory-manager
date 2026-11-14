@@ -191,6 +191,11 @@ type Entry struct {
 	SignInRequired bool
 	// Service is parsed and kept opaque.
 	Service *ServiceSpec
+	// SupersededBy names the catalog entry that replaces this one. A
+	// superseded entry is detection-only: it has no install block, no
+	// profile may want it, and when it is found scan reports it as foreign
+	// with an info finding (Gemini CLI, superseded by Antigravity CLI).
+	SupersededBy string
 }
 
 // IsChoice reports whether the entry is a choice group.

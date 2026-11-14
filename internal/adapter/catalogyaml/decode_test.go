@@ -50,6 +50,10 @@ packages:
     service:
       manager: auto
       anything: { nested: [1, 2] }
+  old:
+    kind: cli
+    superseded_by: zeta
+    detect: { commands: [old] }
   group:
     choice:
       - { id: alpha, platforms: [darwin], host_on: [wsl] }
@@ -69,10 +73,13 @@ func TestDecodeCatalog(t *testing.T) {
 	for _, e := range entries {
 		ids = append(ids, e.ID)
 	}
-	if !slices.Equal(ids, []string{"zeta", "alpha", "group"}) {
+	if !slices.Equal(ids, []string{"zeta", "alpha", "old", "group"}) {
 		t.Errorf("order not preserved: %v", ids)
 	}
-	z, a, g := entries[0], entries[1], entries[2]
+	z, a, g := entries[0], entries[1], entries[3]
+	if entries[2].SupersededBy != "zeta" {
+		t.Errorf("superseded_by = %q", entries[2].SupersededBy)
+	}
 	if z.Kind != catalog.KindCLI || z.Display != "Zeta" || z.VersionPolicy != catalog.PolicyTrack {
 		t.Errorf("zeta = %+v", z)
 	}

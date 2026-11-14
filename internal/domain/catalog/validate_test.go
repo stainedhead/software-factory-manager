@@ -65,6 +65,19 @@ func TestValidateProblems(t *testing.T) {
 			p.Include = []string{"missing"}
 			c.Profiles["base-dev"] = p
 		}, []string{`profiles/base-dev: unknown include "missing"`}},
+		{"superseded by unknown", func(c *Catalog) {
+			c.Entries = append(c.Entries, Entry{ID: "gemini-cli", Kind: KindCLI, SupersededBy: "nope"})
+		}, []string{`packages.gemini-cli: unknown superseded_by "nope"`}},
+		{"superseded installable", func(c *Catalog) {
+			c.Entries = append(c.Entries, Entry{ID: "gemini-cli", Kind: KindCLI, SupersededBy: "git",
+				Install: map[platform.Key][]InstallStep{platform.Darwin: {{Backend: BackendBrewFormula, ID: "gemini-cli"}}}})
+		}, []string{"packages.gemini-cli: a superseded entry is detection-only and must not have an install block"}},
+		{"superseded in profile", func(c *Catalog) {
+			c.Entries = append(c.Entries, Entry{ID: "gemini-cli", Kind: KindCLI, SupersededBy: "git"})
+			p := c.Profiles["base-dev"]
+			p.Packages = append(p.Packages, ProfilePackage{ID: "gemini-cli"})
+			c.Profiles["base-dev"] = p
+		}, []string{`profiles/base-dev: package "gemini-cli" is superseded by "git" and cannot be wanted`}},
 		{"include cycle", func(c *Catalog) {
 			p := c.Profiles["base-dev"]
 			p.Include = []string{"agentic-factory"}

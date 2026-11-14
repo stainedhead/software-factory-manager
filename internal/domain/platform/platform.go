@@ -116,6 +116,9 @@ const (
 	CodeCLTMissing      = "clt-missing"
 	CodeNodeOld         = "node-old"
 	CodeNoDisplay       = "no-display"
+	// CodeSuperseded marks a found tool the catalog says is replaced by
+	// another (Gemini CLI by Antigravity CLI); info only.
+	CodeSuperseded = "superseded"
 )
 
 // Finding is one bootstrap or doctor observation.
