@@ -1,10 +1,12 @@
 # software-factory-manager
 
-> **Status:** early scaffolding. This README describes the project layout and workflow; sections marked _TBD_ are filled in as the product takes shape.
+> **Status:** design complete in draft (v0.3), implementation not started. Sections marked _TBD_ are filled in as the product takes shape.
 
 ## Overview
 
-_TBD — one paragraph on what software-factory-manager does and who it is for. See [docs/product-summary.md](docs/product-summary.md)._
+`software-factory-manager` builds **`sfi`**, a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
+
+Start with [INTENT.md](INTENT.md) for purpose, scope and key decisions, then [docs/product-summary.md](docs/product-summary.md) and the full [design](docs/design/software-factory-installer-design.md).
 
 ## Quick start
 
@@ -19,12 +21,16 @@ make test
 
 ## Documentation
 
+[INTENT.md](INTENT.md) is the one-page statement of what we are building and why.
+
 **For users and operators** — [user-docs/](user-docs/)
 
 | Guide | What it covers |
 |---|---|
 | [Getting started](user-docs/getting-started.md) | Installing and running for the first time |
 | [Configuration](user-docs/configuration.md) | Settings, environment variables, and options |
+| [Configuration lists (`-cl`)](user-docs/configuration-list.md) | The same tools on every machine, with no prompts |
+| [Per-tool setup](user-docs/README.md) | Hermes, Paperclip, Orca and T3 Code setup files, templates and validation |
 
 **For contributors and maintainers** — [docs/](docs/)
 
@@ -34,6 +40,7 @@ make test
 | [Product details](docs/product-details.md) | Features, behaviour, and requirements |
 | [Technical details](docs/technical-details.md) | Components, data flow, and interfaces |
 | [Architecture decision record](docs/architecture-decision-record.md) | Key design decisions and their rationale |
+| [Design](docs/design/) | The full working design for `sfi` |
 
 Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/).
 
@@ -54,7 +61,7 @@ Contributor and AI-agent rules — architecture, TDD, and documentation standard
 ```
 cmd/        entry points
 internal/   domain, usecase, and adapter layers (Clean Architecture)
-docs/       product and technical documentation
+docs/       product and technical documentation (docs/design/ holds the full design)
 user-docs/  user-facing guides: setup, configuration, adoption
 specs/      feature specifications (active and archived)
 ```

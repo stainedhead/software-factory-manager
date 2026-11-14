@@ -4,7 +4,7 @@
 
 *v0.3 changes (from J's own Mac): a `conflict` state for files Homebrew doesn't own sitting where a package installs (§3a), and item-level tap trust under Homebrew 6 (§3b).*
 
-*v0.2 changes: Homebrew on macOS, Linux and WSL (§2a). Corrected: hermes has a Homebrew formula (`hermes-agent`). Confirmed: paperclip has none. Gemini CLI replaced by Antigravity CLI. Single-user machines. Paperclip runs as a managed service, with network exposure chosen at install time (§6a). Added AWS CLI. Node.js is now an explicit catalog entry. Added Codex CLI, uv, jq and ripgrep (default on), and a container runtime, the AWS Session Manager plugin, gcloud and az (optional, default off). Added saved configuration lists and `--configuration-list`/`-cl` for prompt-free build machines (§7a), and install and usage docs including running from the repo (§13). Added the startup bootstrap for Homebrew and npm: prompted in the TUI, automatic with `-cl` (§4a). `-cl` is designed Linux-CI-first (§7a). Added seeding of agents and configuration from files (§6b), and per-tool setup flags `--hermes-setup`/`-hs`, `--paperclip-setup`/`-ps` and `--orca-setup`/`-os` and `--t3-setup`/`-ts` (§7a). Added `sfi template` and `sfi validate`, the format-contract rule for every build (§7b), and user docs for each file (`user_docs/`).*
+*v0.2 changes: Homebrew on macOS, Linux and WSL (§2a). Corrected: hermes has a Homebrew formula (`hermes-agent`). Confirmed: paperclip has none. Gemini CLI replaced by Antigravity CLI. Single-user machines. Paperclip runs as a managed service, with network exposure chosen at install time (§6a). Added AWS CLI. Node.js is now an explicit catalog entry. Added Codex CLI, uv, jq and ripgrep (default on), and a container runtime, the AWS Session Manager plugin, gcloud and az (optional, default off). Added saved configuration lists and `--configuration-list`/`-cl` for prompt-free build machines (§7a), and install and usage docs including running from the repo (§13). Added the startup bootstrap for Homebrew and npm: prompted in the TUI, automatic with `-cl` (§4a). `-cl` is designed Linux-CI-first (§7a). Added seeding of agents and configuration from files (§6b), and per-tool setup flags `--hermes-setup`/`-hs`, `--paperclip-setup`/`-ps` and `--orca-setup`/`-os` and `--t3-setup`/`-ts` (§7a). Added `sfi template` and `sfi validate`, the format-contract rule for every build (§7b), and user docs for each file (`user-docs/`).*
 
 ## 1. Purpose
 
@@ -807,7 +807,7 @@ How it works:
 
 Gaps: Orca and T3 don't publish formal schemas, so `sfi` maintains its own, derived from their docs and from observed files. Those schemas are marked `vendor-unofficial`, and their contract tests rely more on "the app starts and reads the settings" than on a vendor validator.
 
-User-facing instructions for each file live in [`user_docs/`](../user_docs/README.md).
+User-facing instructions for each file live in [`user-docs/`](../../user-docs/README.md).
 
 ---
 
