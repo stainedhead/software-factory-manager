@@ -14,7 +14,7 @@ Start with [INTENT.md](INTENT.md) for purpose, scope and key decisions, then [do
 
 ## Quick start
 
-Requires Go 1.22+.
+Requires the latest stable Go (1.27+).
 
 ```sh
 git clone https://github.com/stainedhead/software-factory-manager.git

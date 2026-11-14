@@ -4,6 +4,7 @@ Newest first. Each entry gives the decision, why, and where the design covers it
 
 | Date | Decision | Why | Design |
 |---|---|---|---|
+| 2026-11-14 | Add `--no-paperclip` / `-nop` to suppress Paperclip from being considered for install. It is a per-run switch that overrides a listed Paperclip in `-cl` (with a warning), conflicts with `-ps` (usage error), and never touches an existing install. | J wants to change the default of always proposing Paperclip, for machines and builds that don't run it. | §7a |
 | 2026-11-14 | The application is built as `facman`, with its entry point at `cmd/facman`. It replaces the working name `sfi`. Flags (`-cl`, `-hs`, `-ps`, `-os`, `-ts`) are unchanged. | J's naming decision. | §13 |
 | 2026-11-14 | Add a `conflict` ownership state for unowned files at a backend's install path. Never overwrite or `--force`; offer move-aside-then-install. Third-party taps need explicit, item-level trust (Homebrew 6). | Found real conflicts on a lab Mac. Homebrew 6 requires tap trust. | §3a, §3b |
 | 2026-11-14 | Every file format has a template, a schema and `facman validate`, and contract tests run on every build. | Users write these files first, and the tools' formats drift. | §7b |

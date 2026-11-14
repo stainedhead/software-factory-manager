@@ -44,7 +44,7 @@ Use the `Makefile`; do not invent ad-hoc invocations.
 
 ## Go toolchain and conventions
 
-- Go 1.22+; the version is pinned in `go.mod` (module `github.com/stainedhead/software-factory-manager`).
+- Use the latest stable Go (currently 1.27); the `go` directive in `go.mod` is the single source, and CI and releases read it. Bump it when a new Go release ships (module `github.com/stainedhead/software-factory-manager`).
 - Run `go mod tidy` whenever imports change and commit `go.mod`/`go.sum` with the code.
 - Format with `gofmt`/`goimports`; lint with `golangci-lint` (`.golangci.yml`). Fix findings, don't suppress them without a comment explaining why.
 - Wrap errors with context: `fmt.Errorf("doing x: %w", err)`. No panics in library code.
@@ -75,9 +75,26 @@ Documentation is part of the change. A change is not done until the affected doc
 - When you add, remove, move, or change the responsibility of a folder or package, update its README and its parent's README in the same change. Create the README when you create the folder.
 - **Read the READMEs first** when learning or navigating the codebase: start at the root `README.md`, then the README of each folder you work in. Treat them, together with `docs/`, as the source of truth for intent; if code and docs disagree, fix whichever is wrong.
 
+## CI/CD
+
+Every push to `main` and every pull request runs the full pipeline; a release runs on a version tag.
+
+| Trigger | Workflow | What it does |
+|---|---|---|
+| Pull request, push to `main` | `.github/workflows/ci.yml` | `go mod tidy` check, `golangci-lint`, `make cover`, integration tests (`-tags integration`), `make build` and a `facman --version` smoke test, on Linux and macOS |
+| Tag `v*` | `.github/workflows/release.yml` | `make check`, then GoReleaser builds linux/darwin (amd64, arm64) binaries and publishes them with checksums to GitHub Releases (`.goreleaser.yaml`) |
+
+Rules:
+- **CI must be green.** Direct pushes to `main` are allowed, but a red `main` is fixed before any other work.
+- **CI mirrors `make check`.** Anything CI enforces must also be runnable locally through the `Makefile`; when you add a CI step, add or extend a make target.
+- **Releases are tags.** Cut a release with an annotated semver tag (`git tag -a v0.1.0 -m ...` then push it). Never build or publish release artifacts by hand. The version is injected into `facman --version` at build time.
+- **Contract tests gate releases.** Once the catalog and format contracts exist, no release ships unless they pass against the pinned tool versions (see `docs/design/`). A nightly job against latest tool releases will be added then.
+- **Not yet in place:** binary signing and notarization, the Homebrew tap, and the nightly job. Add them as the design calls for them and record the decision in `docs/architecture-decision-record.md`.
+- Keep workflow files and `.goreleaser.yaml` documented in `.github/README.md`, and update it when they change.
+
 ## Git workflow
 
-- Direct pushes to `main` are allowed; a pull request is optional. Run `make check` before pushing.
+- Direct pushes to `main` are allowed; a pull request is optional. Run `make check` before pushing, and watch CI after (see CI/CD above).
 - Small, focused commits with imperative-mood messages.
 
 ## Dev-Flow Skills

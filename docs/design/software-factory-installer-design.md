@@ -2,6 +2,8 @@
 
 *Status: draft v0.3 for review by J · 2026-11-14 · Binary name: `facman` (J, 2026-11-14)*
 
+*v0.3 addition (J, 2026-11-14): `--no-paperclip` / `-nop` suppresses Paperclip from being considered for install (§7a).*
+
 *v0.3 changes (from J's own Mac): a `conflict` state for files Homebrew doesn't own sitting where a package installs (§3a), and item-level tap trust under Homebrew 6 (§3b).*
 
 *v0.2 changes: Homebrew on macOS, Linux and WSL (§2a). Corrected: hermes has a Homebrew formula (`hermes-agent`). Confirmed: paperclip has none. Gemini CLI replaced by Antigravity CLI. Single-user machines. Paperclip runs as a managed service, with network exposure chosen at install time (§6a). Added AWS CLI. Node.js is now an explicit catalog entry. Added Codex CLI, uv, jq and ripgrep (default on), and a container runtime, the AWS Session Manager plugin, gcloud and az (optional, default off). Added saved configuration lists and `--configuration-list`/`-cl` for prompt-free build machines (§7a), and install and usage docs including running from the repo (§13). Added the startup bootstrap for Homebrew and npm: prompted in the TUI, automatic with `-cl` (§4a). `-cl` is designed Linux-CI-first (§7a). Added seeding of agents and configuration from files (§6b), and per-tool setup flags `--hermes-setup`/`-hs`, `--paperclip-setup`/`-ps` and `--orca-setup`/`-os` and `--t3-setup`/`-ts` (§7a). Added `facman template` and `facman validate`, the format-contract rule for every build (§7b), and user docs for each file (`user-docs/`).*
@@ -486,6 +488,8 @@ J's decision is that Paperclip runs as a **service `facman` manages**, not just 
 
 **Install options in general.** Any package can declare `options:` like the one above. The rules are the same everywhere: the safest choice is the default, a riskier choice needs the developer's explicit selection (or an explicit headless flag), and the chosen value is recorded with the consent in `operations`.
 
+**Opting out.** `--no-paperclip` / `-nop` (§7a) removes Paperclip, and with it this whole service lifecycle, from consideration for a run.
+
 Paperclip is the only service in the list today, but the `service:` block is generic, so later services (local MCP servers, for example) reuse it.
 
 ---
@@ -556,6 +560,7 @@ This replaces the vague "post-install hooks" item in the phase plan.
 ```
 
 - **Plan** is a table grouped by state. Missing required packages are pre-checked, optional ones are not, and foreign ones cannot be selected for install (only for **[a]dopt**). Keys: `space` toggles, `a` adopts, `i` shows info (source, why it is needed, which profile asked for it), `/` filters.
+- **`--no-paperclip` / `-nop`** hides Paperclip from Plan for the run (§7a).
 - **Review** is the consent gate. It shows every command, whether it needs sudo, whether a script is unverified, and dependency order. Consent is recorded in `operations.consent_by` with the OS user and timestamp.
 - **Manage** is a second tab for `managed` and `adopted` items only: upgrade, uninstall, reinstall, forget. Foreign items never appear here.
 - **Save configuration** (`s` on Plan or Review) writes the current answers to a configuration list file (§7a).
@@ -741,8 +746,34 @@ As a convenience, `-ps` also accepts a **Paperclip company package** directly (a
 - `-hs`, `-ps`, `-os`, `-ts` and `-cl` are all handled by the same exact-token rewrite as `-cl` (Option A).
 - `-h` stays help and `-c` stays the configuration list.
 - `-o` stays `--output` on `facman config init/export`, because the rewrite matches only the exact tokens `-os` and `-os=<file>`.
-- The single letters `-s`, `-p` and `-t` are deliberately left unused, so `-ps` and `-hs` can never be misread as combined shorthands if the rewrite is ever bypassed.
+- `-nop` is handled by the same exact-token rewrite, and only the exact token `-nop` matches. `-n` stays unused, and `-no` and `-nop=<x>` are usage errors.
+- The single letters `-s`, `-p` and `-t` are deliberately left unused, so `-ps`, `-hs` and `-nop` can never be misread as combined shorthands if the rewrite is ever bypassed.
 - A unit test covers the full set.
+
+### Suppressing Paperclip: `--no-paperclip` / `-nop` (J, 2026-11-14)
+
+J asked for a switch that **changes the default** of considering Paperclip. Today Paperclip is part of the `agentic-factory` profile (§5) and is pre-checked in the TUI, so a default run proposes it. `--no-paperclip` (short `-nop`) removes it from consideration for that run.
+
+| Long | Short | Takes a value? |
+|---|---|---|
+| `--no-paperclip` | `-nop` | No. It is a plain switch, so `-nop=<x>` is a usage error (exit 64). |
+
+**Behaviour:**
+
+- **Not considered.** Paperclip is left out of the plan. In the TUI it does not appear in **Plan** (so nothing is pre-checked and there is nothing to untick). In `plan`, `apply --profile` and `apply -cl` it is dropped from the resolved package set before ordering.
+- **Everything Paperclip drags in goes with it.** Its service step (§6a), its exposure question, its setup (`-ps`, §6b) and Paperclip-only requirements are not planned. If Paperclip was the only package needing npm, Node is not installed on its account and the bootstrap does not prompt for it (§4a: Node is installed only when a selected package uses npm). Node is still installed if any other selected package needs it.
+- **With `-cl`.** The flag wins over the file for this run. If the configuration list names `paperclip`, `facman` prints a warning (*"paperclip is listed in build.facman.yaml but suppressed by --no-paperclip"*), `--dry-run` shows that line with `suppressed by --no-paperclip`, and the run continues. It is not an error, so one checked-in list can serve machines that do and don't run Paperclip. The consent record notes the suppression: `consent_by=config:<path>@<sha>; suppressed=paperclip`.
+- **Contradictions are usage errors.** `-nop` together with `-ps` (or with `facman setup -ps …`) asks for two opposite things, so `facman` stops with exit code 64 and says why.
+- **An existing Paperclip is left alone.** The flag only affects installing. If Paperclip is already `managed`, `adopted` or `foreign`, this run does not install, upgrade, reconfigure, stop or remove it, and the service keeps running. The summary lists it as `suppressed (not touched)`. Removing it is still an explicit `facman uninstall paperclip`.
+- **Scan is unchanged.** Detection still runs, so `facman status` and `facman scan` keep reporting Paperclip truthfully. The flag changes only what is proposed and installed.
+
+```bash
+facman apply --profile agentic-factory --no-paperclip           # the profile, minus Paperclip
+facman apply -cl configs/build-linux.facman.yaml -nop           # build machine that never runs Paperclip
+facman plan --profile agentic-factory -nop --dry-run            # see what it would skip
+```
+
+This is a one-run switch, not stored state. A persistent form (a user config setting, or a general `--no-<package>` / `--skip <id>`) is open question 14.
 
 ---
 
@@ -860,7 +891,7 @@ Distribution: a signed and notarized universal macOS binary on GitHub Releases, 
 |---|---|
 | **0. Spike** | Detectors only (`facman scan --json`) run against 3–5 real lab Macs to validate provenance rules and find surprises (duplicates, nvm Node, Apple git). |
 | **1. MVP** | Startup bootstrap (§4a: CLT, Homebrew, shellenv, Node/npm), brew-formula and brew-cask backends, YAML catalog and profiles, SQLite inventory, TUI Scan → Plan → Review → Run → Summary, install only. |
-| **2. Manage** | Upgrade, uninstall, adopt, forget, drift; npm backend and the **service manager** (unlocks paperclip, §6a); headless parity. |
+| **2. Manage** | Upgrade, uninstall, adopt, forget, drift; npm backend and the **service manager** (unlocks paperclip, §6a); headless parity; the `--no-paperclip` / `-nop` switch (§7a), since Paperclip is first installable here. |
 | **2b. Config lists + Linux CI** | Save configuration from the TUI, `facman config init/export/validate`, `apply -cl` with no prompts, `--check`/`--dry-run`, exit codes. **The Linux headless bootstrap lands here** (distro prerequisites, Linuxbrew, the root check), because `-cl` will mostly run on Linux CI. Pulled forward for J's build-machine use case. |
 | **3. Fleet** | Signed manifest repo pull, JSON export, MDM packaging. |
 | **4. Linux desktop + WSL** | Interactive Linux and WSL TUI polish, WSL host detection (report-only). The Linux headless bootstrap already arrived in 2b. Mostly free, because the brew and npm backends are shared. |
@@ -885,6 +916,7 @@ Distribution: a signed and notarized universal macOS binary on GitHub Releases, 
 11. **WSL host apps.** On Windows/WSL machines, is report-only acceptable for GUI apps in v1, or should `facman` install them on the Windows host through WinGet from the start? That means a second consent scope, and possibly admin rights on Windows.
 12. **Linux desktops.** Are there Linux desktop machines (not just headless boxes) in the lab? If so, VS Code and Claude desktop would need an apt/dnf or Flatpak backend, because Homebrew has no Linux casks for them.
 13. **Config lists and the catalog.** Should a configuration list pin the catalog by git tag (current design), or embed a full snapshot of the catalog entries it uses so it is completely self-contained?
+14. **Suppression scope.** `--no-paperclip` is a per-run switch. Should there also be a persistent setting (for example `suppress: [paperclip]` in a user or factory config), and should it generalize to `--no-<package>` / `--skip <id>` for any optional package? Also confirm the two defaults chosen above: with `-cl`, the flag overrides a listed Paperclip with a warning (not an error), and an already-installed Paperclip is left untouched rather than removed.
 
 ## 13. Install and usage (draft README content)
 
@@ -893,7 +925,7 @@ Distribution: a signed and notarized universal macOS binary on GitHub Releases, 
 ### Prerequisites
 
 - macOS 13+ (primary), Linux (Ubuntu 24.04+ or another distro with glibc ≥ 2.39), or Windows with WSL 2 + Ubuntu.
-- **Go 1.24+**, but only if you run from source. Release binaries need nothing.
+- **Latest stable Go (1.27+)**, but only if you run from source. Release binaries need nothing.
 - Homebrew is **not** required beforehand. `facman` offers to install it (with consent) on first run.
 
 ### Option 1: run straight from the repo (no install)
@@ -952,6 +984,7 @@ facman setup -ps setup/paperclip/agentic-factory.setup.yaml
 facman setup -os setup/orca/repos.setup.yaml
 facman setup -ts setup/t3/providers.setup.yaml
 facman apply -cl configs/build-linux.facman.yaml -ps setup/paperclip/ci.setup.yaml   # override one tool's setup
+facman apply --profile agentic-factory --no-paperclip                                 # skip Paperclip (short: -nop)
 ```
 
 ### Build-machine usage (no prompts)
