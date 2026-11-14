@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-14
 **Jira:** N/A
-**Status:** Draft (dev-flow `/implm-frm-prd` Step 5, `/review-code`, run unattended)
+**Status:** Reviewed (2026-11-14, `/review-prd`, dev-flow Step 6), ready for spec. Written by `/review-code` in dev-flow `/implm-frm-prd` Step 5, run unattended. The review log is Appendix A.
 **Source review:** the whole diff from `origin/main` (`f0776c9`) to `11fed13` on branch `claude/project-thread-ys3kmd` (226 files, about 30,000 lines added), reviewed against [spec.md](specs/261114-software-factory-manager/spec.md) and acceptance criteria I1-1 to I1-16.
 **Spec it fixes:** `specs/261114-software-factory-manager/` (Increment 1, Phase 0 + Phase 1 MVP)
 
@@ -20,11 +20,13 @@ The findings cluster in three places:
 
 The rest are P2: robustness, observability, design and documentation items, including the two known ones (AGENTS.md's Commands table, and Paperclip's hint printed twice).
 
-| Priority | Count | Findings |
+| Priority | Findings | Requirements |
 |---|---|---|
 | P0 (true blocker) | 0 | none |
-| P1 (high) | 3 | FR-001, FR-002, FR-003 |
-| P2 (medium) | 16 | FR-004 to FR-019 |
+| P1 (high) | 3 (FR-001, FR-002, FR-003) | 5: FR-001a, FR-001b, FR-001c, FR-002, FR-003 |
+| P2 (medium) | 16 (FR-004 to FR-019) | 21: FR-001d, FR-004, FR-005a/b, FR-006, FR-007a/b, FR-008, FR-009, FR-010a/b/c, FR-011 to FR-019 |
+
+The review in Step 6 split four findings into atomic parts (FR-001, FR-005, FR-007 and FR-010), so 19 findings give 26 requirements. FR-001d, the log path, is a P2 part of a P1 finding.
 
 ## Problem Statement
 
@@ -48,8 +50,8 @@ Increment 1 meets its acceptance criteria in CI, but a review of the code found 
 
 - **TDD.** Each fix starts with a failing test that reproduces the finding (red), then the minimal change (green), then a refactor. A bug fix always adds a regression test. Use table-driven tests with `t.Run` and `t.Helper`, and fakes over mocks, as AGENTS.md requires.
 - **Code review per fix.** Before starting the next fix, review the finished one (`/review-code` on its commits, or a short design and code review recorded in the fixes spec's `implementation-notes.md`). Check the Clean Architecture direction, test quality, and the acceptance criteria of that FR. Fix what the review finds before moving on.
-- **Agent teammates.** Split independent workstreams across worker agent teammates (model `claude-sonnet-4-6`, per the dev-flow command). The orchestrator owns sequencing, review and `status.md`. Suggested streams: **A**, input validation and argv safety (FR-001, FR-002, FR-011, FR-012, FR-013); **B**, real-Homebrew and CI evidence (FR-003, FR-004, FR-019); **C**, state, runtime and observability (FR-005 to FR-009); **D**, design and docs (FR-010, FR-014 to FR-018).
-- **Git worktrees.** Each parallel stream works in its own worktree and branch (`git worktree add ../facman-fix-<stream> -b fix/<stream>`) off the feature branch. Streams merge back one at a time, with `make check` green after each merge. Stream A touches `domain/plan` and `domain/catalog`, and stream D (FR-010) touches `adapter/session`. Land A before D's FR-010 refactor to avoid conflicts.
+- **Agent teammates.** Split independent workstreams across worker agent teammates (model `claude-sonnet-4-6`, per the dev-flow command). The orchestrator owns sequencing, review and `status.md`. Suggested streams: **A**, input validation and argv safety (FR-001a to FR-001d, FR-002, FR-011, FR-012, FR-013); **B**, real-Homebrew and CI evidence (FR-003, FR-004, FR-019); **C**, state, runtime and observability (FR-005a to FR-009); **D**, design and docs (FR-010a to FR-010c, FR-014 to FR-018).
+- **Git worktrees.** Each parallel stream works in its own worktree and branch (`git worktree add ../facman-fix-<stream> -b fix/<stream>`) off the feature branch. Streams merge back one at a time, with `make check` green after each merge. Stream A touches `domain/plan` and `domain/catalog`, and stream D (FR-010a) touches `adapter/session`. Land A before D's FR-010a refactor to avoid conflicts.
 - **Priority order.** P1 before P2. Within a stream, follow the FR order.
 - **Gate.** `PATH=$HOME/go/bin:$PATH make check` passes before every commit. Coverage stays at 80% or more overall, with new code fully covered. Docs and READMEs are updated in the same commit (AGENTS.md).
 
@@ -71,12 +73,22 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 
 **Why it matters.** Catalogs are meant to be shared between factories (product summary), so a catalog is input. The spec's Security NFR ("no `--force`/`--overwrite`") and the consent screen both have to hold for any catalog `facman` accepts.
 
-**Acceptance criteria.**
+The finding has one root cause, input that is not validated, and four fixes that can land and be tested separately. Each part has its own priority.
+
+**FR-001a (P1): Validate catalog values at load time.** Acceptance criteria:
 1. `catalog.Validate` rejects, with exit 3 and a `file:line:col`-style detail per problem: a package ID not matching `^[a-z0-9][a-z0-9._+@-]*$`; an `install[].id` for a brew backend not matching `^[A-Za-z0-9][A-Za-z0-9._+@-]*(/[A-Za-z0-9._+@-]+){0,2}$`; a `tap` not matching `^[A-Za-z0-9][A-Za-z0-9_-]*/[A-Za-z0-9][A-Za-z0-9._-]*$`; and a `detect.commands` entry that is empty or contains `/`, `..` or a control character. A table-driven test covers each rule with `-f`, `--HEAD`, `../../x`, `a/b/c/d` and `"x\x1b[2K"`.
-2. `plan.Validate` rejects any argument of a `brew` command that starts with `-`, except `--cask` and `--formula` for `install` and `trust`, so no short or long option can be added from data. A table-driven test covers `-f`, `--force`, `-s`, `--HEAD` and `--overwrite`.
-3. `Command.String` escapes every control character (`unicode.IsControl`) whether or not the argument has shell metacharacters. A test asserts that `"a\x1bb"` renders as `"a\x1bb"` (quoted and escaped).
-4. `statedir.LogPath` keeps the file inside `logs/` for any input: the name is sanitized to `[A-Za-z0-9._+@-]`, and a test asserts `filepath.Dir(LogPath(...)) == LogsPath()` for the hostile inputs above.
-5. An e2e test runs `plan --catalog` on a fixture with `id: "-f"`, which exits 3 with the catalog error and records no brew invocation.
+2. The embedded catalog still passes `catalog.Validate` (the existing load test).
+3. An e2e test runs `plan --catalog` on a fixture with `id: "-f"`, which exits 3 with the catalog error and records no brew invocation in the fakecmd log.
+
+**FR-001b (P1): Forbid every option that comes from data in brew argv (domain invariant).** Acceptance criteria:
+1. `plan.Validate` rejects any argument of a `brew` command after the subcommand that starts with `-`, except `--cask` and `--formula` for `install` and `trust`. A table-driven test covers `-f`, `--force`, `-s`, `--HEAD`, `--overwrite` and `--cask=x`, and checks that `brew install --cask foo` and `brew trust --cask a/b/c` still pass.
+
+**FR-001c (P1): Escape control characters wherever a command is shown for consent.** Acceptance criteria:
+1. `Command.String` escapes every control character (`unicode.IsControl`) whether or not the argument has shell metacharacters. A test asserts that `"a\x1bb"` renders as the quoted, escaped `"a\x1bb"` and contains no byte `0x1b`.
+2. The headless plan list and the TUI Review screen both render through `Command.String`. A golden test of Review with such an argument shows the escaped form.
+
+**FR-001d (P2): Keep operation logs inside `logs/`.** This is defense in depth once FR-001a lands. Acceptance criteria:
+1. `statedir.LogPath` sanitizes the package-ID part of the name to `[A-Za-z0-9._+@-]` (any other byte becomes `_`). A table test asserts `filepath.Dir(LogPath(...)) == LogsPath()` for `../../x`, `a/b` and `"x\x00y"`.
 
 #### FR-002 (P1, security): Never resolve programs or probes from relative PATH entries
 
@@ -92,9 +104,9 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 **Finding.** The headline flow, a clean lab machine where `facman` installs Homebrew and then the profile, has only run against fakes: `httptest` serves the installer and fakecmd plays `brew` (I1-5, `cmd/facman/e2e_test.go`). I1-14 (`cmd/facman/integration_test.go`) runs on a macOS runner that already has Homebrew, so neither the real installer, the re-locate after the bootstrap, nor `shellenv` on a fresh prefix has ever run. The `brew info --json=v2`, `brew tap` and `brew trust` fixtures were written by hand, as `internal/adapter/brew/testdata/README.md:5` says ("Provenance: not captured from a real Homebrew"), and they decide sudo hand-off, link paths and keg-only handling.
 
 **Acceptance criteria.**
-1. A new integration test (build tag `integration`, opt-in `FACMAN_INTEGRATION_BOOTSTRAP=1`) runs as a non-root user in a clean Linux container job in CI (no Homebrew at `/home/linuxbrew`). It runs `facman apply --catalog testdata/catalogs/integration --profile integration` with consent fed through a pty. It asserts that the real installer ran from a temp file, that `packages` holds `homebrew` as `managed` with `bootstrap = 1` and `hello` as `managed`, and that a second `apply` proposes nothing and exits 0.
+1. A new integration test (build tag `integration`, opt-in `FACMAN_INTEGRATION_BOOTSTRAP=1`) runs in a clean Linux container job in CI. The image has the Linux prerequisites (compiler, `procps`, `curl`, `file`, `git`), no Homebrew at `/home/linuxbrew`, and a non-root user with passwordless `sudo`, because the installer creates `/home/linuxbrew`. As that user it runs `facman apply --catalog testdata/catalogs/integration --profile integration` with consent fed through a pty. It asserts that the real installer ran from a temp file, that `packages` holds `homebrew` as `managed` with `bootstrap = 1` and `hello` as `managed`, and that a second `apply` proposes nothing and exits 0.
 2. The `brew` adapter fixtures are replaced by, or checked against, output captured from real Homebrew. The macOS integration job runs `brew info --json=v2` for one formula, one keg-only formula and one cask with a `pkg` artifact, plus `brew tap` and `brew trust`. A contract test parses that output with `ParseInfo`, `ParseTaps` and `ParseTrusted` and fails on unknown shapes. `testdata/README.md` records the Homebrew version the fixtures came from.
-3. The macOS clean-machine path is either run once by hand on a clean macOS VM, with the result recorded in the fixes spec's `implementation-notes.md` (date, macOS and Homebrew versions, `facman apply` exit code, `packages` rows), or recorded as an explicit open item handed to J alongside I1-16.
+3. The fixes spec's `implementation-notes.md` has a "macOS clean-machine run" entry with these fields: date, macOS version, Homebrew version, `facman apply` exit code, and the `packages` rows for `homebrew` and one cask. If no clean macOS VM was available, the entry says "not run", and `user-docs/field-check.md` (FR-017) includes the run as a step for J.
 
 ### P2 (medium)
 
@@ -110,26 +122,30 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 
 **Finding.** `session.start` opens and migrates the database (`internal/adapter/session/session.go:269`) before it takes the lock (`:274-283`), and read-only commands migrate without the lock at all. `sqlite.Store.migrate` reads the schema version outside the migration transaction (`internal/adapter/sqlite/store.go:118-133`) and `apply` uses a deferred `BeginTx` (`:136-160`). Two first launches at the same moment (the TUI plus `facman scan` from a script, for example) both see version 0, and the second fails with exit 4 (`table meta already exists`). Separately, `TryLock` writes the holder's PID after taking the flock (`internal/adapter/statedir/statedir.go:155-165`), so a competing process can read an empty file and report "PID 0".
 
-**Acceptance criteria.**
-1. Each migration runs in a `BEGIN IMMEDIATE` transaction that re-reads `schema_version` inside it and skips work that is already done. A test opens 20 `Store`s on one fresh file at the same time and asserts that all succeed with schema version 1 and one `machine_id`.
-2. When the holder's PID cannot be read, the lock-held message says "PID unknown" and never "PID 0". A unit test covers an empty lock file.
+**FR-005a (P2): Make the migration atomic.** Acceptance criteria:
+1. Each migration runs in a `BEGIN IMMEDIATE` transaction that re-reads `schema_version` inside it and skips work that is already done. A test opens 20 `Store`s on one fresh file at the same time (goroutines released together through a channel; no sleeps) and asserts that all succeed with schema version 1 and exactly one `machine_id` row. The test passes 100 runs in a row under `-race -count=100`.
+
+**FR-005b (P2): Never report "PID 0" for the lock holder.** Acceptance criteria:
+1. When the holder's PID cannot be read, the lock-held message says "PID unknown" and never "PID 0". A unit test covers an empty lock file and a garbage lock file.
 
 #### FR-006 (P2, reliability): Give a hung command an escape hatch, and say truthfully what Ctrl+C does
 
 **Finding.** Plan commands run with no timeout under `context.WithoutCancel` (`internal/usecase/execute/execute.go:326-329`). Non-interactive children get their own process group (`internal/adapter/execrunner/runner.go:191-193`), and `watchSignals` swallows every signal after the first (`internal/adapter/cli/cli.go:322-337`). A `brew install` that hangs on the network therefore can only be stopped with `kill -9` from another terminal. The message printed on the first Ctrl+C, "it is never killed midway", is also wrong for interactive (sudo) commands: they share the terminal's process group and get the SIGINT.
 
 **Acceptance criteria.**
-1. A second Ctrl+C (headless), or `y` on a second confirm in the TUI, stops the run now. It sends SIGTERM to the current child's process group, then SIGKILL after 10 s, marks the operation `interrupted` with the signal in its detail, marks the remaining actions `not-started`, and exits 1. A test drives a fakecmd that sleeps and asserts the operation row and exit code.
+1. A second Ctrl+C (headless), or `y` on a second confirm in the TUI, stops the run now. It sends SIGTERM to the current child's process group, then SIGKILL after a grace period (10 s by default, injectable so the test needs no real wait), marks the operation `interrupted` with the signal in its detail, marks the remaining actions `not-started`, and exits 1. A test drives a fakecmd that sleeps and asserts the operation row and exit code.
 2. The first-signal message names the current command and, for an interactive command, says it receives the interrupt directly. A golden test covers both texts.
 
 #### FR-007 (P2, observability): Record what happened to interactive commands and to signal-killed commands
 
 **Finding.** Interactive commands are not teed to their per-operation log (`internal/adapter/execrunner/runner.go:188-189`), and the log only says "output went to the terminal" (`:288-290`). Every cask counts as interactive whenever `brew info` cannot be read (`internal/adapter/brew/backend.go:160-170`), which includes every cask on a machine that has no Homebrew yet, so a fresh-machine run leaves empty logs for all GUI installs. A child killed by a signal reports exit code -1 (`runner.go:199-201`), the same value as `NotRunExitCode` (`internal/usecase/execute/execute.go:21`), so the operations log cannot tell "killed" from "never started".
 
-**Acceptance criteria.**
-1. Every operation log ends with a footer giving the exit code or signal name, the start and end times and the duration, for interactive commands too. A test asserts the footer for a normal exit, a non-zero exit and a SIGTERM-killed fakecmd.
-2. A signal-killed command is recorded with a detail of `killed by signal <NAME>` and an exit code distinct from `NotRunExitCode`, either a documented constant or `128+signo`, with the choice recorded in the ADR. Unit tests cover the runner and `execute`.
-3. user-docs/configuration.md ("State and logs") documents that interactive output is not captured.
+**FR-007a (P2): End every operation log with an outcome footer.** Acceptance criteria:
+1. Every operation log ends with a footer giving the exit code or signal name, the start and end times (RFC 3339, UTC) and the duration, for interactive commands too. A test asserts the footer for a normal exit, a non-zero exit and a SIGTERM-killed fakecmd, through both `Run` and `Handoff`.
+2. user-docs/configuration.md ("State and logs") says that the output of interactive (sudo) commands goes to the terminal and is not in the log.
+
+**FR-007b (P2): Tell "killed by a signal" apart from "never started".** Acceptance criteria:
+1. A signal-killed command is recorded with the detail `killed by signal <NAME>` and an exit code of `128+signo` (OQ-2), which is never equal to `NotRunExitCode`. The ADR records the choice. Unit tests cover the runner and `execute`, and the `operations.exit_code` value is asserted in an e2e test.
 
 #### FR-008 (P2, observability): Log read-only probes so detection decisions can be explained
 
@@ -153,11 +169,16 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 
 **Finding.** `internal/adapter/session/session.go` (630 lines) holds application rules that belong in the use-case layer. These include which items get the conflict pre-flight (`preflight`, `:457`; `brewItems`, `:473`), how a failed pre-flight turns a package `Incomplete`, and the post-bootstrap re-plan rules, present/incomplete/conflict (`Replanner.AfterBootstrap`, `:545`). They are tested only through adapter tests. The front ends depend on each other: `adapter/tui` imports `adapter/cli` (`internal/adapter/tui/tui.go:19`) for `TUIRunner`/`TUIRequest`, and `adapter/cli` depends on the concrete `session` types (`internal/adapter/cli/cli.go:26`). The use-case packages import `usecase/process` (decision I-8), but AGENTS.md still says "`usecase` imports `domain` only".
 
-**Acceptance criteria.**
-1. The pre-flight selection and the re-plan rules live in a use-case package (for example `internal/usecase/run`) behind ports, with use-case-level table tests. `adapter/session` keeps only the adapter composition, or goes away.
-2. `adapter/tui` no longer imports `adapter/cli`. The shared request type lives with the consumer, and `cmd/facman` wires them.
-3. AGENTS.md's Architecture section documents the `usecase/process` exception (value types only).
-4. A `make archcheck` target, run by `make check` and CI, fails when `domain` imports a non-domain package of this module or a third-party package, when `usecase` imports `adapter`, `cmd` or `testkit`, or when one front-end adapter imports another. A test of the script's rule list, or its CI failure on a seeded violation, is recorded.
+**FR-010a (P2): Move the pre-flight and re-plan rules into the use-case layer.** Acceptance criteria:
+1. The pre-flight selection (`preflight`, `brewItems`) and the re-plan rules (`Replanner.AfterBootstrap`) live in a use-case package (for example `internal/usecase/run`) behind ports, with use-case-level table tests that cover present, incomplete, conflict and not-in-catalog. `adapter/session` keeps only the adapter composition.
+2. The existing e2e suite passes unchanged, which shows there is no change in behaviour.
+
+**FR-010b (P2): Decouple the two front ends.** Acceptance criteria:
+1. `adapter/tui` no longer imports `adapter/cli`. `TUIRunner` and `TUIRequest` are declared by their consumer (`adapter/cli`), `adapter/tui` satisfies them structurally, and `cmd/facman` wires them. `go list -deps ./internal/adapter/tui` shows no `adapter/cli`.
+
+**FR-010c (P2): Document the architecture rules and enforce them mechanically.** Acceptance criteria:
+1. AGENTS.md's Architecture section documents the `usecase/process` exception (value types only, no interfaces).
+2. A `make archcheck` target, run by `make check` and CI, fails when `domain` imports a non-domain package of this module or any third-party package, when `usecase` imports `adapter`, `cmd` or `testkit`, or when `adapter/tui` and `adapter/cli` import each other. Its own test feeds it a seeded import list with one violation per rule and asserts a non-zero exit and the rule's name in the output.
 
 #### FR-011 (P2, correctness): Do not print a plan that failed its safety check
 
@@ -177,11 +198,11 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 
 #### FR-013 (P2, security/observability): Surface inherited `HOMEBREW_*` settings that change reviewed commands
 
-**Finding.** `Runner.Environ` passes the whole parent environment and strips only `HOMEBREW_NO_REQUIRE_TAP_TRUST*` (`internal/adapter/execrunner/runner.go:89-106`). Variables such as `HOMEBREW_CASK_OPTS` (for example `--no-quarantine` or `--appdir`), `HOMEBREW_NO_INSTALL_FROM_API` or `HOMEBREW_FORCE_BREWED_*` change what a reviewed `brew install` does. They appear neither in Review nor in the log header, which lists only override names (`:280-287`).
+**Finding.** `Runner.Environ` passes the whole parent environment and strips only `HOMEBREW_NO_REQUIRE_TAP_TRUST*` (`internal/adapter/execrunner/runner.go:89-106`). Some inherited Homebrew variables change what a reviewed `brew install` does. `HOMEBREW_CASK_OPTS` (for example `--no-quarantine` or `--appdir`) is one, and `HOMEBREW_NO_INSTALL_FROM_API` is another. They appear neither in Review nor in the log header, which lists only override names (`:280-287`). This review did not check which cask options Homebrew accepts through `HOMEBREW_CASK_OPTS`. The fix is visibility, not stripping, because these are the developer's own settings.
 
 **Acceptance criteria.**
-1. Review (TUI and headless) and every operation log header list the names of inherited `HOMEBREW_*` variables. Values are never shown.
-2. `doctor` and `plan` emit a warning finding when `HOMEBREW_CASK_OPTS` contains `--no-quarantine` or `--force`, naming the variable and the fix. Unit tests cover both.
+1. Review (TUI and headless) and every operation log header list the names of inherited `HOMEBREW_*` variables, and never their values. Unit tests cover the runner header and the plan renderer, and a TUI golden test covers Review.
+2. `plan` and `doctor` emit a warning finding (code `homebrew-cask-opts`) when `HOMEBREW_CASK_OPTS` contains `--no-quarantine`, naming the variable and the fix (unset it for the run). Unit tests cover the finding being present and absent.
 
 #### FR-014 (P2, TDD): Fuzz the parsers of external input
 
@@ -189,7 +210,7 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 
 **Acceptance criteria.**
 1. Each of these has a native Go fuzz target (`FuzzXxx`) seeded from its testdata, and asserts no panic plus one invariant per parser (for example, `ParseShellEnv` never returns a name that fails `validName`).
-2. A `make fuzz` target runs each target for 10 s. CI runs it on Linux. Any crasher found is committed as a regression seed.
+2. A `make fuzz` target runs each target for 10 s (`-fuzztime=10s`), and CI's Linux job runs it. Each crasher found while the fixes are being made is committed under `testdata/fuzz/<FuzzName>/` and passes in `make test`.
 
 #### FR-015 (P2, docs): Complete AGENTS.md's Commands table (known item)
 
@@ -273,3 +294,34 @@ Each finding is one FR. Line numbers are as of `11fed13`.
 - Commands run under `context.WithoutCancel`, and each operations row is written `in_progress` before its command runs, which makes crash recovery (I1-11) sound.
 - The TUI consents only to the exact plan that was reviewed (`internal/adapter/tui/tui.go`, `sameActions`).
 - Environment facts are injected only through `cmd/facman/wire.go` options, so Linux-no-display and WSL fixtures run on any CI runner.
+
+## Appendix A: Review log (`/review-prd`, 2026-11-14, dev-flow Step 6)
+
+Run unattended. Every gap was resolved in this file, so no question waits on J.
+
+**Verdict before the fixes:** Needs revision (no Fail). **After the fixes:** Ready for spec.
+
+| Dimension | Status | Note |
+|---|---|---|
+| Problem clarity | ✅ Pass | The specific gaps are named, and so are the users affected (lab-machine developers, catalog owners) |
+| Scope definition | ✅ Pass | Goals RG1 to RG4 and explicit non-goals (no new features, no schema or exit-code changes, no installer checksum) |
+| Functional completeness | ⚠️ Warn → ✅ Pass | Every goal is covered by FRs, but FR-001, FR-005, FR-007 and FR-010 bundled independent fixes. Split into FR-001a to d, FR-005a/b, FR-007a/b and FR-010a to c, each with its own criteria and priority |
+| NFR coverage | ✅ Pass | Security, reliability, performance, observability, compatibility and maintainability |
+| Acceptance criteria | ⚠️ Warn → ✅ Pass | Four criteria could not be checked as written: FR-003 AC 3 ("either … or"), FR-010 AC 4 ("a test … or its CI failure … is recorded"), FR-006 (a real 10 s wait in a test) and FR-014 ("any crasher found" with no place to put it). Rewritten with concrete, checkable outcomes |
+| Dependency identification | ✅ Pass | Homebrew installer and output shapes, GitHub runners, J, toolchain. FR-003's container prerequisites (Linux prereqs, passwordless sudo) were added |
+| Open questions | ✅ Pass | OQ-1 to OQ-4, each with a default in force |
+
+**Review-PRD checks (review PRD from `/implm-frm-prd`):**
+
+- **TDD guidance:** present (Development Guidance, plus a regression test required for each fix).
+- **Code review per fix:** present, recorded in the fixes spec's implementation-notes.
+- **Agent teammates:** present, with four suggested streams (A to D) on `claude-sonnet-4-6`.
+- **Git worktrees:** present, one per stream, with a merge order (A before D's FR-010a).
+- **P0 means a true blocker:** confirmed that there are none. The P1 security findings need a catalog that the user passes with `--catalog` (the embedded catalog is safe), or a relative `PATH` entry, and the Review screen still shows every command (except under FR-001c). They are serious, but they do not block the I1-16 field check.
+
+**Priority corrections:**
+
+1. FR-001d (log path traversal) moved from P1 to P2. Once FR-001a validates IDs it is defense in depth, and the impact is a `.log` file written in the user's own tree.
+2. FR-001c (control characters in the consent screen) stays P1, because it lets data falsify the consent display.
+3. FR-013 was narrowed. The review had not verified that `HOMEBREW_CASK_OPTS` accepts `--force`, so the warning is limited to `--no-quarantine`, plus listing the names of inherited variables. It stays P2.
+4. All other priorities stand. FR-003 stays P1: the clean-machine bootstrap is the product's headline flow (INTENT.md) and has never run for real. FR-012 stays P2, because the located brew's `shellenv` normally puts it first on `PATH`.
