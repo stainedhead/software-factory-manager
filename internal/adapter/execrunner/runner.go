@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/plan"
@@ -187,6 +188,9 @@ func (r *Runner) Run(ctx context.Context, cmd process.Cmd) (process.Result, erro
 	if cmd.Interactive {
 		c.Stdin, c.Stdout, c.Stderr = r.stdin, r.stdout, r.stderr
 	} else {
+		// Its own process group: a Ctrl+C at the terminal reaches facman,
+		// which stops after this command, but never kills it midway.
+		c.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 		c.Stdout = io.MultiWriter(&stdout, log)
 		c.Stderr = io.MultiWriter(&stderr, log)
 	}

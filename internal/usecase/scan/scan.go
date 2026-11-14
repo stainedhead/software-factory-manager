@@ -43,6 +43,9 @@ type Input struct {
 	// HoldsLock is true when the caller (apply, TUI Run) already holds the
 	// state lock; scan then writes without taking it again.
 	HoldsLock bool
+	// ReadOnly is set for a dry run: scan neither takes the lock nor
+	// writes anything (no reconcile, no snapshot), so nothing changes.
+	ReadOnly bool
 }
 
 // Result is the outcome of a scan.
@@ -120,14 +123,14 @@ func Covers(id ownership.DetectorID, e catalog.Entry, p platform.Platform) bool 
 	return true
 }
 
-// Run scans. When it holds the lock (taken here with TryLock, or by the
+// Run scans. A ReadOnly scan writes nothing. When it holds the lock (taken here with TryLock, or by the
 // caller) it marks interrupted operations, records interrupted installs
 // that are now present (AD-8) and saves the detection snapshot; when
 // another facman holds the lock it writes nothing and adds a warning.
 func (s *Service) Run(ctx context.Context, in Input) (Result, error) {
 	res := Result{Records: map[string]inventory.Record{}}
-	write := in.HoldsLock
-	if !write {
+	write := in.HoldsLock && !in.ReadOnly
+	if !write && !in.ReadOnly {
 		unlock, holder, err := s.State.TryLock()
 		if err != nil {
 			return res, failure.Bootstrap("taking the state lock: %w", err)

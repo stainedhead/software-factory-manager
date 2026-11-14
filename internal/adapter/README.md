@@ -12,5 +12,7 @@ Implementations of the use case ports: subprocesses, filesystem, SQLite, YAML, H
 | [detect/](detect/) | PATH, app-bundle and npm detectors | `scan.Detector` |
 | [fsprobe/](fsprobe/) | Conflict evidence and owner of a path | `conflicts.PathProbe` |
 | [sqlite/](sqlite/) | Inventory database and migrations | `scan`/`execute`/`status.Inventory` |
+| [installer/](installer/) | Homebrew installer download to a temp file (never piped), retries | `execute.HomebrewInstaller` |
+| [report/](report/) | Report schema v1 (embedded) and `--json` encoding | — |
 
-More adapters (`installer`, `report`, `cli`, `tui`) are added by their workstreams. Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).
+More adapters (`session`, `cli`, `tui`) are added by their workstreams. Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).

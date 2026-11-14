@@ -13,6 +13,7 @@ Behaviour:
 - **Environment.** Base (usually `os.Environ()`) plus `Cmd.Env` overrides, with every `HOMEBREW_NO_REQUIRE_TAP_TRUST*` variable removed (FR-047, I1-10).
 - **Log.** When `Cmd.Log` is set: a header `$ "argv"…` and `# env: NAMES` (override names only, never values), then stdout and stderr as they arrive, then `# exit N`.
 - **Timeouts and cancellation.** `Cmd.Timeout` kills the child and returns an error wrapping `process.ErrTimeout`; a cancelled ctx kills the child and returns the ctx error. Callers that must let a command finish (installs: "stop after the current command") pass a context that is not cancelled, such as `context.WithoutCancel`.
+- **Process groups.** A non-interactive child runs in its own process group (`Setpgid`), so a `Ctrl+C` at the terminal reaches facman (which stops after the current command) but never kills the child midway. An interactive child stays in the foreground group because it owns the terminal.
 - **Interactive.** `Cmd.Interactive` gives the child the parent's stdin, stdout and stderr (sudo prompts); output is not captured, and facman never sees a password.
 - A non-zero exit is a `Result`, not an error; a missing program wraps `process.ErrNotFound`.
 

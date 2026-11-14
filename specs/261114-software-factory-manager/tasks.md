@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**33 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 5/9, F 0/6, G 0/5, H 0/4)
+**38 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 9/9, F 1/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -186,7 +186,7 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream F — CLI, report, wiring, end-to-end (parallel with G)
 
-**T-F1 — `adapter/report` schema v1.** *Depends:* E · *Est:* 3 h
+**✅ T-F1 — `adapter/report` schema v1.** *Depends:* E · *Est:* 3 h
 - **Test first:** encoder output for scan, plan, apply, status and doctor results validates against the embedded `schema/report.v1.json` (santhosh-tekuri/jsonschema in tests); a deliberately broken document fails; optional fields omitted; `consent_by` null on dry run.
 - **Done when:** schema per data-dictionary §7; README.
 

@@ -245,6 +245,21 @@ func TestScanWithoutLockWritesNothing(t *testing.T) {
 	}
 }
 
+func TestScanReadOnlyWritesNothing(t *testing.T) {
+	inv := &memInventory{interrupted: []inventory.Operation{{ID: 7, PackageID: "gh", Op: inventory.OpInstall}}}
+	l := &lock{}
+	res, err := newService(inv, l, &fakeDet{id: ownership.DetectorPath}).Run(context.Background(), Input{Catalog: testCatalog(), Env: Env{Platform: darwin}, ReadOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Wrote || inv.marked || len(inv.snaps) != 0 || len(inv.upserts) != 0 || l.unlocked {
+		t.Errorf("a read-only scan wrote or locked: %+v %+v", res, inv)
+	}
+	if len(res.Findings) != 0 || len(res.Statuses) != len(testCatalog().Entries) {
+		t.Errorf("result = %+v", res)
+	}
+}
+
 func TestScanReconcileInterrupted(t *testing.T) {
 	cmd := func(argv ...string) []plan.Command { return []plan.Command{{Argv: argv, Mutating: true}} }
 	ops := []inventory.Operation{

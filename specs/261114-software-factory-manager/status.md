@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 37 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D and E done; then F, G, H |
+| 5 | Implementation | In Progress | 38 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D and E done; F in progress; then G, H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -69,6 +69,8 @@
 | T-E7 `usecase/execute` re-plan and cancel | ✅ Done | `Replanner` port, `already-present`, `context.WithoutCancel` per command; download failure exit 4 (I-29) |
 | T-E8 `usecase/doctor` and `usecase/status` | ✅ Done | Whole-catalog pre-flight, tap trust (I-30); status rows with provenance |
 | T-E9 `usecase/summary` | ✅ Done | No ports; caller maps the execute outcome (I-31) |
+| T-F1 `adapter/report` schema v1 | ✅ Done | Embedded schema, every command validated in tests (I-33); also `adapter/installer` (I-32), `scan.Input.ReadOnly` (I-34), child process groups (I-35) |
+| T-F2 `adapter/cli` command tree and exit codes | 🔄 In Progress | |
 
 ## Blockers
 

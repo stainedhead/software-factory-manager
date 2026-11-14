@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -38,6 +39,8 @@ func TestHelperProcess(t *testing.T) {
 		}
 	case "sleep":
 		time.Sleep(10 * time.Second)
+	case "pgid":
+		fmt.Println(syscall.Getpgrp())
 	case "cat":
 		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		_, _ = fmt.Fprint(os.Stdout, "got "+line)
@@ -140,6 +143,34 @@ func TestCancelKillsChild(t *testing.T) {
 	_, err := newRunner().Run(ctx, helperCmd("sleep"))
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+}
+
+// A Ctrl+C at the terminal goes to the foreground process group; a
+// non-interactive child runs in its own group, so it finishes and facman
+// stops after it (spec: never kill a command midway).
+func TestNonInteractiveChildHasOwnProcessGroup(t *testing.T) {
+	res, err := newRunner().Run(context.Background(), helperCmd("pgid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ours := strings.TrimSpace(res.Stdout), fmt.Sprint(syscall.Getpgrp()); got == ours || got == "" {
+		t.Errorf("child process group = %q, ours = %s: want its own group", got, ours)
+	}
+	var out, errOut bytes.Buffer
+	devnull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = devnull.Close() }()
+	r := New(Options{BaseEnv: []string{"PATH=" + os.Getenv("PATH")}, Stdin: devnull, Stdout: &out, Stderr: &errOut})
+	cmd := helperCmd("pgid")
+	cmd.Interactive = true
+	if _, err := r.Run(context.Background(), cmd); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(out.String()); got != fmt.Sprint(syscall.Getpgrp()) {
+		t.Errorf("interactive child group = %q, want ours (it owns the terminal)", got)
 	}
 }
 
