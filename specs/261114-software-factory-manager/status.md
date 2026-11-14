@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 38 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D and E done; F in progress; then G, H |
+| 5 | Implementation | In Progress | 43 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D, E and F done; then G, H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -70,7 +70,11 @@
 | T-E8 `usecase/doctor` and `usecase/status` | ✅ Done | Whole-catalog pre-flight, tap trust (I-30); status rows with provenance |
 | T-E9 `usecase/summary` | ✅ Done | No ports; caller maps the execute outcome (I-31) |
 | T-F1 `adapter/report` schema v1 | ✅ Done | Embedded schema, every command validated in tests (I-33); also `adapter/installer` (I-32), `scan.Input.ReadOnly` (I-34), child process groups (I-35) |
-| T-F2 `adapter/cli` command tree and exit codes | 🔄 In Progress | |
+| T-F2 `adapter/cli` command tree and exit codes | ✅ Done | Deferred commands and flags exit 64; FR-005 normalizer and collision test (I-36) |
+| T-F3 Headless consent, dry run and signals | ✅ Done | `[y/N]` on stderr, non-terminal stdin 64, first signal stops after the current command |
+| T-F4 `cmd/facman` wiring | ✅ Done | `wire.go` `options`/`newApp`; new `adapter/session` composes the use cases, holds the lock, `Replanner` (I-37, I-38); TUI seam (I-39) |
+| T-F5 End-to-end tests | ✅ Done | In-process fixtures, schema-validated JSON, pty consent, second run 4, crash recovery via test-binary helper (I-40) |
+| T-F6 Performance smoke tests | ✅ Done | Numbers in I-41; TUI frame budget with G |
 
 ## Blockers
 
@@ -87,3 +91,4 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | Step 3, workstream C: `execrunner`, `platform`, `statedir` and `sqlite` adapters. Coverage: 94.7% overall, 100% domain. |
 | 2026-11-14 | Step 3, workstream D: `brew` (locator, shellenv, info parsing, detector, formula/cask backends, tap/trust state), `detect` (PATH, bundle, npm), `fsprobe`; detection-only `gemini-cli` entry (T-D9). Coverage: 95.6% overall. Deviations I-16 to I-24. |
 | 2026-11-14 | Step 3, workstream E: bootstrap, scan, conflicts, planning, execute, doctor, status and summary use cases; `inventory.InstallRef` shared by scan and execute; `statedir.OpenLog`. Coverage: 96.4% overall, 100% domain, usecase ≥ 97.2% per package. Deviations I-26 to I-31. |
+| 2026-11-14 | Step 3, workstream F: report schema v1, installer, `adapter/session` and `adapter/cli`, `cmd/facman` wiring, e2e and perf smoke tests. Coverage: 96.4% overall. Deviations I-32 to I-41. |

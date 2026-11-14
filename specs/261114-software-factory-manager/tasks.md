@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**38 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 9/9, F 1/6, G 0/5, H 0/4)
+**43 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 9/9, F 6/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -190,23 +190,23 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 - **Test first:** encoder output for scan, plan, apply, status and doctor results validates against the embedded `schema/report.v1.json` (santhosh-tekuri/jsonschema in tests); a deliberately broken document fails; optional fields omitted; `consent_by` null on dry run.
 - **Done when:** schema per data-dictionary §7; README.
 
-**T-F2 — `adapter/cli` command tree and exit codes.** *Depends:* T-F1 · *Est:* 4 h
+**✅ T-F2 — `adapter/cli` command tree and exit codes.** *Depends:* T-F1 · *Est:* 4 h
 - **Test first (I1-12):** `--version`/`--about` output unchanged (existing tests ported); `scan|plan|apply|status|doctor` registered; `upgrade`, `uninstall`, `adopt`, `forget`, `restore`, `setup`, `service`, `export`, `config`, `template`, `validate` → 64 with "arrives in a later increment"; unknown command/flag → 64; `--profile` with no value → 64; `plan`/`apply` without `--profile` → 64; `--set` → 64; `--catalog https://…` → 64; failure kinds → exit codes; `--json` writes only JSON to stdout, messages to stderr.
 - **Done when:** README.
 
-**T-F3 — Headless consent, dry run and signals.** *Depends:* T-F2 · *Est:* 3 h
+**✅ T-F3 — Headless consent, dry run and signals.** *Depends:* T-F2 · *Est:* 3 h
 - **Test first:** non-terminal stdin → 64 with TUI hint; pty: prompt text `Proceed? [y/N]` after the command list; `y`/`Y`/`yes` → run; `n`, empty, EOF, `Ctrl+C` at prompt → exit 0, no rows; `--dry-run` never prompts; first SIGINT during Run → stop after current command, exit 1.
 - **Done when:** README updated.
 
-**T-F4 — `cmd/facman` wiring.** *Depends:* T-F2, B, C, D · *Est:* 2 h
+**✅ T-F4 — `cmd/facman` wiring.** *Depends:* T-F2, B, C, D · *Est:* 2 h
 - **Test first:** `run(args, stdio)` with `defaultOptions()` still passes existing `--version`/`--about` tests; `newApp(options)` builds every adapter from options (platform probe, UID, known prefixes, app dirs, `/etc/os-release` and `/proc/version` paths, installer URL, clock, user, stdio) (R-3); no-arg with non-terminal stdout prints `--about` text + hint, exit 0 (AD-14); root `--profile`/`--with`/`--catalog` reach the TUI (R-6).
 - **Done when:** `main.go` + `wire.go` only wire; `cmd/facman/README.md` updated.
 
-**T-F5 — End-to-end tests.** *Depends:* T-F4, T-A11 · *Est:* 6 h
+**✅ T-F5 — End-to-end tests.** *Depends:* T-F4, T-A11 · *Est:* 6 h
 - **Test first:** `cmd/facman/e2e_test.go`, in-process with fixtures: I1-2 (scan `--json` schema-valid, read-only invocations, < 5 s), I1-4 (`--catalog`, unknown ID exit 3, pins exit 3), I1-5 (no brew: scan/plan report and install nothing; apply lists installer first, decline changes nothing; consent with an `httptest` installer that creates a fake brew in the injected prefix → `homebrew` row `managed`, `bootstrap = 1`, later commands get `HOMEBREW_PREFIX` from `shellenv` (R-1); UID 0 via injected UID → 4; linuxbrew prefix found; glibc warning in `--dry-run`), Linux-no-display and WSL fixtures: GUI items `unavailable-here`, WSL `winget` hint (R-9), `doctor` clean → 0 and untrusted Orca tap → 2 (R-2), `apply --json` keeps the prompt on stderr (R-8), I1-6, I1-7 (pty consent, op rows, second apply runs nothing exit 0), I1-9 (dangling `claude` symlink, exit 1, doctor exit 2), I1-10, I1-12; I1-11 as a subprocess (fake `brew install` sleeps; test SIGKILLs facman after the `in_progress` row appears; next run marks it interrupted and finishes); `testkit.AssertSafeInvocations` after every test (I1-8).
 - **Done when:** all green on Linux and macOS without Homebrew access.
 
-**T-F6 — Performance smoke tests.** *Depends:* T-F5 · *Est:* 1 h
+**✅ T-F6 — Performance smoke tests.** *Depends:* T-F5 · *Est:* 1 h
 - **Test first:** `--version` in-process < 50 ms and as a built binary < 1 s (generous to avoid flakes; the 100 ms target is measured manually); full-catalog fixture scan < 5 s; first TUI `View()` < 500 ms.
 - **Done when:** measured numbers recorded in implementation-notes.
 

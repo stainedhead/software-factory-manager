@@ -5,5 +5,6 @@ Test fixtures and test-only programs. Go ignores `testdata/` for `./...`, so not
 | Path | Contents |
 |---|---|
 | [fakecmd/](fakecmd/) | Fake multi-call executable (brew, xcode-select, mdfind, plutil, npm, getconf, ldd, file), built by `internal/testkit` |
+| [catalogs/](catalogs/) | Catalog directories for tests (`e2e/`: two entries for `--catalog`, profile union, pins, crash recovery) |
 
-Machine fixtures (`fixtures/`) and the one-entry integration catalog (`catalogs/integration/`) are added by later workstreams. Back to the [root README](../README.md).
+The end-to-end tests build their machine fixtures in Go (`cmd/facman/e2e_test.go`) from the embedded catalog. The one-entry integration catalog (`catalogs/integration/`) is added by workstream H. Back to the [root README](../README.md).

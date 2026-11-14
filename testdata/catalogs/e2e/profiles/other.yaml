@@ -1,0 +1,6 @@
+apiVersion: facman/v1
+profile: other
+description: gh, and jq at another pin
+packages:
+  - gh
+  - jq: { version: "1.8" }

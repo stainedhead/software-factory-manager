@@ -14,5 +14,7 @@ Implementations of the use case ports: subprocesses, filesystem, SQLite, YAML, H
 | [sqlite/](sqlite/) | Inventory database and migrations | `scan`/`execute`/`status.Inventory` |
 | [installer/](installer/) | Homebrew installer download to a temp file (never piped), retries | `execute.HomebrewInstaller` |
 | [report/](report/) | Report schema v1 (embedded) and `--json` encoding | — |
+| [session/](session/) | Composes the use cases into one command run; holds the state lock; the replanner | `execute.Replanner` |
+| [cli/](cli/) | cobra commands, flag normalizer and validation, `[y/N]` prompt, progress, rendering, exit codes, signals; TUI seam | — (driving adapter) |
 
-More adapters (`session`, `cli`, `tui`) are added by their workstreams. Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).
+The `tui` adapter is added by workstream G. Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).

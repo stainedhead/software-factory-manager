@@ -2,7 +2,7 @@
 
 **Agentic Software Factory Manager** — the home of `facman`.
 
-> **Status:** design complete in draft (v0.3); Increment 1 (MVP) is specified in [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/) and in implementation: the domain model, use case ports and test harness are in place. Sections marked _TBD_ are filled in as the product takes shape.
+> **Status:** design complete in draft (v0.3); Increment 1 (MVP) is specified in [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/) and in implementation: the domain model, use cases, adapters and the headless CLI (`facman scan`, `plan`, `apply`, `status`, `doctor`, each with `--json`) are in place; the TUI is next. Sections marked _TBD_ are filled in as the product takes shape.
 
 ## Overview
 

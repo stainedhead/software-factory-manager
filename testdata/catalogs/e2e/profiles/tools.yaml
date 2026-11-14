@@ -1,0 +1,5 @@
+apiVersion: facman/v1
+profile: tools
+description: gh only
+packages:
+  - gh
