@@ -6,8 +6,8 @@
 **Review PRD:** software-factory-manager-auto-review-PRD.md (moved into the review spec in Step 8)
 **Review Spec:** [261114-software-factory-manager-auto-review/](261114-software-factory-manager-auto-review/) (created in Step 8 as `specs/261114-software-factory-manager-auto-review/`, archived here in Step 10)
 **Process Start:** 2026-11-14T18:37:38Z
-**Process End:** —
-**Total Runtime:** —
+**Process End:** 2026-11-14T22:44:04Z
+**Total Runtime:** 4 h 6 min (246 min) from Process Start; 4 h 12 min from the first run commit `3c40123` (18:31:27Z, git)
 
 ## Step Summary
 
@@ -25,7 +25,7 @@
 | 10 | Archive Fixes Spec              | ✅ Complete | 2026-11-14T22:34:29Z | 2026-11-14T22:35:44Z | 1 |
 | 11 | Final Quality Pass              | ✅ Complete | 2026-11-14T22:37:04Z | 2026-11-14T22:41:14Z | 4 |
 | 12 | Process Analysis Report         | ✅ Complete | 2026-11-14T22:41:20Z | 2026-11-14T22:43:43Z | 2 |
-| 13 | Archive Spec                    | ⬜ Pending | — | — | — |
+| 13 | Archive Spec                    | ✅ Complete | 2026-11-14T22:43:51Z | 2026-11-14T22:44:04Z | 1 |
 | 14 | Open Pull Request               | ⬜ Pending | — | — | — |
 
 ## Run notes
@@ -45,3 +45,4 @@
 - Step 10: `/archive-spec` on the review spec (unattended, confirmations skipped): status.md Phases 5 and 6 set Complete, with the 3 partial and 2 deferred items carried as open items. Moved to `specs/archive/`, then into `specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/`. Relative links in the moved files were rewritten two levels deeper, and the root README, specs READMEs, this dashboard and user-docs/field-check.md were updated. A link check over all Markdown found 0 broken links.
 - Step 11: final quality pass. `make check` (fmt, lint 0 issues, archcheck, doccheck, race tests) green; `make cover` 96.5% overall, every domain package 100%, usecase 97.4 to 100% (lowest: scan 97.4%), lowest adapter sqlite 85.4%; no gap to close. `make integration` (mutating test off) passes, with the three real-Homebrew tests skipping in the container (root, no brew; they pass on macOS CI). `make fuzz` (6 parsers, 10 s each) and `make build-all` (4 binaries) green. Docs fixed: technical-details' CI sentence now lists every CI gate; specs/README's empty "Active specs" table replaced by a sentence linking the archive; spec.md's spec-directory line and the acceptance-criteria intro (ticked = test-proven, mapping in technical-details#acceptance-evidence, I1-16 field-only via user-docs/field-check.md). Every evidence test named in technical-details exists; every user-doc is linked from README; every folder has a README. CI: 6c18c58 green on both OSes, 215bb24 cancelled (superseded by the next push), 1e12276 green on macOS.
 - Step 12: `/write-flow-analys` followed from the command file. [software-factory-manager-analysis.md](software-factory-manager-analysis.md) covers timing from git, all run commits, spec estimate (132.5 h) vs. actual, the orchestration facts (unattended cloud run, plugin install failed so command files were followed directly, workers on the session model not `claude-sonnet-4-6`, sequential workers not worktrees, three macOS-only CI catches, PR #2 opened through the GitHub connector), and eight recommendations for the dev-flow plugin. Token counts unavailable and not estimated.
+- Step 13: archive layout confirmed against the command: the original spec files (spec, status, plan, tasks, research, data-dictionary, architecture, implementation-notes, README), the PRD, this dashboard, the analysis, and the nested review spec `261114-software-factory-manager-auto-review/` with its PRD. `specs/` holds no active spec. Process End and Total Runtime set. Step 14: PR #2 has been open since 18:32:09Z (opened through the GitHub connector); its body is updated by the orchestrator, and merging is J's call.

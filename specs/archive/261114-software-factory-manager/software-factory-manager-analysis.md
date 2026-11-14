@@ -12,7 +12,7 @@
 
 Increment 1 delivers the smallest useful slice of `facman`: on a macOS or Linux machine a developer runs `facman` (TUI) or `facman apply --profile agentic-factory` (headless), and `facman` checks the bootstrap state, detects every catalog v1 package and how it got there, classifies each into an ownership state, and proposes only the missing brew-installable tools with the exact commands. After explicit consent it installs them through the `brew-formula` and `brew-cask` backends and records every step in a local SQLite inventory with an append-only audit log, never touching what it did not install, never overwriting a conflicting file, and trusting Orca's tap item by item. A code review then produced 26 fix requirements, of which 21 were done, 3 partly done and 2 deferred with rationale.
 
-**Total runtime:** about 4 h 20 min of wall clock. The git history runs from the first run commit `3c40123` (2026-11-14T18:31:27Z) to the archive commit (Step 13, see section 3). The PRD review began at about 18:30Z, and the dashboard's Process Start is 18:37:38Z.
+**Total runtime:** 4 h 12 min of wall clock by git (4 h 06 min from the dashboard's Process Start to Process End, 2026-11-14T22:44:04Z). The git history runs from the first run commit `3c40123` (2026-11-14T18:31:27Z) to the archive commit (Step 13, see section 3). The PRD review began at about 18:30Z, and the dashboard's Process Start is 18:37:38Z.
 **Overall assessment:** Successful. Steps 1 to 13 ran unattended and nothing was escalated. Step 14's PR (#2) has been open since the start of the run. The result is about 28.7 k lines of Go (14.0 k of them tests, 297 top-level tests), 96.5% coverage (domain 100%, use cases 97.4 to 100%), and CI green on Linux and macOS. I1-1 to I1-15 are proven by tests. I1-16, the clean-machine bootstrap and the real `brew` output capture remain for J's field run ([user-docs/field-check.md](../../../user-docs/field-check.md)). The biggest risk is that the real-machine checks have not happened yet, not the code.
 
 ---
@@ -35,15 +35,14 @@ Start and end times are from the status dashboard. They agree with the git commi
 | 9 | Implement Review Fixes | 21:39:38Z | 22:34:10Z | 55 | 9 commits; archcheck, doccheck and fuzz gates; Homebrew 7 cask parser fix |
 | 10 | Archive Fixes Spec | 22:34:29Z | 22:35:44Z | 1 | Review spec nested in the Increment 1 archive |
 | 11 | Final Quality Pass | 22:37:04Z | 22:41:14Z | 4 | All gates green; three doc fixes (`d9b289f`) |
-| 12 | Process Analysis Report | see dashboard | see dashboard | ~10 | This file |
-| 13 | Archive Spec | see dashboard | see dashboard | ~2 | Layout confirmed; Process End and Total Runtime set |
+| 12 | Process Analysis Report | 22:41:20Z | 22:43:43Z | 2 | This file (`343b75a`) |
+| 13 | Archive Spec | 22:43:51Z | 22:44:04Z | 1 | Layout confirmed; Process End and Total Runtime set |
 | 14 | Open Pull Request | — | — | — | PR #2 was opened at 18:32:09Z, at the start of the run (see section 3) |
 
 **Notable observations:**
-- Step 3 took 53% of the run (137 of about 260 minutes), and Step 9 took another 21%. Everything else was one to nine minutes per step.
+- Step 3 took 54% of the run (137 of 252 minutes), and Step 9 took another 22%. Everything else was one to nine minutes per step.
 - There was no idle gap between steps longer than 4 minutes (Step 4 → 5: 21:19:50 to 21:23:41, waiting for macOS CI on the Ctrl+C fix).
 - No step was retried as a whole. Three fixes were driven by CI (section 6). Each was a focused follow-up commit, not a re-run.
-- Steps 12 and 13 have no dashboard rows in this table because this report is written during Step 12. Their final times are in the dashboard.
 
 ---
 
@@ -162,5 +161,5 @@ For this project:
 ## 7. Manual vs. Automated Comparison
 
 **Estimated manual duration:** about 4 to 5 weeks for one senior Go developer. The basis is the spec's own 132.5 focused hours for Increment 1, at about 30 focused hours a week (about 4.5 weeks), plus about 3 to 5 days for the PRD and spec review, the code review and the 26 review fixes. This assumes the developer already knows Homebrew's internals and Bubble Tea, and it excludes meetings and review wait time.
-**Actual automated runtime:** about 4 h 20 min of wall clock (git, `3c40123` 18:31:27Z to the Step 13 commit), with no human input during the run.
+**Actual automated runtime:** 4 h 12 min of wall clock (git, `3c40123` 18:31:27Z to the Step 13 commit), with no human input during the run.
 **Efficiency gain:** roughly 30 to 40 times in elapsed working time, with large caveats. J's review of PR #2, the field check and the clean-machine bootstrap have not happened yet. They need human time and real Macs, and they could find rework. The automated run also leaned on a well-structured PRD and design (v0.3 and v0.4) that took human effort to produce before the run began.
