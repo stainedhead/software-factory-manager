@@ -13,4 +13,4 @@ Errors: a git URL passed to `Dir` is a usage error (exit 64, "git catalogs arriv
 
 Catalog facts marked "unverified" in `catalog.yaml` (Orca, T3 Code and GitHub Copilot app bundle IDs) are data; fix them there after the I1-16 field run, no code change needed.
 
-**Architecture.** Adapter: imports `internal/domain/catalog`, `failure`, `platform` and the port packages it satisfies. Used by `cmd/facman` wiring. Related: [data dictionary §6](../../../specs/261114-software-factory-manager/data-dictionary.md#6-catalog-and-profile-yaml-embedded-apiversion-facmanv1). Back to [internal/adapter](../README.md).
+**Architecture.** Adapter: imports `internal/domain/catalog`, `failure`, `platform` and the port packages it satisfies. Used by `cmd/facman` wiring. Related: [data dictionary §6](../../../specs/archive/261114-software-factory-manager/data-dictionary.md#6-catalog-and-profile-yaml-embedded-apiversion-facmanv1). Back to [internal/adapter](../README.md).

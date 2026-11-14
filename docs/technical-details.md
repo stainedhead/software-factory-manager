@@ -1,6 +1,6 @@
 # Technical Details
 
-This is how `facman` Increment 1 is built: its components, the data flow of each command, the ports between layers, and its dependencies. The rules for changing it are in [AGENTS.md](../AGENTS.md). The working design is in [design/](design/software-factory-installer-design.md). The decisions behind this structure are in the [architecture decision record](architecture-decision-record.md) and in the spec's [architecture.md](../specs/261114-software-factory-manager/architecture.md) (AD-1 to AD-16).
+This is how `facman` Increment 1 is built: its components, the data flow of each command, the ports between layers, and its dependencies. The rules for changing it are in [AGENTS.md](../AGENTS.md). The working design is in [design/](design/software-factory-installer-design.md). The decisions behind this structure are in the [architecture decision record](architecture-decision-record.md) and in the spec's [architecture.md](../specs/archive/261114-software-factory-manager/architecture.md) (AD-1 to AD-16).
 
 ## Layers
 
@@ -133,8 +133,8 @@ Go 1.27 (the `go` directive in `go.mod`). Binaries are static for darwin and lin
 
 ## Data formats
 
-- Catalog and profile YAML, `apiVersion: facman/v1`: [data dictionary §6](../specs/261114-software-factory-manager/data-dictionary.md#6-catalog-and-profile-yaml-embedded-apiversion-facmanv1), and the user reference in [user-docs/configuration.md](../user-docs/configuration.md#catalog-directories).
-- Report schema v1 (`--json`): [internal/adapter/report/schema/report.v1.json](../internal/adapter/report/schema/report.v1.json) and [data dictionary §7](../specs/261114-software-factory-manager/data-dictionary.md#7-report-schema-v1---json).
-- State DB tables (`meta`, `packages`, `operations`, `detections`, `tap_trust`, and `services`, which is reserved for Increment 2): [data dictionary](../specs/261114-software-factory-manager/data-dictionary.md) and `internal/adapter/sqlite`.
+- Catalog and profile YAML, `apiVersion: facman/v1`: [data dictionary §6](../specs/archive/261114-software-factory-manager/data-dictionary.md#6-catalog-and-profile-yaml-embedded-apiversion-facmanv1), and the user reference in [user-docs/configuration.md](../user-docs/configuration.md#catalog-directories).
+- Report schema v1 (`--json`): [internal/adapter/report/schema/report.v1.json](../internal/adapter/report/schema/report.v1.json) and [data dictionary §7](../specs/archive/261114-software-factory-manager/data-dictionary.md#7-report-schema-v1---json).
+- State DB tables (`meta`, `packages`, `operations`, `detections`, `tap_trust`, and `services`, which is reserved for Increment 2): [data dictionary](../specs/archive/261114-software-factory-manager/data-dictionary.md) and `internal/adapter/sqlite`.
 
 Back to [docs](README.md).

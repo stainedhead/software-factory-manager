@@ -6,7 +6,7 @@
 
 > **Structure.** The sections above the appendices are the PRD proper (problem, goals, 80+ numbered requirements, NFRs, acceptance criteria, risks, open questions, and the **Delivery plan**, which defines Increment 1). **Appendices A-K** hold the full command reference, flags, TUI keys, ownership states, the catalog, file formats, bootstrap checks, exit codes, inventory schema and paths, so the design's detail is not lost. Research notes, option analyses and source links stay in the design doc.
 >
-> **Sources.** Drafted from [INTENT.md](../../INTENT.md) and [docs/design/software-factory-installer-design.md](../../docs/design/software-factory-installer-design.md) (v0.3), with decisions from [docs/architecture-decision-record.md](../../docs/architecture-decision-record.md). Section references such as "§7a" point into the design doc. No interview was run, because the decisions were already made there. Anything the sources leave open is under **Open Questions** or marked `# TODO:`.
+> **Sources.** Drafted from [INTENT.md](../../../INTENT.md) and [docs/design/software-factory-installer-design.md](../../../docs/design/software-factory-installer-design.md) (v0.3), with decisions from [docs/architecture-decision-record.md](../../../docs/architecture-decision-record.md). Section references such as "§7a" point into the design doc. No interview was run, because the decisions were already made there. Anything the sources leave open is under **Open Questions** or marked `# TODO:`.
 >
 > **Review.** The PRD was reviewed on 2026-11-14 (`/review-prd`, run unattended). Gaps the sources could answer were filled and are marked *decided in review (2026-11-14)*. The review log, with every decision and its rationale, is **Appendix L**. Decisions made in review are defaults that J can overturn.
 
@@ -191,7 +191,7 @@ Requirements are grouped by area. The "Phase" column in the table at the end of 
 - **Observability:** Append-only audit log with consent, commands, exit codes and log paths (FR-060). `--json` output on every headless command (FR-007). Deterministic exit codes (FR-075). GitHub Actions annotations from `validate --format github`. Logs (decided in review, 2026-11-14): each operation writes its full output to `<state dir>/logs/<YYYYMMDD-HHMMSS>-<operation id>-<package id>.log`, where the state dir is the one in Appendix J, and the path goes in `operations.log_path`. At launch, `facman` deletes log files older than 90 days. Rows in the `operations` table are never deleted, so the audit trail outlives the logs, and a pruned log shows as "pruned" rather than missing. Logs never contain secret values. Commands are logged with env var names, not values.
 - **Portability:** macOS (primary), Linux (Tier 1 Homebrew: glibc 2.39 or newer, x86_64 and ARM64), and WSL 2. Single static binary, no cgo (FR-003, FR-060). State files live on the Linux filesystem on WSL, never under `/mnt/c`.
 - **Usability:** The TUI shows exact commands and evidence before any change. Errors name the cause and the fix (for example exit 4 messages). Every format gets a template, schema-driven editor autocomplete, and line-numbered validation errors.
-- **Maintainability:** Clean Architecture (domain, usecase, adapter), TDD, `make check` and CI green on every push (see [AGENTS.md](../../AGENTS.md)). Docs and READMEs are updated in the same change as the code.
+- **Maintainability:** Clean Architecture (domain, usecase, adapter), TDD, `make check` and CI green on every push (see [AGENTS.md](../../../AGENTS.md)). Docs and READMEs are updated in the same change as the code.
 - **Compatibility and drift control:** Pinned tool versions in the catalog, each tied to a schema version, with contract tests (FR-103). Orca and T3 Code publish no formal schemas, so their schemas are `vendor-unofficial`. For these (decided in review, 2026-11-14), a pinned-version contract must show that the pinned tool starts with the seeded file and reads back every key `facman` wrote, and it blocks a release like any other contract. The schema itself only produces warnings, because it is our guess at the format, not the vendor's.
 
 ## Acceptance Criteria
@@ -224,7 +224,7 @@ These criteria cover the whole product. Each increment meets the subset its Deli
 | Node.js 24.11 or newer, npm, corepack/pnpm | Dependency | Needed only for Paperclip today. Provided by `node@24` through brew or a version manager. |
 | Vendor tools (Claude Code, Copilot, Codex, Antigravity, Hermes, Orca, T3 Code, Paperclip, cloud CLIs) | Dependency | Install paths and formats are owned by vendors and can change. Pinned versions plus nightly contract tests are the mitigation. |
 | Homebrew taps and casks (`stablyai/orca`) | Dependency | Bare `orca` is an unrelated Plotly cask, so the full tap path is required. |
-| GitHub Actions, GoReleaser, golangci-lint | Dependency | CI and release pipeline (see [AGENTS.md](../../AGENTS.md)). Signing, notarization and the Homebrew tap are not yet in place. |
+| GitHub Actions, GoReleaser, golangci-lint | Dependency | CI and release pipeline (see [AGENTS.md](../../../AGENTS.md)). Signing, notarization and the Homebrew tap are not yet in place. |
 | Apple Developer signing and notarization | Dependency | Needed for the signed macOS release (FR-113). Owner and timeline are Open Question 13. Not needed for Increment 1 (see Delivery plan). |
 | Platform/lab team owning the catalog repo | Dependency | Needed for tagged, reviewed catalog releases (FR-046). |
 | Vendor format drift (Hermes, T3 Code are most likely) | Risk | Contract tests (nightly against latest) are the early warning. Orca and T3 have no official schemas, so coverage is weaker. |
@@ -339,7 +339,7 @@ Behaviour decisions for Increment 1:
 
 # Appendices: full specification
 
-The requirements above say *what* must be true. These appendices record the complete command structure, screens, file formats, catalog and defaults, so nothing in the design doc is lost in this PRD. Where the design left a detail open, the review either resolved it (marked *decided in review, 2026-11-14*) or moved it to Open Questions. Rationale and research stay in the [design doc](../../docs/design/software-factory-installer-design.md); section numbers (§) point there.
+The requirements above say *what* must be true. These appendices record the complete command structure, screens, file formats, catalog and defaults, so nothing in the design doc is lost in this PRD. Where the design left a detail open, the review either resolved it (marked *decided in review, 2026-11-14*) or moved it to Open Questions. Rationale and research stay in the [design doc](../../../docs/design/software-factory-installer-design.md); section numbers (§) point there.
 
 ## Appendix A: Command reference
 
@@ -675,7 +675,7 @@ Availability by platform (summary of design §2a): CLI formulae and casks work o
 
 ## Appendix L: Review log (2026-11-14)
 
-`/review-prd` was run unattended on 2026-11-14. J was away, so every question the command would have asked was decided from the sources, in priority order: this PRD, [INTENT.md](../../INTENT.md), [AGENTS.md](../../AGENTS.md), the [design doc](../../docs/design/software-factory-installer-design.md) (v0.3), and the [ADR](../../docs/architecture-decision-record.md). The guiding rules were safest default, consent first, own only what we install, Linux CI first for `-cl`, and Clean Architecture with TDD. J can overturn any decision below.
+`/review-prd` was run unattended on 2026-11-14. J was away, so every question the command would have asked was decided from the sources, in priority order: this PRD, [INTENT.md](../../../INTENT.md), [AGENTS.md](../../../AGENTS.md), the [design doc](../../../docs/design/software-factory-installer-design.md) (v0.3), and the [ADR](../../../docs/architecture-decision-record.md). The guiding rules were safest default, consent first, own only what we install, Linux CI first for `-cl`, and Clean Architecture with TDD. J can overturn any decision below.
 
 **Verdict before:** Needs revision (no Fail, four Warnings).
 **Verdict after:** Ready for spec. The remaining Open Questions are product questions for J, and each one that the design informs has a recommended default, so they do not block Increment 1.

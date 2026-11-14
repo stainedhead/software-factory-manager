@@ -10,4 +10,4 @@ What facman intends to do: `Command` (exact argv), `Action`, `Plan`, `Exclusion`
 
 **Architecture.** Domain layer: no I/O. Imports `catalog`, `platform`. Used by `inventory` (commands in operations), `ownership` (conflicts) and the planning and execute use cases.
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).

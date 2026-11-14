@@ -17,4 +17,4 @@ f := testkit.NewFake(t, fakeworld.World{Brew: &fakeworld.Brew{Prefix: t.TempDir(
 testkit.AssertSafeInvocations(t, f.Log(t))
 ```
 
-Call `testkit.RemoveBuild()` from `TestMain` to delete the built binary. Related: [plan.md testing strategy](../../specs/261114-software-factory-manager/plan.md#testing-strategy). Back to [internal](../README.md).
+Call `testkit.RemoveBuild()` from `TestMain` to delete the built binary. Related: [plan.md testing strategy](../../specs/archive/261114-software-factory-manager/plan.md#testing-strategy). Back to [internal](../README.md).

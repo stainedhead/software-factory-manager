@@ -12,4 +12,4 @@ The catalog model, validation, per-platform install selection and profile resolu
 
 **Architecture.** Domain layer: no I/O. Imports `platform`, `failure`. Used by `plan`, `ownership`, the use cases and `adapter/catalogyaml` (which decodes YAML into these types).
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).

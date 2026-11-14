@@ -9,4 +9,4 @@ End-of-run summary for `apply` and the TUI Summary screen (T-E9, FR-112, FR-113)
 
 **Architecture.** Use case layer: imports `internal/domain/...` only. Used by `adapter/cli` and `adapter/tui` (workstreams F and G).
 
-Related: [tasks](../../../specs/261114-software-factory-manager/tasks.md), [product details](../../../docs/product-details.md). Back to [internal/usecase](../README.md).
+Related: [tasks](../../../specs/archive/261114-software-factory-manager/tasks.md), [product details](../../../docs/product-details.md). Back to [internal/usecase](../README.md).

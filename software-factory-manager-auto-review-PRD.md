@@ -3,8 +3,8 @@
 **Created:** 2026-11-14
 **Jira:** N/A
 **Status:** Reviewed (2026-11-14, `/review-prd`, dev-flow Step 6), ready for spec. Written by `/review-code` in dev-flow `/implm-frm-prd` Step 5, run unattended. The review log is Appendix A.
-**Source review:** the whole diff from `origin/main` (`f0776c9`) to `11fed13` on branch `claude/project-thread-ys3kmd` (226 files, about 30,000 lines added), reviewed against [spec.md](specs/261114-software-factory-manager/spec.md) and acceptance criteria I1-1 to I1-16.
-**Spec it fixes:** `specs/261114-software-factory-manager/` (Increment 1, Phase 0 + Phase 1 MVP)
+**Source review:** the whole diff from `origin/main` (`f0776c9`) to `11fed13` on branch `claude/project-thread-ys3kmd` (226 files, about 30,000 lines added), reviewed against [spec.md](specs/archive/261114-software-factory-manager/spec.md) and acceptance criteria I1-1 to I1-16.
+**Spec it fixes:** `specs/archive/261114-software-factory-manager/` (Increment 1, Phase 0 + Phase 1 MVP)
 
 ## Executive Summary
 
@@ -230,7 +230,7 @@ The finding has one root cause, input that is not validated, and four fixes that
 
 #### FR-017 (P2, docs): Close the acceptance record and keep reference material outside the archived spec
 
-**Finding.** All 16 acceptance checkboxes in spec.md are unticked (`specs/261114-software-factory-manager/spec.md:254-269`), although status.md reports 52/52 tasks done. Nothing maps each criterion to the test that proves it. The I1-16 field check is handed to J without a procedure: `docs/product-details.md:63` only names what needs confirming. `docs/technical-details.md:136-138` and `user-docs/configuration.md:73` send readers to the spec's data dictionary for the catalog YAML format and DB tables, which become archive material in Step 7.
+**Finding.** All 16 acceptance checkboxes in spec.md are unticked (`specs/archive/261114-software-factory-manager/spec.md:254-269`), although status.md reports 52/52 tasks done. Nothing maps each criterion to the test that proves it. The I1-16 field check is handed to J without a procedure: `docs/product-details.md:63` only names what needs confirming. `docs/technical-details.md:136-138` and `user-docs/configuration.md:73` send readers to the spec's data dictionary for the catalog YAML format and DB tables, which become archive material in Step 7.
 
 **Acceptance criteria.**
 1. An "Acceptance evidence" table (I1-1 to I1-16, each with test names or the CI job) is added to `docs/technical-details.md`, and the spec's checkboxes are ticked in the archived copy, with I1-16 marked handed over.

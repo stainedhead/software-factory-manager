@@ -2,7 +2,7 @@
 
 **Agentic Software Factory Manager** — the home of `facman`.
 
-> **Status:** Increment 1 (MVP) is built: the TUI (`facman`) and the headless commands `scan`, `plan`, `apply`, `status` and `doctor`, each with `--json`, on macOS, Linux and WSL 2 through Homebrew. Upgrades, uninstall, adoption, the npm backend, configuration lists (`-cl`), templates and per-tool setup flags arrive in later increments; see [What works today](#what-works-today). The spec is [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/).
+> **Status:** Increment 1 (MVP) is built: the TUI (`facman`) and the headless commands `scan`, `plan`, `apply`, `status` and `doctor`, each with `--json`, on macOS, Linux and WSL 2 through Homebrew. Upgrades, uninstall, adoption, the npm backend, configuration lists (`-cl`), templates and per-tool setup flags arrive in later increments; see [What works today](#what-works-today). The spec is [specs/archive/261114-software-factory-manager/](specs/archive/261114-software-factory-manager/).
 
 ## Overview
 
@@ -66,7 +66,7 @@ Every command except `--version` and `--about` also takes `--catalog <dir>` to u
 | [Architecture decision record](docs/architecture-decision-record.md) | Key design decisions and their rationale |
 | [Design](docs/design/) | The full working design for `facman` |
 
-Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/). The active spec is [Increment 1 (MVP)](specs/261114-software-factory-manager/spec.md), and the product PRD now lives with it at [specs/261114-software-factory-manager/software-factory-manager-PRD.md](specs/261114-software-factory-manager/software-factory-manager-PRD.md).
+Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/). The [Increment 1 (MVP) spec](specs/archive/261114-software-factory-manager/spec.md) is complete and archived; the product PRD is archived with it at [specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md](specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md). The code review's fixes are tracked in [software-factory-manager-auto-review-PRD.md](software-factory-manager-auto-review-PRD.md) until their spec is created.
 
 ## Development
 

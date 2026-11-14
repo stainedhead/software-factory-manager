@@ -8,4 +8,4 @@ Platform facts (`Platform`, `Key`, `Distro`) and the startup bootstrap result (`
 
 **Architecture.** Domain layer: no I/O. Imports `version`. Used by `catalog` (install selection), `plan` (warnings) and the bootstrap use case.
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).

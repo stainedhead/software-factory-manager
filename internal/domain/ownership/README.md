@@ -8,4 +8,4 @@ Classifies each catalog package into exactly one ownership state (`absent`, `for
 
 **Architecture.** Domain layer: no I/O. Imports `catalog`, `inventory`, `plan`, `version`. Used by the scan, planning, doctor and status use cases and by detector adapters (which produce `Detection`s).
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).

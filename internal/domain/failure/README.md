@@ -8,4 +8,4 @@ Typed errors that decide exit codes (PRD Appendix H): usage 64, validation 3, bo
 
 **Architecture.** Domain layer: no I/O. Imports nothing. Used by `catalog` and by every use case and driving adapter that maps errors to exit codes.
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).

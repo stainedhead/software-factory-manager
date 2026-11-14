@@ -8,7 +8,13 @@ Active feature specs live here; completed ones move to `specs/archive/` (via `/a
 
 | Spec | Scope | Status |
 |---|---|---|
-| [261114-software-factory-manager/](261114-software-factory-manager/) | `facman` Increment 1 (Phase 0 + Phase 1 MVP): detect, plan and install brew packages safely, from the TUI and the CLI | Implemented (Step 3 done); in documentation and review |
+| none | The Increment 1 review fixes get a spec here next (from `../software-factory-manager-auto-review-PRD.md`) | — |
+
+## Archived specs
+
+| Spec | Scope | Archived |
+|---|---|---|
+| [archive/261114-software-factory-manager/](archive/261114-software-factory-manager/) | `facman` Increment 1 (Phase 0 + Phase 1 MVP): detect, plan and install brew packages safely, from the TUI and the CLI | 2026-11-14, 100% complete; review findings moved to the auto-review PRD |
 
 ## Naming
 

@@ -5,7 +5,7 @@
 **Source PRD:** [software-factory-manager-PRD.md](software-factory-manager-PRD.md)
 **Scope:** Increment 1 (Phase 0 + Phase 1 MVP), see [spec.md](spec.md)
 
-Most product research is already in the design doc ([§2, §2a, §3a, §3b, §4a](../../docs/design/software-factory-installer-design.md)), checked against Homebrew and vendor docs on 2026-11-14. This file records only what Increment 1 implementation needs, and the questions still to settle while building.
+Most product research is already in the design doc ([§2, §2a, §3a, §3b, §4a](../../../docs/design/software-factory-installer-design.md)), checked against Homebrew and vendor docs on 2026-11-14. This file records only what Increment 1 implementation needs, and the questions still to settle while building.
 
 ## Research Questions
 
@@ -135,7 +135,7 @@ Rule: a resolved path under `/usr/bin`, `/bin` or `/usr/sbin` gets provenance `o
 
 ## References
 
-- Design doc: [docs/design/software-factory-installer-design.md](../../docs/design/software-factory-installer-design.md)
+- Design doc: [docs/design/software-factory-installer-design.md](../../../docs/design/software-factory-installer-design.md)
 - Homebrew: `brew info` JSON v2 (docs.brew.sh/Querying-Brew), Tap trust (docs.brew.sh/Tap-Trust), Installation (docs.brew.sh/Installation)
 - XDG Base Directory Specification (specifications.freedesktop.org)
 - `modernc.org/sqlite`, `github.com/charmbracelet/bubbletea`, `github.com/spf13/cobra`, `github.com/creack/pty`

@@ -1,7 +1,7 @@
 # Status: software-factory-manager, Increment 1
 
 **Feature:** software-factory-manager (`facman`), Increment 1 (Phase 0 + Phase 1 MVP)
-**Spec directory:** `specs/261114-software-factory-manager/`
+**Spec directory:** `specs/archive/261114-software-factory-manager/` (archived 2026-11-14; created as `specs/261114-software-factory-manager/`)
 **Created:** 2026-11-14
 **Orchestration dashboard:** [software-factory-manager-status.md](software-factory-manager-status.md)
 
@@ -17,7 +17,7 @@
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
 | 5 | Implementation | Complete | 52 / 52 tasks (+ T-D9). Workstreams A to H done; `make check` green, coverage 96.6% (domain 100%, usecase ≥ 97.2%) |
-| 6 | Completion & archival | Not Started | |
+| 6 | Completion & archival | Complete | Product docs updated (dev-flow Step 4); code review done and its findings handed to the fixes PRD (Steps 5–6); archived to `specs/archive/` (Step 7) |
 
 ## Phase 0 Checklist
 
@@ -85,6 +85,13 @@
 | T-H3 Documentation | ✅ Done | Root README, technical-details, product-details, ADR, getting-started, configuration, new usage-examples; missing folder READMEs added (I-53) |
 | T-H4 Quality gate | ✅ Done | `make check` green; `make cover` 96.6% total, domain 100%, usecase 97.2–100%; `go mod tidy` clean; README audit of `internal`, `cmd`, `testdata`, `specs`, `docs` clean |
 
+## Archival note (dev-flow Step 7, 2026-11-14)
+
+Phases 0 to 6 are complete, and all 52 tasks (+ T-D9) are done, so this spec is archived at 100%. Before this step, Phase 6 still read "Not Started" only because archiving *is* Phase 6. The product docs it needs were updated in Step 4. Two items are carried forward, not left open here:
+
+- **Review findings.** `/review-code` (Step 5) produced 19 findings (0 P0, 3 P1, 16 P2) in `software-factory-manager-auto-review-PRD.md` at the repo root. They are fixed under their own spec (Step 8 onward), not this one.
+- **Acceptance checkboxes.** The I1-1 to I1-16 boxes in spec.md stay unticked. I1-1 to I1-15 pass in CI (status above), but the criterion-to-test evidence table is still review finding FR-017, and I1-16 is J's manual field check after shipping. They are ticked when FR-017 lands.
+
 ## Blockers
 
 None. Open questions for J are listed in [spec.md](spec.md#open-questions); each has a default in force, so none blocks Increment 1.
@@ -104,4 +111,5 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | Fix for macOS CI (075beb9): Ctrl+C before consent was exit 4 when it landed during the scan; now a decline (exit 0), with a deterministic regression test (I-54). |
 | 2026-11-14 | Step 4 (Documentation and User Docs): README, INTENT, product summary/details, technical details, ADR, design v0.4, user-docs (getting started, configuration reference, usage examples) updated for what Increment 1 ships. |
 | 2026-11-14 | Step 3, workstream H: real-Homebrew integration tests, CI `make integration` with macOS-only mutation, docs for Increment 1, folder README audit, quality gate. Phase 5 complete. Deviations I-52, I-53. |
+| 2026-11-14 | Dev-flow Steps 5–7: code review (19 findings → auto-review PRD), PRD review (26 requirements, no P0), Phase 6 complete, spec archived to `specs/archive/261114-software-factory-manager/`. |
 | 2026-11-14 | Step 3, workstream G: `adapter/tui` (Bubble Tea v2) Scan → Plan → Review → Run → Summary, wired as `facman` with no command; `catalog.ResolveSelection`, `session.Run.Resolve`/`PlanSelection`/`Request.Runner`, `execrunner.Handoff`. Deviations I-42 to I-51. |

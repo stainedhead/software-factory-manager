@@ -6,7 +6,7 @@
 
 ## Architecture Overview
 
-`facman` is one static Go binary. Increment 1 maps the design's components ([design §4](../../docs/design/software-factory-installer-design.md#4-architecture)) onto the Clean Architecture layers in [AGENTS.md](../../AGENTS.md). Dependencies point inward only:
+`facman` is one static Go binary. Increment 1 maps the design's components ([design §4](../../../docs/design/software-factory-installer-design.md#4-architecture)) onto the Clean Architecture layers in [AGENTS.md](../../../AGENTS.md). Dependencies point inward only:
 
 ```
 cmd/facman ──► internal/adapter/* ──► internal/usecase/* ──► internal/domain/*

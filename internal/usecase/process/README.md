@@ -9,4 +9,4 @@ Value types of the `CommandRunner` port: `Cmd` (argv, env overrides, dir, intera
 
 **Architecture.** Use case layer: imports `internal/domain/...` (and `usecase/process` for runner types) only; never an adapter. Adapters implement these ports and carry compile-time assertions such as `var _ scan.Detector = (*PathDetector)(nil)`.
 
-Related: [data dictionary §3](../../../specs/261114-software-factory-manager/data-dictionary.md#3-use-case-ports-interfaces-declared-where-consumed), [tasks](../../../specs/261114-software-factory-manager/tasks.md). Back to [internal/usecase](../README.md).
+Related: [data dictionary §3](../../../specs/archive/261114-software-factory-manager/data-dictionary.md#3-use-case-ports-interfaces-declared-where-consumed), [tasks](../../../specs/archive/261114-software-factory-manager/tasks.md). Back to [internal/usecase](../README.md).

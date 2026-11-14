@@ -333,9 +333,9 @@ Increment 1 is done when every criterion I1-1 to I1-15 passes in CI and I1-16 is
 ## References
 
 - Source PRD: [specs/261114-software-factory-manager/software-factory-manager-PRD.md](software-factory-manager-PRD.md), especially *Delivery plan* and Appendices A to L
-- [INTENT.md](../../INTENT.md), [AGENTS.md](../../AGENTS.md)
-- Design: [docs/design/software-factory-installer-design.md](../../docs/design/software-factory-installer-design.md) (§3, §3a, §3b, §4, §4a, §5, §6, §7, §8)
-- [docs/architecture-decision-record.md](../../docs/architecture-decision-record.md)
+- [INTENT.md](../../../INTENT.md), [AGENTS.md](../../../AGENTS.md)
+- Design: [docs/design/software-factory-installer-design.md](../../../docs/design/software-factory-installer-design.md) (§3, §3a, §3b, §4, §4a, §5, §6, §7, §8)
+- [docs/architecture-decision-record.md](../../../docs/architecture-decision-record.md)
 - Spec files: [research.md](research.md), [data-dictionary.md](data-dictionary.md), [architecture.md](architecture.md), [plan.md](plan.md), [tasks.md](tasks.md), [implementation-notes.md](implementation-notes.md), [status.md](status.md)
 
 ## Spec review log (2026-11-14)

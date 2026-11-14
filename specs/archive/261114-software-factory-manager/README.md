@@ -1,8 +1,8 @@
-# specs/261114-software-factory-manager
+# specs/archive/261114-software-factory-manager
 
 Active spec for **Increment 1 (Phase 0 + Phase 1 MVP)** of `facman`, the Agentic Software Factory Manager: detect, plan and install brew packages safely, from the TUI and the CLI. Later increments get their own spec directories.
 
-Back to [specs/](../README.md). Source of intent: [INTENT.md](../../INTENT.md); rules: [AGENTS.md](../../AGENTS.md).
+Back to [specs/archive/](../README.md) and [specs/](../../README.md). Source of intent: [INTENT.md](../../../INTENT.md); rules: [AGENTS.md](../../../AGENTS.md).
 
 | File | Purpose |
 |---|---|

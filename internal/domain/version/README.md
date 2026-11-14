@@ -8,4 +8,4 @@ Parses and compares the version strings tools print (`2.1.4`, `v24.11.0`, `1.7.1
 
 **Architecture.** Domain layer: no I/O. Imports nothing. Used by `platform` (glibc), `ownership` (`satisfies_if`, `reject_if`).
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).

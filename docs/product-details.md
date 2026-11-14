@@ -1,6 +1,6 @@
 # Product Details
 
-This page describes the settled behaviour of `facman`, the **Agentic Software Factory Manager**. It covers what Increment 1 (Phase 0 and Phase 1, the MVP) ships today, and where the rest of the product is designed. Requirements and acceptance criteria are in the [Increment 1 spec](../specs/261114-software-factory-manager/spec.md). The full product is in the [PRD](../specs/261114-software-factory-manager/software-factory-manager-PRD.md) and the [design](design/software-factory-installer-design.md).
+This page describes the settled behaviour of `facman`, the **Agentic Software Factory Manager**. It covers what Increment 1 (Phase 0 and Phase 1, the MVP) ships today, and where the rest of the product is designed. Requirements and acceptance criteria are in the [Increment 1 spec](../specs/archive/261114-software-factory-manager/spec.md). The full product is in the [PRD](../specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md) and the [design](design/software-factory-installer-design.md).
 
 ## Increment 1: what ships
 

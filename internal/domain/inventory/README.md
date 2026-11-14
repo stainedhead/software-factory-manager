@@ -8,4 +8,4 @@ What facman keeps about what it installed: `Record` (only `managed` or `adopted`
 
 **Architecture.** Domain layer: no I/O. Imports `catalog`, `plan`. Used by `ownership` and by `adapter/sqlite`, which stores these types (data-dictionary §4).
 
-Related: [data dictionary](../../../specs/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
+Related: [data dictionary](../../../specs/archive/261114-software-factory-manager/data-dictionary.md), [architecture](../../../specs/archive/261114-software-factory-manager/architecture.md). Back to [internal/domain](../README.md).
