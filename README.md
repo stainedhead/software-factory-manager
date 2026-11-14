@@ -1,10 +1,14 @@
 # software-factory-manager
 
+**Agentic Software Factory Manager** — the home of `facman`.
+
 > **Status:** design complete in draft (v0.3), implementation not started. Sections marked _TBD_ are filled in as the product takes shape.
 
 ## Overview
 
-`software-factory-manager` builds **`facman`**, a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
+`software-factory-manager` builds **`facman`**, the **Agentic Software Factory Manager**: a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
+
+The repo is named for what it is, a software factory manager. The binary is `facman`, and `facman --version` and `facman --about` both show the full name, "Agentic Software Factory Manager".
 
 Start with [INTENT.md](INTENT.md) for purpose, scope and key decisions, then [docs/product-summary.md](docs/product-summary.md) and the full [design](docs/design/software-factory-installer-design.md).
 

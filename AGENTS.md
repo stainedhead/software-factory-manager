@@ -1,15 +1,15 @@
 # AGENTS.md
 
-Rules for AI agents and human contributors working in `software-factory-manager` (Go).
+Rules for AI agents and human contributors working in `software-factory-manager` (Go). The repo builds one application, **`facman`** — the **Agentic Software Factory Manager** (entry point `cmd/facman`). Always use that full name in user-visible text; it comes from `internal/domain/appinfo`, so never hard-code it elsewhere. The design's old working name `sfi` is retired — never use it.
 
-Before changing code, read the root `README.md`, the `README.md` in the folders you touch, and `docs/technical-details.md`.
+Before changing code, read `INTENT.md` (purpose, scope, key decisions), the root `README.md`, the `README.md` in the folders you touch, and `docs/technical-details.md`. The full working design is in `docs/design/`; the per-tool guides are in `user-docs/`.
 
 ## Architecture — Clean Architecture
 
 Dependencies point inward only:
 
 ```
-cmd/            entry points (thin: wiring and flags only)
+cmd/facman/      entry point for the `facman` binary (thin: wiring and flags only)
 internal/
   domain/       entities, value objects, domain errors — no external imports
   usecase/      application logic; defines the interfaces it needs (ports)
@@ -27,7 +27,7 @@ Use the `Makefile`; do not invent ad-hoc invocations.
 
 | Command | Purpose |
 |---|---|
-| `make build` | Compile binaries from `./cmd/...` into `bin/` |
+| `make build` | Compile binaries from `./cmd/...` into `bin/` (produces `bin/facman`) |
 | `make test` | `go test -race ./...` |
 | `make lint` | `golangci-lint run` (v2, config in `.golangci.yml`) |
 | `make fmt` | `gofmt -w .` |
@@ -62,13 +62,15 @@ Documentation is part of the change. A change is not done until the affected doc
 | `docs/product-summary.md` | Product/stakeholders | One-page what and why | Scope or positioning changes |
 | `docs/product-details.md` | Product/engineering | Features, behaviour, requirements | A feature is added, changed, or removed |
 | `docs/technical-details.md` | Engineers | Components, data flow, interfaces, dependencies | Structure, interfaces, or dependencies change |
+| `INTENT.md` (root) | Everyone | One-page purpose, scope, and key decisions | Purpose, scope, or a key decision changes |
+| `docs/design/` | Engineers | Full working design for `facman` | The design changes; keep in step with the code |
 | `docs/architecture-decision-record.md` | Engineers | Dated log of architectural decisions and rationale | Any significant design decision is made or reversed |
 | `user-docs/` | Users/operators | Getting started, configuration, adoption guides | User-visible behaviour or configuration changes |
 | `specs/` | Engineers | Active feature specs; finished ones go to `specs/archive/` | Per the specification workflow below |
 
 ## README.md at every level
 
-- Keep a `README.md` at the repo root **and in every directory of the package hierarchy** (`cmd/<name>/`, `internal/<layer>/`, `internal/<layer>/<package>/`, `docs/`, `user-docs/`, `specs/`).
+- Keep a `README.md` at the repo root **and in every directory of the package hierarchy** (`cmd/`, `cmd/facman/`, `internal/<layer>/`, `internal/<layer>/<package>/`, `docs/`, `docs/design/`, `user-docs/`, `specs/`).
 - Each folder README states: the folder's purpose, its key files/subpackages, how it fits the architecture (what it depends on and what depends on it), and links to related docs.
 - When you add, remove, move, or change the responsibility of a folder or package, update its README and its parent's README in the same change. Create the README when you create the folder.
 - **Read the READMEs first** when learning or navigating the codebase: start at the root `README.md`, then the README of each folder you work in. Treat them, together with `docs/`, as the source of truth for intent; if code and docs disagree, fix whichever is wrong.

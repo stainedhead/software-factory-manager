@@ -2,9 +2,9 @@
 
 ## What we are building
 
-**`facman`** (the software-factory manager) is a single Go binary with a terminal UI and a headless CLI. It gives every lab machine the same toolset for taking part in one or more software factories, and it keeps that toolset current without trampling what developers already installed.
+**`facman`**, the **Agentic Software Factory Manager**, is a single Go binary with a terminal UI and a headless CLI. It gives every lab machine the same toolset for taking part in one or more software factories, and it keeps that toolset current without trampling what developers already installed.
 
-The repo is `software-factory-manager`. **The application is built as `facman`.** The binary, the command users type, and the entry point (`cmd/facman`) all use that name. The design was drafted under the working name `sfi`, and that name is retired.
+The repo is `software-factory-manager`, and the product's full name is **Agentic Software Factory Manager**. **The application is built as `facman`.** The full name is part of the binary: `facman --version` and `facman --about` print it (it lives in `internal/domain/appinfo`). The binary, the command users type, and the entry point (`cmd/facman`) all use that name. The design was drafted under the working name `sfi`, and that name is retired.
 
 ## Who it is for
 

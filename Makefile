@@ -1,7 +1,9 @@
 .PHONY: build test lint fmt cover check
 
+LDFLAGS := -X main.version=$(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+
 build:
-	go build -o bin/ ./cmd/...
+	go build -ldflags "$(LDFLAGS)" -o bin/ ./cmd/...
 
 test:
 	go test -race ./...
