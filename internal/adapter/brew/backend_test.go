@@ -45,14 +45,23 @@ func testWorld(prefix string) fakeworld.World {
 			"gh":      {Version: "2.62.0"},
 		},
 		Casks: map[string]fakeworld.Cask{
-			"claude-code":            {Version: "2.1.4", Artifacts: []map[string]any{{"binary": []any{"claude"}}}},
+			// Installed casks report each link's absolute path in a "target"
+			// key next to the stanza (Homebrew 7.0.11, captured on CI).
+			"claude-code": {Version: "2.1.4", Artifacts: []map[string]any{{"binary": []any{"claude"}, "target": prefix + "/bin/claude"}}},
+			"firefox": {Version: "159.0", Artifacts: []map[string]any{
+				{"uninstall": []any{map[string]any{"quit": "org.mozilla.firefox"}}},
+				{"app": []any{"Firefox.app"}, "target": "/Applications/Firefox.app"},
+				{"command_wrapper": []any{"firefox", map[string]any{"executable": "/Applications/Firefox.app/Contents/MacOS/firefox"}}, "target": prefix + "/bin/firefox"},
+			}},
+			// Not installed: no target keys, so link paths are derived.
+			"wrapped":                {Version: "1.0", Artifacts: []map[string]any{{"command_wrapper": []any{"wrapped", map[string]any{"executable": "/Apps/W.app/w"}}}}},
 			"iterm2":                 {Version: "3.5", Artifacts: []map[string]any{{"app": []any{"iTerm.app", map[string]any{"target": "iTerm2.app"}}}}},
 			"session-manager-plugin": {Version: "1.2", Artifacts: []map[string]any{{"pkg": []any{"SessionManagerPlugin.pkg"}}}},
 			"stablyai/orca/orca":     {Version: "1.4.0", Artifacts: []map[string]any{{"app": []any{"Orca.app"}}}},
 		},
 		Installed: fakeworld.Installed{
 			Formulae: map[string]string{"jq": "1.7.1", "node@24": "24.11.1"},
-			Casks:    map[string]string{"claude-code": "2.1.4", "stablyai/orca/orca": "1.4.0"},
+			Casks:    map[string]string{"claude-code": "2.1.4", "firefox": "159.0", "stablyai/orca/orca": "1.4.0"},
 		},
 	}}
 }
@@ -70,6 +79,7 @@ func TestDetector(t *testing.T) {
 		formulaEntry("node", "node@24", "node"),
 		formulaEntry("gh", "gh", "gh"),
 		caskEntry("claude-code", "claude-code", "claude"),
+		{ID: "firefox", Kind: catalog.KindGUI, Install: map[platform.Key][]catalog.InstallStep{platform.Darwin: {{Backend: catalog.BackendBrewCask, ID: "firefox"}}}},
 		orcaEntry(),
 		{ID: "paperclip", Kind: catalog.KindCLI, Install: map[platform.Key][]catalog.InstallStep{platform.Darwin: {{Backend: catalog.BackendNPM, ID: "paperclipai"}}}},
 		{ID: "bare-orca", Kind: catalog.KindGUI, Install: map[platform.Key][]catalog.InstallStep{platform.Darwin: {{Backend: catalog.BackendBrewCask, ID: "orca"}}}},
@@ -83,10 +93,12 @@ func TestDetector(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[string]ownership.Detection{
-		"jq":          {Found: true, Provenance: catalog.ProvBrew, Version: "1.7.1", BackendRef: "brew-formula:jq"},
-		"node":        {Found: true, Provenance: catalog.ProvBrew, Version: "24.11.1", BackendRef: "brew-formula:node@24"},
-		"gh":          {},
-		"claude-code": {Found: true, Provenance: catalog.ProvBrewCask, Version: "2.1.4", BackendRef: "brew-cask:claude-code"},
+		"jq":   {Found: true, Provenance: catalog.ProvBrew, Version: "1.7.1", BackendRef: "brew-formula:jq"},
+		"node": {Found: true, Provenance: catalog.ProvBrew, Version: "24.11.1", BackendRef: "brew-formula:node@24"},
+		"gh":   {},
+		// The path Homebrew reports for the link is the detection's path.
+		"claude-code": {Found: true, Provenance: catalog.ProvBrewCask, Version: "2.1.4", BackendRef: "brew-cask:claude-code", Path: "/opt/homebrew/bin/claude"},
+		"firefox":     {Found: true, Provenance: catalog.ProvBrewCask, Version: "159.0", BackendRef: "brew-cask:firefox", Path: "/opt/homebrew/bin/firefox"},
 		"orca":        {Found: true, Provenance: catalog.ProvBrewCask, Version: "1.4.0", BackendRef: "brew-cask:stablyai/orca/orca"},
 		"bare-orca":   {},
 	}
@@ -293,6 +305,10 @@ func TestLinkPaths(t *testing.T) {
 		{"cask binary", cask, caskEntry("claude-code", "claude-code", "claude"), []string{"/opt/homebrew/bin/claude"}},
 		{"cask app with target", cask, catalog.Entry{ID: "iterm2", Kind: catalog.KindGUI, Install: map[platform.Key][]catalog.InstallStep{platform.Darwin: {{Backend: catalog.BackendBrewCask, ID: "iterm2"}}}}, []string{"/Apps/iTerm2.app"}},
 		{"tap item before tap uses detect.commands (D-9)", cask, orcaEntry(), []string{"/opt/homebrew/bin/orca"}},
+		// Homebrew's own target is authoritative (an installed cask, doctor's whole-catalog check).
+		{"reported targets", cask, catalog.Entry{ID: "firefox", Kind: catalog.KindGUI, Install: map[platform.Key][]catalog.InstallStep{platform.Darwin: {{Backend: catalog.BackendBrewCask, ID: "firefox"}}}},
+			[]string{"/Applications/Firefox.app", "/opt/homebrew/bin/firefox"}},
+		{"command wrapper without target", cask, caskEntry("wrapped", "wrapped"), []string{"/opt/homebrew/bin/wrapped"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

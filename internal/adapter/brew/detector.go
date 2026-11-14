@@ -77,7 +77,7 @@ func lookup(info Info, s catalog.InstallStep) (ownership.Detection, bool) {
 		if !ok || c.Installed == nil {
 			return ownership.Detection{}, false
 		}
-		d.Provenance, d.Version = catalog.ProvBrewCask, c.Version()
+		d.Provenance, d.Version, d.Path = catalog.ProvBrewCask, c.Version(), caskPath(c)
 		return d, true
 	}
 	f, ok := info.Formula(s.ID)
@@ -86,6 +86,23 @@ func lookup(info Info, s catalog.InstallStep) (ownership.Detection, bool) {
 	}
 	d.Provenance, d.Version = catalog.ProvBrew, f.Version()
 	return d, true
+}
+
+// caskPath is the path Homebrew reports for an installed cask's main link:
+// the first binary or command_wrapper target, else the first app target,
+// else "" (Homebrew 6 shapes, or nothing linked).
+func caskPath(c Cask) string {
+	app := ""
+	for _, l := range c.Links() {
+		switch {
+		case l.Target == "":
+		case l.Kind == "binary" || l.Kind == "command_wrapper":
+			return l.Target
+		case l.Kind == "app" && app == "":
+			app = l.Target
+		}
+	}
+	return app
 }
 
 // Ref is the backend reference recorded for a brew step, for example

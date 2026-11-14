@@ -143,3 +143,87 @@ func TestParseTapsAndTrusted(t *testing.T) {
 		}
 	}
 }
+
+// Regression (review FR-003, CI on Homebrew 7.0.11): an installed cask's
+// artifacts carry the absolute link path in a "target" key next to the
+// stanza, and command_wrapper stanzas link a wrapper into {prefix}/bin.
+// info-installed-real.json is captured from `brew info --json=v2
+// --installed` on the macOS CI runner (trimmed to five formulae).
+func TestParseInfoHomebrew7Installed(t *testing.T) {
+	info, err := ParseInfo(fixture(t, "info-installed-real.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		token      string
+		apps, bins []string
+		links      []Link
+		sudo       bool
+	}{
+		{"azure-cli", nil, []string{"az"}, []Link{
+			{Kind: "binary", Name: "az", Target: "/opt/homebrew/bin/az"},
+			{Kind: "bash_completion", Name: "az", Target: "/opt/homebrew/etc/bash_completion.d/az"},
+			{Kind: "zsh_completion", Name: "_az", Target: "/opt/homebrew/share/zsh/site-functions/_az"},
+			{Kind: "fish_completion", Name: "az.fish", Target: "/opt/homebrew/share/fish/vendor_completions.d/az.fish"},
+		}, false},
+		{"firefox", []string{"Firefox.app"}, []string{"firefox"}, []Link{
+			{Kind: "app", Name: "Firefox.app", Target: "/Applications/Firefox.app"},
+			{Kind: "command_wrapper", Name: "firefox", Target: "/opt/homebrew/bin/firefox"},
+		}, false},
+		{"google-chrome", []string{"Google Chrome.app"}, nil, []Link{
+			{Kind: "app", Name: "Google Chrome.app", Target: "/Applications/Google Chrome.app"},
+		}, false},
+		{"session-manager-plugin", nil, []string{"session-manager-plugin"}, []Link{
+			{Kind: "binary", Name: "session-manager-plugin", Target: "/opt/homebrew/bin/session-manager-plugin"},
+		}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.token, func(t *testing.T) {
+			c, ok := info.Cask(tt.token)
+			if !ok || c.Version() == "" {
+				t.Fatalf("cask %s = %+v, %v", tt.token, c, ok)
+			}
+			if !slices.Equal(c.Apps(), tt.apps) || !slices.Equal(c.Binaries(), tt.bins) || c.NeedsSudo() != tt.sudo {
+				t.Errorf("apps=%v bins=%v sudo=%v", c.Apps(), c.Binaries(), c.NeedsSudo())
+			}
+			if !slices.Equal(c.Links(), tt.links) {
+				t.Errorf("links = %+v\nwant    %+v", c.Links(), tt.links)
+			}
+		})
+	}
+	for _, f := range []struct {
+		id      string
+		kegOnly bool
+	}{{"jq", false}, {"gh", false}, {"git", false}, {"node@24", true}, {"sqlite", true}} {
+		got, ok := info.Formula(f.id)
+		if !ok || got.KegOnly != f.kegOnly || got.Version() == "" {
+			t.Errorf("formula %s = %+v, %v", f.id, got, ok)
+		}
+	}
+}
+
+func TestCaskLinksEdgeCases(t *testing.T) {
+	info, err := ParseInfo([]byte(`{"formulae":[],"casks":[{"token":"x","full_token":"x","tap":"homebrew/cask","installed":"1","artifacts":[
+		{"app":["A.app"],"pkg":["x.pkg"]},
+		{"binary":["bin/rel"],"target":"relative/path"},
+		{"binary":["bin/ctl"],"target":"/opt/x/bin/ctl\u001b[2K"},
+		{"binary":["bin/num"],"target":5},
+		{"command_wrapper":[{"executable":"/x"}]},
+		{"manpage":["man/x.1"]},
+		{"zap":[{"trash":"~/.x"}]},
+		{"binary":["$APPDIR/X.app/bin/x",{"target":"xx"}]}
+	]}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := info.Casks[0].Links()
+	want := []Link{
+		{Kind: "binary", Name: "rel"},
+		{Kind: "binary", Name: "ctl"},
+		{Kind: "binary", Name: "num"},
+		{Kind: "binary", Name: "xx"},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("links = %+v\nwant    %+v", got, want)
+	}
+}

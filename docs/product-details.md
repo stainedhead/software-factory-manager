@@ -44,7 +44,7 @@ Every command takes `--json` (report schema v1) and `--catalog <dir>`. Full flag
 
 - **States:** `absent`, `managed`, `adopted` (shown; adopting arrives in Increment 2), `foreign`, `drifted`, `duplicate`, `conflict`, `unavailable-here`.
 - **Conflicts:** before planning a brew item, `facman` checks the paths it would link. Unowned files there make it `conflict`, with evidence (the `ls -l` line, file type, symlink target, owner class) and a fix hint. It is left out with its dependents, and the run exits 1. `facman` never uses `--force` and never runs `brew link`.
-- **Tap trust (Homebrew 6):** a third-party tap item gets three separate, reviewed actions: `brew tap`, `brew trust --cask <tap>/<item>` (item level, never the whole tap) and the install. `HOMEBREW_NO_REQUIRE_TAP_TRUST*` is removed from every child.
+- **Tap trust (Homebrew 6 and later; CI runs Homebrew 7.0.11):** a third-party tap item gets three separate, reviewed actions: `brew tap`, `brew trust --cask <tap>/<item>` (item level, never the whole tap) and the install. `HOMEBREW_NO_REQUIRE_TAP_TRUST*` is removed from every child.
 - **Node:** `node@24` is installed keg-only and never force-linked. Children get its `bin` first on `PATH`, and the Summary prints the line for your shell profile.
 - **Homebrew bootstrap:** if Homebrew is missing, the plan starts with the installer. The installer is downloaded to a private temp file, marked "unverified script" (Homebrew publishes no checksum) and run with the terminal. After it runs, `facman` re-detects and only drops actions that are no longer needed.
 - **Concurrency:** one mutating run at a time (`flock`). Read-only commands never block.

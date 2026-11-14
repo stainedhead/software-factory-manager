@@ -34,7 +34,7 @@
 | T-1b | FR-001b | P1 | ✅ Done | Brew option allow-list and `forceLike` in `plan.Validate`; testkit oracle hardened (RF-4) |
 | T-1c | FR-001c | P1 | ✅ Done | `Command.String` escapes non-printables; TUI golden `review-escaped`, headless test (RF-5) |
 | T-2 | FR-002 | P1 | ✅ Done | Relative/empty PATH entries skipped in `execrunner`, `detect` and `brew.Locate`; `path-relative-entry` warning; e2e `TestRelativePathEntryNeverRuns` (RF-6, RF-7) |
-| T-3 | FR-003 | P1 | 🟡 Partial (rest deferred) | Shape checker + read-only real-brew contract test (CI logs, `FACMAN_CAPTURE_DIR`); `user-docs/field-check.md` clean-machine and capture steps. Container bootstrap job and captured fixtures deferred (RF-8, RF-9) |
+| T-3 | FR-003 | P1 | 🟡 Partial (rest deferred) | Shape checker + read-only real-brew contract test; it found the Homebrew 7.0.11 cask `target` shape on CI, parser fixed (RF-12); field-check procedure. Container bootstrap job deferred (RF-8, RF-9) |
 | T-1d | FR-001d | P2 | ✅ Done | `statedir.LogPath` sanitizes the package ID; `TestLogPathStaysInLogs` |
 | T-4 | FR-004 | P2 | ⬜ Not started | |
 | T-5a | FR-005a | P2 | ⬜ Not started | |

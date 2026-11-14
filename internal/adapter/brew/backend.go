@@ -170,8 +170,9 @@ func (b *Backend) caskNeedsSudo(ctx context.Context, step catalog.InstallStep) b
 }
 
 // LinkPaths returns the paths installing step would write (FR-015): for a
-// cask, its binary targets under {prefix}/bin and app bundles under the
-// app dir, from brew info; for a formula, each detect.commands name under
+// cask, every link brew info reports, at the absolute target Homebrew gives
+// for an installed cask (Homebrew 7), else derived: binary and
+// command_wrapper names under {prefix}/bin, app bundles under the app dir; for a formula, each detect.commands name under
 // {prefix}/bin, or nothing when the formula is keg-only. When brew info
 // cannot be read (a tap item before its tap is added, D-9), the entry's
 // detect.commands under {prefix}/bin are used. With Homebrew missing there
@@ -207,11 +208,18 @@ func (b *Backend) LinkPaths(ctx context.Context, entry catalog.Entry, step catal
 		return commandPaths(), nil
 	}
 	var out []string
-	for _, bin := range c.Binaries() {
-		out = append(out, filepath.Join(t.Prefix, "bin", bin))
-	}
-	for _, app := range c.Apps() {
-		out = append(out, filepath.Join(b.opts.AppDir, app))
+	for _, l := range c.Links() {
+		p := l.Target // Homebrew's own answer for an installed cask
+		switch {
+		case p != "":
+		case l.Kind == "app":
+			p = filepath.Join(b.opts.AppDir, l.Name)
+		default: // binary, command_wrapper
+			p = filepath.Join(t.Prefix, "bin", l.Name)
+		}
+		if !slices.Contains(out, p) {
+			out = append(out, p)
+		}
 	}
 	return out, nil
 }

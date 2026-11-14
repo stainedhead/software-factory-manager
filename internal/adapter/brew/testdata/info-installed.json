@@ -13,12 +13,12 @@
   "casks": [
     { "token": "claude-code", "full_token": "claude-code", "tap": "homebrew/cask",
       "installed": "2.1.4",
-      "artifacts": [ { "binary": [ "claude" ] }, { "zap": [ { "trash": "~/.claude" } ] } ] },
+      "artifacts": [ { "binary": [ "claude" ], "target": "/opt/homebrew/bin/claude" }, { "zap": [ { "trash": "~/.claude" } ] } ] },
     { "token": "orca", "full_token": "stablyai/orca/orca", "tap": "stablyai/orca",
       "installed": "1.4.0",
-      "artifacts": [ { "app": [ "Orca.app" ] }, { "binary": [ "$APPDIR/Orca.app/Contents/Resources/bin/orca", { "target": "orca" } ] } ] },
+      "artifacts": [ { "app": [ "Orca.app" ], "target": "/Applications/Orca.app" }, { "binary": [ "$APPDIR/Orca.app/Contents/Resources/bin/orca" ], "target": "/opt/homebrew/bin/orca" } ] },
     { "token": "visual-studio-code", "full_token": "visual-studio-code", "tap": "homebrew/cask",
       "installed": "1.95.3",
-      "artifacts": [ { "app": [ "Visual Studio Code.app" ] }, { "binary": [ "$APPDIR/Visual Studio Code.app/Contents/Resources/app/bin/code", { "target": "code" } ] } ] }
+      "artifacts": [ { "app": [ "Visual Studio Code.app" ], "target": "/Applications/Visual Studio Code.app" }, { "binary": [ "$APPDIR/Visual Studio Code.app/Contents/Resources/app/bin/code" ], "target": "/opt/homebrew/bin/code" } ] }
   ]
 }

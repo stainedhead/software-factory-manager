@@ -61,8 +61,23 @@ func infoShapeProblems(data []byte) []string {
 		want(where, c, "artifacts", "array", false)
 		arts, _ := c["artifacts"].([]any)
 		for j, y := range arts {
-			if a, ok := y.(map[string]any); !ok || len(a) != 1 {
-				problems = append(problems, fmt.Sprintf("%s.artifacts[%d]: want a one-key object, got %v", where, j, y))
+			// One stanza key, plus (Homebrew 7, installed casks) an
+			// absolute "target" next to it.
+			a, ok := y.(map[string]any)
+			stanzas := 0
+			for k := range a {
+				if k != "target" {
+					stanzas++
+				}
+			}
+			if !ok || stanzas != 1 {
+				problems = append(problems, fmt.Sprintf("%s.artifacts[%d]: want one stanza key (plus an optional target), got %v", where, j, y))
+				continue
+			}
+			if t, has := a["target"]; has {
+				if ts, isStr := t.(string); !isStr || !strings.HasPrefix(ts, "/") {
+					problems = append(problems, fmt.Sprintf("%s.artifacts[%d].target: %v, want an absolute path", where, j, t))
+				}
 			}
 		}
 	}
@@ -91,7 +106,10 @@ func TestInfoShape(t *testing.T) {
 		{`{"formulae": [{"name": "jq", "full_name": "jq", "tap": "homebrew/core", "keg_only": "no", "linked_keg": null, "installed": []}], "casks": []}`, "keg_only: string, want bool"},
 		{`{"formulae": [{"name": "jq", "full_name": "jq", "keg_only": false, "linked_keg": null, "installed": [{"version": 1}]}], "casks": []}`, "installed[0].version: float64, want string"},
 		{`{"formulae": [], "casks": [{"token": "x", "full_token": "x", "tap": null, "installed": 2, "artifacts": [{"app": [], "pkg": []}]}]}`, "installed: float64"},
-		{`{"formulae": [], "casks": [{"token": "x", "full_token": "x", "tap": null, "installed": null, "artifacts": [{"app": [], "pkg": []}]}]}`, "one-key object"},
+		{`{"formulae": [], "casks": [{"token": "x", "full_token": "x", "tap": null, "installed": null, "artifacts": [{"app": [], "pkg": []}]}]}`, "want one stanza key"},
+		{`{"formulae": [], "casks": [{"token": "x", "full_token": "x", "tap": null, "installed": "1", "artifacts": [{"target": "/x"}]}]}`, "want one stanza key"},
+		{`{"formulae": [], "casks": [{"token": "x", "full_token": "x", "tap": null, "installed": "1", "artifacts": [{"binary": ["x"], "target": 5}]}]}`, "want an absolute path"},
+		{`{"formulae": [], "casks": [{"token": "x", "full_token": "x", "tap": null, "installed": "1", "artifacts": [{"binary": ["x"], "target": "bin/x"}]}]}`, "want an absolute path"},
 		{`{"formulae": [], "casks": [{"token": "x", "tap": null, "installed": null, "artifacts": []}]}`, `missing "full_token"`},
 	}
 	for _, tt := range bad {

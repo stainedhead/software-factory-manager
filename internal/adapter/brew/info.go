@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
+	"unicode"
 )
 
 // Info is the document `brew info --json=v2` prints (research.md RQ-1).
@@ -68,13 +70,22 @@ func (c Cask) Version() string {
 	return *c.Installed
 }
 
-// Apps returns the app bundle names the cask installs (target names when
-// the stanza has one).
-func (c Cask) Apps() []string { return c.targets("app") }
+// Apps returns the app bundle names the cask installs.
+func (c Cask) Apps() []string { return c.names("app") }
 
-// Binaries returns the names the cask links into {prefix}/bin (the target,
-// else the base name of the source).
-func (c Cask) Binaries() []string { return c.targets("binary") }
+// Binaries returns the names the cask links into {prefix}/bin: binary
+// stanzas and command_wrapper scripts.
+func (c Cask) Binaries() []string { return c.names("binary", "command_wrapper") }
+
+func (c Cask) names(kinds ...string) []string {
+	var out []string
+	for _, l := range c.Links() {
+		if slices.Contains(kinds, l.Kind) {
+			out = append(out, l.Name)
+		}
+	}
+	return out
+}
 
 // NeedsSudo reports whether the cask runs a pkg or installer artifact,
 // which may prompt for sudo.
@@ -90,34 +101,96 @@ func (c Cask) NeedsSudo() bool {
 	return false
 }
 
-// targets reads stanzas of the form [source] or [source, {"target": name}].
-func (c Cask) targets(kind string) []string {
-	var out []string
+// Link is one path a cask artifact writes.
+type Link struct {
+	// Kind is the stanza: app, binary, command_wrapper, bash_completion, …
+	Kind string
+	// Name is the base name of the link (of Target when there is one).
+	Name string
+	// Target is the absolute path Homebrew reports for the link. Homebrew 7
+	// puts it in a "target" key next to the stanza for an installed cask;
+	// it is "" when not reported (a cask that is not installed).
+	Target string
+}
+
+// linkKinds are the stanzas whose link path facman derives when Homebrew
+// reports no target: app bundles go to the app dir, the others to
+// {prefix}/bin.
+var linkKinds = []string{"app", "binary", "command_wrapper"}
+
+// Links returns the paths the cask's artifacts write, in order. It reads
+// both shapes: Homebrew 7's installed form {"<kind>": [source, …],
+// "target": "/abs/path"} (any stanza with a target counts), and the
+// uninstalled form {"<kind>": [source, {"target": name}]} for app, binary
+// and command_wrapper stanzas, whose name is derived (command_wrapper's
+// first element is the wrapper's name). An object with more than one
+// stanza key, or a target that is not an absolute path without control
+// characters, is not trusted as a link path.
+func (c Cask) Links() []Link {
+	var out []Link
 	for _, a := range c.Artifacts {
-		raw, ok := a[kind]
+		kind, raw, ok := stanza(a)
 		if !ok {
 			continue
 		}
-		var parts []json.RawMessage
-		if err := json.Unmarshal(raw, &parts); err != nil || len(parts) == 0 {
+		l := Link{Kind: kind, Name: derivedName(kind, raw)}
+		if t, ok := siblingTarget(a); ok {
+			l.Target, l.Name = t, path.Base(t)
+		}
+		if l.Target == "" && (l.Name == "" || !slices.Contains(linkKinds, kind)) {
 			continue
 		}
-		var source string
-		if err := json.Unmarshal(parts[0], &source); err != nil || source == "" {
-			continue
-		}
-		name := path.Base(source)
-		if len(parts) > 1 {
-			var opts struct {
-				Target string `json:"target"`
-			}
-			if err := json.Unmarshal(parts[1], &opts); err == nil && opts.Target != "" {
-				name = path.Base(opts.Target)
-			}
-		}
-		out = append(out, name)
+		out = append(out, l)
 	}
 	return out
+}
+
+// stanza returns the artifact's one stanza key other than "target".
+func stanza(a map[string]json.RawMessage) (string, json.RawMessage, bool) {
+	kind, n := "", 0
+	for k := range a {
+		if k != "target" {
+			kind, n = k, n+1
+		}
+	}
+	if n != 1 {
+		return "", nil, false
+	}
+	return kind, a[kind], true
+}
+
+func siblingTarget(a map[string]json.RawMessage) (string, bool) {
+	raw, ok := a["target"]
+	if !ok {
+		return "", false
+	}
+	var t string
+	if err := json.Unmarshal(raw, &t); err != nil || !path.IsAbs(t) || strings.IndexFunc(t, unicode.IsControl) >= 0 {
+		return "", false
+	}
+	return path.Clean(t), true
+}
+
+// derivedName reads [source] or [source, {"target": name}].
+func derivedName(kind string, raw json.RawMessage) string {
+	var parts []json.RawMessage
+	if err := json.Unmarshal(raw, &parts); err != nil || len(parts) == 0 {
+		return ""
+	}
+	var source string
+	if err := json.Unmarshal(parts[0], &source); err != nil || source == "" {
+		return ""
+	}
+	name := path.Base(source)
+	if kind != "command_wrapper" && len(parts) > 1 {
+		var opts struct {
+			Target string `json:"target"`
+		}
+		if err := json.Unmarshal(parts[1], &opts); err == nil && opts.Target != "" {
+			name = path.Base(opts.Target)
+		}
+	}
+	return name
 }
 
 // ParseInfo decodes a brew info --json=v2 document.

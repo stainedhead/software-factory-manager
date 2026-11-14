@@ -80,7 +80,7 @@ Not installed:
 
 ## Third-party taps and trust (Orca)
 
-Orca lives in the `stablyai/orca` tap. Homebrew 6 requires trust for third-party taps, so the plan shows three separate steps, all covered by your one consent:
+Orca lives in the `stablyai/orca` tap. Homebrew 6 and later require trust for third-party taps, so the plan shows three separate steps, all covered by your one consent:
 
 ```
  7. orca  brew tap stablyai/orca

@@ -137,7 +137,7 @@ What happened: `brew install --cask claude-code` failed with *"It seems there is
 
 How `facman` handles it:
 
-- **Pre-flight, before planning.** For every brew item in the plan, `facman` lists the paths the formula or cask will link (`binary`, `app`, and `bin/` links from `brew info --json=v2`) and checks each one. If something is already there, it classifies it:
+- **Pre-flight, before planning.** For every brew item in the plan, `facman` lists the paths the formula or cask will link (`binary`, `app`, `command_wrapper` and `bin/` links from `brew info --json=v2`; for an installed cask Homebrew 7 reports each link's absolute `target`, which is used as is) and checks each one. If something is already there, it classifies it:
   - **owned by this package** (fine)
   - **owned by another brew item** (a real brew conflict, for example `docker-desktop` against `rancher`)
   - **owned by npm** (it resolves into `{brew_prefix}/lib/node_modules/...` or the npm prefix, and is listed by `npm ls -g`)
