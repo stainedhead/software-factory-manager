@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -67,5 +68,51 @@ func TestCatalogValuesRejectedAtLoad(t *testing.T) {
 			}
 			assertOnlyLocateProbes(t, f)
 		})
+	}
+}
+
+// Review FR-002: with "." first in PATH, a node (or brew) in the current
+// directory is never run, and scan warns about the relative entry.
+func TestRelativePathEntryNeverRuns(t *testing.T) {
+	f := newFixture(t, machine{})
+	// Planted programs in the current directory leave a marker when run.
+	cwd, marker := t.TempDir(), filepath.Join(t.TempDir(), "ran")
+	for _, name := range []string{"node", "brew", "git", "jq"} {
+		mustWrite(t, filepath.Join(cwd, name), "#!/bin/sh\necho \"$0 $*\" >> "+marker+"\necho v99.0.0\n")
+		if err := os.Chmod(filepath.Join(cwd, name), 0o755); err != nil { //nolint:gosec // test executable
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(cwd)
+	for i, kv := range f.o.Environ {
+		if v, ok := strings.CutPrefix(kv, "PATH="); ok {
+			f.o.Environ[i] = "PATH=." + string(os.PathListSeparator) + v
+		}
+	}
+	f.want(0, f.run("scan", "--json"))
+	if b, err := os.ReadFile(marker); err == nil {
+		t.Errorf("programs ran from the current directory:\n%s", b)
+	}
+	doc := f.doc()
+	if p, _ := doc["bootstrap"].(map[string]any)["homebrew"].(map[string]any)["path"].(string); !filepath.IsAbs(p) {
+		t.Errorf("located Homebrew at %q, want an absolute path outside the current directory", p)
+	}
+	for _, x := range doc["packages"].([]any) {
+		dets, _ := x.(map[string]any)["detections"].([]any)
+		for _, d := range dets {
+			if p, ok := d.(map[string]any)["path"].(string); ok && !filepath.IsAbs(p) {
+				t.Errorf("%v detected at relative path %q", x.(map[string]any)["id"], p)
+			}
+		}
+	}
+	found := false
+	for _, x := range doc["findings"].([]any) {
+		fd := x.(map[string]any)
+		if fd["code"] == "path-relative-entry" && fd["severity"] == "warning" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("no path-relative-entry warning in %s", f.stdout.String())
 	}
 }

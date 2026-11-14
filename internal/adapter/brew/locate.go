@@ -103,13 +103,13 @@ func isExecutable(p string) bool {
 
 var versionRe = regexp.MustCompile(`Homebrew (\S+)`)
 
-// Locate finds brew on PATH, then at the known prefixes. The prefix is the
+// Locate finds brew on PATH (absolute entries only), then at the known prefixes. The prefix is the
 // parent of brew's bin directory. It reports when the prefix belongs to
 // another user, and brew's version ("" when it cannot be read).
 func (l *Locator) Locate(ctx context.Context) (platform.HomebrewInfo, error) {
 	var info platform.HomebrewInfo
 	for _, dir := range filepath.SplitList(l.opts.Getenv("PATH")) {
-		if dir == "" {
+		if !filepath.IsAbs(dir) { // never a brew from the current directory (review FR-002)
 			continue
 		}
 		if p := filepath.Join(dir, "brew"); isExecutable(p) {

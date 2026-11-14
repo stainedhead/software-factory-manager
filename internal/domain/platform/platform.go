@@ -135,6 +135,9 @@ const (
 	CodeTapPending = "tap-not-added"
 	// CodeCheckFailed is a doctor info: a check could not be completed.
 	CodeCheckFailed = "check-failed"
+	// CodePathRelativeEntry is a scan warning: PATH has a relative or empty
+	// entry, which facman ignores when it looks for programs (review FR-002).
+	CodePathRelativeEntry = "path-relative-entry"
 )
 
 // Finding is one bootstrap or doctor observation.

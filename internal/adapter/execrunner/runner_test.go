@@ -357,3 +357,43 @@ func TestHandoff(t *testing.T) {
 		t.Error("log header failure not reported")
 	}
 }
+
+// Review FR-002: relative and empty PATH entries are never searched, like
+// os/exec's ErrDot protection.
+func TestPathLookupSkipsRelativeEntries(t *testing.T) {
+	cwd := t.TempDir()
+	abs := t.TempDir()
+	for _, d := range []string{cwd, filepath.Join(cwd, "bin")} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(d, "brew"), []byte("#!/bin/sh\n"), 0o755); err != nil { //nolint:gosec // test executable
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(cwd)
+	sep := string(os.PathListSeparator)
+	tests := []struct {
+		name, path, want string
+	}{
+		{"dot only", ".", ""},
+		{"empty entry", sep, ""},
+		{"relative dir", "bin", ""},
+		{"dot-relative dir", "./bin", ""},
+		{"dot first, none absolute", "." + sep + "bin" + sep + sep, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := lookPath("brew", tt.path)
+			if !errors.Is(err, process.ErrNotFound) {
+				t.Errorf("lookPath(brew, %q) = %q, %v; want ErrNotFound", tt.path, p, err)
+			}
+		})
+	}
+	if err := os.WriteFile(filepath.Join(abs, "brew"), []byte("#!/bin/sh\n"), 0o755); err != nil { //nolint:gosec // test executable
+		t.Fatal(err)
+	}
+	if p, err := lookPath("brew", "."+sep+"bin"+sep+abs); err != nil || p != filepath.Join(abs, "brew") {
+		t.Errorf("lookPath with an absolute entry after relative ones = %q, %v", p, err)
+	}
+}

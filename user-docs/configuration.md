@@ -86,7 +86,7 @@ A minimal example is [testdata/catalogs/integration/](../testdata/catalogs/integ
 |---|---|
 | `HOME` | Finding the state directory and per-user tool locations. Unset or relative is exit 4. |
 | `XDG_STATE_HOME` | Linux and WSL: the state directory's parent, when it is an absolute path. |
-| `PATH` | Finding `brew` and every detected command. Homebrew is also looked for at `/opt/homebrew` and `/usr/local` (macOS) and `/home/linuxbrew/.linuxbrew` (Linux) when it is not on `PATH`. |
+| `PATH` | Finding `brew` and every detected command. Homebrew is also looked for at `/opt/homebrew` and `/usr/local` (macOS) and `/home/linuxbrew/.linuxbrew` (Linux) when it is not on `PATH`. Only absolute entries are searched: a relative or empty entry (`.`, `bin`, or the empty entry a leading, trailing or doubled `:` makes) is ignored, so a program in the current directory never runs, and `scan` reports a `path-relative-entry` warning. |
 | `USER` | The OS user named in the consent record (`user@time`). |
 | `DISPLAY`, `WAYLAND_DISPLAY` | Linux: whether GUI apps (casks) are offered. |
 | `WSL_DISTRO_NAME` | Detecting WSL, together with `/proc/version`. |

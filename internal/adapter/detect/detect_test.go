@@ -452,3 +452,29 @@ func fixtureRoots(t *testing.T) map[string]string {
 	}
 	return map[string]string{"plain": t.TempDir(), "behind symlinked dir": linked}
 }
+
+// Review FR-002: the PATH detector never searches, or runs a version probe
+// from, a relative or empty PATH entry.
+func TestPathDetectorSkipsRelativeEntries(t *testing.T) {
+	cwd := t.TempDir()
+	script(t, filepath.Join(cwd, "node"), "v99.0.0")
+	script(t, filepath.Join(cwd, "bin", "node"), "v98.0.0")
+	abs := t.TempDir()
+	script(t, filepath.Join(abs, "node"), "v24.1.0")
+	t.Chdir(cwd)
+	entries := []catalog.Entry{cli("node", []string{"node"}, &catalog.VersionProbe{Cmd: []string{"node", "--version"}, Regex: `v(\S+)`}, nil)}
+	r := newRecorder(abs)
+	got, err := NewPathDetector(r, PathOptions{}).Detect(context.Background(), entries,
+		scan.Env{Platform: platform.Platform{OS: "linux"}, Path: []string{".", "", "bin", "./bin", abs}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Path != filepath.Join(abs, "node") || got[0].Version != "24.1.0" {
+		t.Fatalf("detections = %+v, want only %s", got, filepath.Join(abs, "node"))
+	}
+	for _, c := range r.calls {
+		if !filepath.IsAbs(c[0]) || strings.HasPrefix(c[0], cwd) {
+			t.Errorf("ran %v from a relative PATH entry", c)
+		}
+	}
+}

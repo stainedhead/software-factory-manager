@@ -105,7 +105,8 @@ func (r *Runner) Environ(overrides map[string]string) []string {
 	return out
 }
 
-// LookPath finds name on the base PATH. A name with a slash is checked as is.
+// LookPath finds name on the base PATH. A name with a slash is checked as
+// is. Relative and empty PATH entries are ignored.
 func (r *Runner) LookPath(name string) (string, error) {
 	return lookPath(name, r.base["PATH"])
 }
@@ -118,7 +119,10 @@ func lookPath(name, path string) (string, error) {
 		return "", fmt.Errorf("%w: %s", process.ErrNotFound, name)
 	}
 	for _, dir := range filepath.SplitList(path) {
-		if dir == "" {
+		// A relative or empty entry ("", ".", "bin") would run a program
+		// from the current directory; skip it like os/exec's ErrDot
+		// (review FR-002).
+		if !filepath.IsAbs(dir) {
 			continue
 		}
 		p := filepath.Join(dir, name)

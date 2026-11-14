@@ -245,6 +245,43 @@ func TestScanWithoutLockWritesNothing(t *testing.T) {
 	}
 }
 
+// Review FR-002: a relative or empty PATH entry gives one warning finding.
+func TestScanWarnsAboutRelativePathEntries(t *testing.T) {
+	tests := []struct {
+		name string
+		path []string
+		want string // "" means no finding
+	}{
+		{"absolute only", []string{"/opt/homebrew/bin", "/usr/bin"}, ""},
+		{"dot", []string{".", "/usr/bin"}, `"."`},
+		{"empty entry", []string{"/usr/bin", ""}, `""`},
+		{"relative dir", []string{"node_modules/.bin", "/usr/bin"}, `"node_modules/.bin"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := newService(&memInventory{}, &lock{}).Run(context.Background(), Input{Catalog: testCatalog(), Env: Env{Platform: darwin, Path: tt.path}, ReadOnly: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []platform.Finding
+			for _, f := range res.Findings {
+				if f.Code == platform.CodePathRelativeEntry {
+					got = append(got, f)
+				}
+			}
+			if tt.want == "" {
+				if len(got) != 0 {
+					t.Errorf("findings = %+v", got)
+				}
+				return
+			}
+			if len(got) != 1 || got[0].Severity != platform.SeverityWarning || !strings.Contains(got[0].Message, tt.want) || !strings.Contains(got[0].Fix, "PATH") {
+				t.Errorf("findings = %+v, want one warning naming %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestScanReadOnlyWritesNothing(t *testing.T) {
 	inv := &memInventory{interrupted: []inventory.Operation{{ID: 7, PackageID: "gh", Op: inventory.OpInstall}}}
 	l := &lock{}

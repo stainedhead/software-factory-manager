@@ -3,6 +3,9 @@ package scan
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -181,12 +184,33 @@ func (s *Service) Run(ctx context.Context, in Input) (Result, error) {
 			res.Findings = append(res.Findings, superseded(in.Catalog, e, st))
 		}
 	}
+	if f, ok := relativePathFinding(in.Env.Path); ok {
+		res.Findings = append(res.Findings, f)
+	}
 	if write {
 		if err := s.Inventory.SaveDetections(ctx, s.snapshots(res.Statuses)); err != nil {
 			return res, failure.Bootstrap("saving detections: %w", err)
 		}
 	}
 	return res, nil
+}
+
+// relativePathFinding warns when PATH has relative or empty entries. The
+// runner and the detectors ignore them, so a program in the current
+// directory is never run (review FR-002).
+func relativePathFinding(path []string) (platform.Finding, bool) {
+	var rel []string
+	for _, d := range path {
+		if !filepath.IsAbs(d) {
+			rel = append(rel, strconv.Quote(d))
+		}
+	}
+	if len(rel) == 0 {
+		return platform.Finding{}, false
+	}
+	return platform.Finding{Code: platform.CodePathRelativeEntry, Severity: platform.SeverityWarning,
+		Message: fmt.Sprintf("PATH has relative or empty entries (%s); facman ignores them and never runs a program from the current directory", strings.Join(rel, ", ")),
+		Fix:     "remove relative entries (such as . or an empty entry from a leading, trailing or doubled :) from PATH"}, true
 }
 
 func superseded(c catalog.Catalog, e catalog.Entry, st ownership.PackageStatus) platform.Finding {

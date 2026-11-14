@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md, plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 26 tasks (T-1a to T-19) |
-| 5 | Implementation | In Progress | 3 / 26 tasks closed (done or deferred) |
+| 5 | Implementation | In Progress | 4 / 26 tasks closed (done or deferred) |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -33,7 +33,7 @@
 | T-1a | FR-001a | P1 | ✅ Done | Allow-lists in `domain/catalog/values.go`; e2e `TestCatalogValuesRejectedAtLoad` (RF-1 to RF-3) |
 | T-1b | FR-001b | P1 | ✅ Done | Brew option allow-list and `forceLike` in `plan.Validate`; testkit oracle hardened (RF-4) |
 | T-1c | FR-001c | P1 | ✅ Done | `Command.String` escapes non-printables; TUI golden `review-escaped`, headless test (RF-5) |
-| T-2 | FR-002 | P1 | ⬜ Not started | |
+| T-2 | FR-002 | P1 | ✅ Done | Relative/empty PATH entries skipped in `execrunner`, `detect` and `brew.Locate`; `path-relative-entry` warning; e2e `TestRelativePathEntryNeverRuns` (RF-6, RF-7) |
 | T-3 | FR-003 | P1 | ⬜ Not started | |
 | T-1d | FR-001d | P2 | ⬜ Not started | |
 | T-4 | FR-004 | P2 | ⬜ Not started | |

@@ -108,7 +108,9 @@ func (d *PathDetector) entry(ctx context.Context, e catalog.Entry, env scan.Env,
 	seen := map[string]bool{}
 	for _, name := range e.Detect.Commands {
 		for _, dir := range env.Path {
-			if dir == "" {
+			// Never probe, or run a version probe from, a relative or empty
+			// PATH entry (review FR-002).
+			if !filepath.IsAbs(dir) {
 				continue
 			}
 			p := filepath.Join(dir, name)

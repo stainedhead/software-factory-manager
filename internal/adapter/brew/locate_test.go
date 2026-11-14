@@ -88,6 +88,30 @@ func TestLocate(t *testing.T) {
 	}
 }
 
+// Review FR-002: a brew in a relative PATH entry (the current directory of a
+// cloned repo) is never located, so it is never run.
+func TestLocateSkipsRelativePathEntries(t *testing.T) {
+	world := fakeworld.World{Brew: &fakeworld.Brew{Prefix: "/x", Version: "6.0.2"}}
+	cwdFake := testkit.NewFake(t, world, "brew")
+	t.Chdir(cwdFake.Dir)
+	for _, path := range []string{".", "", "./"} {
+		r := execrunner.New(execrunner.Options{BaseEnv: []string{"PATH=" + path}})
+		l := NewLocator(r, LocatorOptions{
+			KnownPrefixes: []string{"/nonexistent"},
+			Getenv:        envFunc(map[string]string{"PATH": path}),
+			UID:           os.Getuid,
+			OwnerUID:      func(string) (int, error) { return os.Getuid(), nil },
+		})
+		info, err := l.Locate(context.Background())
+		if err != nil || info.Found {
+			t.Errorf("PATH=%q: info = %+v, err = %v; want not found", path, info, err)
+		}
+	}
+	if n := len(cwdFake.Log(t)); n != 0 {
+		t.Errorf("the brew in the current directory ran %d time(s)", n)
+	}
+}
+
 func TestLocateDefaultsAndRealOwner(t *testing.T) {
 	l := NewLocator(execrunner.New(execrunner.Options{}), LocatorOptions{})
 	if len(l.opts.KnownPrefixes) == 0 || l.opts.Getenv == nil || l.opts.UID == nil {
