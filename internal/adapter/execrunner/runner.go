@@ -222,6 +222,54 @@ func (r *Runner) Run(ctx context.Context, cmd process.Cmd) (process.Result, erro
 	return res, nil
 }
 
+// Handoff prepares an interactive command for a front end that hands the
+// terminal over itself (the TUI's tea.ExecProcess, AD-16): the returned
+// exec.Cmd has the child environment and program resolved as Run would,
+// and its stdio left unset for the front end to fill. The log header is
+// written now. finish turns the error of running it into a Result (a
+// non-zero exit is a Result, not an error) and logs the exit code.
+func (r *Runner) Handoff(cmd process.Cmd) (c *exec.Cmd, finish func(runErr error) (process.Result, error), err error) {
+	if len(cmd.Argv) == 0 {
+		return nil, nil, fmt.Errorf("preparing command: %w: empty argv", process.ErrNotFound)
+	}
+	childPath := r.base["PATH"]
+	if p, ok := cmd.Env["PATH"]; ok {
+		childPath = p
+	}
+	prog, err := lookPath(cmd.Argv[0], childPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("preparing %s: %w", cmd.Argv[0], err)
+	}
+	log := io.Discard
+	if cmd.Log != nil {
+		log = &lockedWriter{w: cmd.Log}
+		cmd.Interactive = true
+		if err := writeHeader(log, cmd); err != nil {
+			return nil, nil, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+		}
+	}
+	c = exec.Command(prog, cmd.Argv[1:]...) //nolint:gosec // argv comes from the reviewed plan; never a shell
+	c.Args[0] = cmd.Argv[0]
+	c.Env = r.Environ(cmd.Env)
+	c.Dir = cmd.Dir
+	finish = func(runErr error) (process.Result, error) {
+		var res process.Result
+		var exitErr *exec.ExitError
+		switch {
+		case runErr == nil:
+		case errors.As(runErr, &exitErr):
+			res.ExitCode = exitErr.ExitCode()
+		default:
+			return process.Result{ExitCode: -1}, fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+		}
+		if _, err := fmt.Fprintf(log, "# exit %d\n", res.ExitCode); err != nil {
+			return res, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+		}
+		return res, nil
+	}
+	return c, finish, nil
+}
+
 // writeHeader logs the argv and the names (never values) of the variables
 // set for the command.
 func writeHeader(w io.Writer, cmd process.Cmd) error {

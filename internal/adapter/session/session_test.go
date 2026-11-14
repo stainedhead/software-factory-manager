@@ -360,3 +360,57 @@ func TestHelpers(t *testing.T) {
 	}
 	var _ execute.Replanner = (*Replanner)(nil)
 }
+
+// wrapRunner is the TUI's hand-off wrapper stand-in: it records the plan
+// commands it is given.
+type wrapRunner struct{ runs [][]string }
+
+func (w *wrapRunner) Run(_ context.Context, c process.Cmd) (process.Result, error) {
+	w.runs = append(w.runs, c.Argv)
+	return process.Result{}, nil
+}
+
+func TestTUISteps(t *testing.T) {
+	ctx := context.Background()
+	h := newHarness()
+	wrap := &wrapRunner{}
+	r, err := New(h.deps).Start(ctx, Request{Command: platform.CommandTUIRun, Profiles: []string{"p"}, Confirmer: yes(true), Runner: wrap})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if !h.dir.locked {
+		t.Error("the TUI holds the lock from the scan on")
+	}
+	d, err := r.Resolve(catalog.Selection{Profiles: []string{"p"}, Without: []string{"gh"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gh, _ := d.Item("gh"); gh.Selected {
+		t.Errorf("gh = %+v", gh)
+	}
+	if _, err := r.Resolve(catalog.Selection{Profiles: []string{"p"}, With: []string{"nope"}}); failure.ExitCode(err) != 3 {
+		t.Errorf("bad selection err = %v", err)
+	}
+	if err := r.PlanSelection(ctx, catalog.Selection{Profiles: []string{"p"}, Without: []string{"gh"}}); err != nil {
+		t.Fatal(err)
+	}
+	res := r.Result()
+	if len(res.Plan.Actions) != 1 || res.Plan.Actions[0].PackageID != "jq" || res.Plan.Excluded[0].Reason != plan.ExcludedNotSelected {
+		t.Fatalf("plan = %+v", res.Plan)
+	}
+	if err := r.Execute(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if len(wrap.runs) != 1 || strings.Join(wrap.runs[0], " ") != "brew install jq" {
+		t.Errorf("plan commands went to %v, want the request's runner", wrap.runs)
+	}
+	for _, argv := range h.run.runs {
+		if argv[0] == "brew" {
+			t.Errorf("plan command ran on the base runner: %v", argv)
+		}
+	}
+	if r.Result().Summary == nil {
+		t.Error("no summary")
+	}
+}

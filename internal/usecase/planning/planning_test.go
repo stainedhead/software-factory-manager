@@ -295,6 +295,38 @@ func TestBuildChoiceWithoutPick(t *testing.T) {
 	}
 }
 
+func TestBuildDeselectedRequired(t *testing.T) {
+	c := testCatalog()
+	tests := []struct {
+		name     string
+		override map[string]ownership.PackageStatus
+		want     bool
+	}{
+		{name: "absent and unticked is reported not selected", want: true},
+		{name: "present and unticked is not reported", override: map[string]ownership.PackageStatus{"jq": present(catalog.ProvBrew)}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := catalog.ResolveSelection(c, catalog.Selection{Profiles: []string{"p"}, Without: []string{"jq"}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			p, err := svc(brewLike{}).Build(context.Background(), Input{Catalog: c, Desired: d, Statuses: statuses(c, darwinPlat, tc.override), Bootstrap: brewFound})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, a := range p.Actions {
+				if a.PackageID == "jq" {
+					t.Errorf("jq planned: %+v", a)
+				}
+			}
+			if got := exclusions(p)["jq"] == plan.ExcludedNotSelected; got != tc.want {
+				t.Errorf("jq not-selected = %v, want %v (%+v)", got, tc.want, p.Excluded)
+			}
+		})
+	}
+}
+
 func TestBuildErrors(t *testing.T) {
 	c := testCatalog()
 	d, _ := catalog.Resolve(c, []string{"p"}, nil)

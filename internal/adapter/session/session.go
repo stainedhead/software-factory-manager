@@ -143,6 +143,10 @@ type Request struct {
 	Confirmer execute.Confirmer
 	// Progress receives run events (apply, TUI).
 	Progress execute.Progress
+	// Runner, when set, runs the plan commands instead of Deps.Runner: the
+	// TUI wraps the system runner so a sudo command gets the terminal
+	// through tea.ExecProcess (AD-16). Detection never uses it.
+	Runner execute.CommandRunner
 }
 
 // Mutates reports whether the request may change the machine: apply
@@ -406,8 +410,25 @@ func (t tapChecker) TapState(ctx context.Context, step catalog.InstallStep) (boo
 // runs the conflict pre-flight for the selected absent brew items and
 // builds the plan.
 func (r *Run) Plan(ctx context.Context, profiles, with []string) error {
+	return r.PlanSelection(ctx, catalog.Selection{Profiles: profiles, With: with})
+}
+
+// Resolve resolves a selection against the run's catalog without planning
+// (the TUI Plan screen re-resolves on every toggle). Errors are exit 3.
+func (r *Run) Resolve(sel catalog.Selection) (catalog.DesiredSet, error) {
+	d, err := catalog.ResolveSelection(*r.res.Catalog, sel)
+	if err != nil {
+		return d, asKind(failure.KindValidation, "resolving the profiles", err)
+	}
+	return d, nil
+}
+
+// PlanSelection is Plan for a selection with deselected items (the TUI
+// Plan screen). It may be called again with a changed selection: the
+// pre-flight then checks the newly selected items too.
+func (r *Run) PlanSelection(ctx context.Context, sel catalog.Selection) error {
 	cat := *r.res.Catalog
-	desired, err := catalog.Resolve(cat, profiles, with)
+	desired, err := catalog.ResolveSelection(cat, sel)
 	if err != nil {
 		return asKind(failure.KindValidation, "resolving the profiles", err)
 	}
@@ -474,7 +495,11 @@ func (r *Run) Execute(ctx context.Context) error {
 	if d.Installer != nil {
 		defer d.Installer.Cleanup()
 	}
-	ex := &execute.Service{Runner: d.Runner, Inventory: r.state.Inventory, Installer: d.Installer, State: r.state.Dir, Clock: d.Clock,
+	runner := d.Runner
+	if r.req.Runner != nil {
+		runner = r.req.Runner
+	}
+	ex := &execute.Service{Runner: runner, Inventory: r.state.Inventory, Installer: d.Installer, State: r.state.Dir, Clock: d.Clock,
 		User: d.User, Progress: r.req.Progress, Confirmer: r.req.Confirmer, Env: d.Machine.Env(),
 		Replanner: &Replanner{Session: r.s, Catalog: *r.res.Catalog, State: r.state}}
 	out, err := ex.Apply(ctx, *r.res.Plan, execute.Options{DryRun: r.req.DryRun})

@@ -298,3 +298,62 @@ func TestSystemClockAndUser(t *testing.T) {
 		t.Error("default stdin is not os.Stdin")
 	}
 }
+
+func TestHandoff(t *testing.T) {
+	r := newRunner("HOMEBREW_NO_REQUIRE_TAP_TRUST=1")
+	var log bytes.Buffer
+	cmd := helperCmd("echo", "a b")
+	cmd.Interactive, cmd.Log = true, &log
+	c, finish, err := r.Handoff(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Args[0] != os.Args[0] || c.Stdin != nil || c.Stdout != nil {
+		t.Errorf("cmd = %v, stdio must be left to the TUI", c.Args)
+	}
+	if slices.ContainsFunc(c.Env, func(kv string) bool { return strings.HasPrefix(kv, "HOMEBREW_NO_REQUIRE_TAP_TRUST") }) {
+		t.Error("tap-trust bypass variable reached the child")
+	}
+	var out bytes.Buffer
+	c.Stdout, c.Stderr = &out, &out
+	res, err := finish(c.Run())
+	if err != nil || res.ExitCode != 3 || !strings.Contains(out.String(), "a b") {
+		t.Errorf("result = %+v, %v, out %q", res, err, out.String())
+	}
+	if l := log.String(); !strings.Contains(l, "# interactive") || !strings.HasSuffix(l, "# exit 3\n") {
+		t.Errorf("log = %q", l)
+	}
+
+	tests := []struct {
+		name    string
+		runErr  error
+		code    int
+		wantErr bool
+	}{
+		{name: "success", code: 0},
+		{name: "could not start", runErr: errors.New("no tty"), code: -1, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, finish, err := r.Handoff(helperCmd("echo"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			res, err := finish(tc.runErr)
+			if res.ExitCode != tc.code || (err != nil) != tc.wantErr {
+				t.Errorf("finish(%v) = %+v, %v", tc.runErr, res, err)
+			}
+		})
+	}
+	if _, _, err := r.Handoff(process.Cmd{Argv: []string{"no-such-program-facman"}}); !errors.Is(err, process.ErrNotFound) {
+		t.Errorf("missing program err = %v", err)
+	}
+	if _, _, err := r.Handoff(process.Cmd{}); !errors.Is(err, process.ErrNotFound) {
+		t.Errorf("empty argv err = %v", err)
+	}
+	failing := helperCmd("echo")
+	failing.Log = &failWriter{}
+	if _, _, err := r.Handoff(failing); err == nil {
+		t.Error("log header failure not reported")
+	}
+}

@@ -202,6 +202,14 @@ func (s *Service) wanted(in Input) ([]string, []plan.Exclusion) {
 			}
 		}
 	}
+	// required items the developer unticked (TUI Plan screen): reported
+	// when they are missing, so Summary says why they were not installed.
+	for _, it := range in.Desired.Items {
+		st, ok := in.Statuses[it.ID]
+		if it.Required && !it.Selected && !groups[it.ID] && ok && st.Offered && st.State == ownership.StateAbsent {
+			excluded = append(excluded, plan.Exclusion{PackageID: it.ID, Reason: plan.ExcludedNotSelected, Detail: "unticked on the Plan screen"})
+		}
+	}
 	var ids []string
 	for _, id := range in.Desired.SelectedIDs() {
 		if !dropped[id] && !groups[id] {

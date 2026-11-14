@@ -76,8 +76,28 @@ func (r *resolver) addf(format string, args ...any) {
 // requires of selected items are selected too. Every problem is returned
 // together as one failure.Validation error.
 func Resolve(c Catalog, profiles []string, with []string) (DesiredSet, error) {
+	return ResolveSelection(c, Selection{Profiles: profiles, With: with})
+}
+
+// Selection is what to resolve: the profiles, the optional items and
+// choice members to include (--with, or ticked on the TUI Plan screen) and
+// the profile items to leave out (unticked on the TUI Plan screen).
+type Selection struct {
+	// Profiles are the selected profile names.
+	Profiles []string
+	// With selects optional items and picks choice-group members.
+	With []string
+	// Without deselects profile items, or clears a picked member. A
+	// deselected item stays in the set (Selected false) so callers can
+	// report it, and is selected again when a selected item requires it.
+	Without []string
+}
+
+// ResolveSelection is Resolve with deselections: Without is applied after
+// With and before requires are expanded.
+func ResolveSelection(c Catalog, sel Selection) (DesiredSet, error) {
 	r := &resolver{c: c, items: map[string]*DesiredItem{}, pinnedBy: map[string]string{}}
-	names := dedupe(profiles)
+	names := dedupe(sel.Profiles)
 	if len(names) == 0 {
 		r.addf("no profile selected (known profiles: %s)", strings.Join(c.ProfileNames(), ", "))
 	}
@@ -85,7 +105,8 @@ func Resolve(c Catalog, profiles []string, with []string) (DesiredSet, error) {
 	for _, name := range names {
 		r.visitProfile(name, nil, visited)
 	}
-	r.applyWith(dedupe(with))
+	r.applyWith(dedupe(sel.With))
+	r.applyWithout(dedupe(sel.Without))
 	r.expandSelections()
 	if len(r.problems) > 0 {
 		return DesiredSet{}, failure.Validation("cannot resolve profiles %s", strings.Join(names, ", ")).
@@ -176,6 +197,26 @@ func (r *resolver) applyWith(with []string) {
 			continue
 		}
 		r.addf("--with %s: unknown package (optional items: %s)", id, strings.Join(r.optionalIDs(), ", "))
+	}
+}
+
+func (r *resolver) applyWithout(without []string) {
+	for _, id := range without {
+		if it, ok := r.items[id]; ok {
+			if e, _ := r.c.Entry(id); e.IsChoice() {
+				r.addf("--without %s: a choice group; leave its members out instead", id)
+				continue
+			}
+			it.Selected = false
+			continue
+		}
+		if group := r.groupWithMember(id); group != nil {
+			if group.ChoicePick == id {
+				group.ChoicePick = ""
+			}
+			continue
+		}
+		r.addf("--without %s: not in the selected profiles", id)
 	}
 }
 

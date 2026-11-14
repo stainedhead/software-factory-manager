@@ -248,3 +248,72 @@ func TestResolveSkipsUnknownRequires(t *testing.T) {
 		t.Error("an unknown requires must not be added")
 	}
 }
+
+func TestResolveSelectionWithout(t *testing.T) {
+	tests := []struct {
+		name    string
+		sel     Selection
+		wantErr string
+		check   func(t *testing.T, d DesiredSet)
+	}{
+		{
+			name: "unticking a required item deselects it but keeps it in the set",
+			sel:  Selection{Profiles: []string{"agentic-factory"}, Without: []string{"jq", "jq"}},
+			check: func(t *testing.T, d DesiredSet) {
+				jq, ok := d.Item("jq")
+				if !ok || !jq.Required || jq.Selected {
+					t.Errorf("jq = %+v, %v", jq, ok)
+				}
+				if got := strings.Join(d.SelectedIDs(), ","); got != "git,node,awscli,orca" {
+					t.Errorf("selected = %s", got)
+				}
+			},
+		},
+		{
+			name: "a requires edge re-selects an unticked item",
+			sel:  Selection{Profiles: []string{"agentic-factory"}, With: []string{"session-manager-plugin"}, Without: []string{"awscli"}},
+			check: func(t *testing.T, d DesiredSet) {
+				aws, _ := d.Item("awscli")
+				if !aws.Selected || !slices.Equal(aws.RequiredBy, []string{"session-manager-plugin"}) {
+					t.Errorf("awscli = %+v", aws)
+				}
+			},
+		},
+		{
+			name: "without a picked member clears the pick",
+			sel:  Selection{Profiles: []string{"agentic-factory"}, With: []string{"colima"}, Without: []string{"colima"}},
+			check: func(t *testing.T, d DesiredSet) {
+				g, _ := d.Item("container-runtime")
+				if g.ChoicePick != "" {
+					t.Errorf("group = %+v", g)
+				}
+				if _, ok := d.Item("docker"); ok {
+					t.Error("docker still pulled in")
+				}
+			},
+		},
+		{
+			name:    "without an item outside the profiles",
+			sel:     Selection{Profiles: []string{"base-dev"}, Without: []string{"jq"}},
+			wantErr: "--without jq: not in the selected profiles",
+		},
+		{
+			name:    "without a choice group",
+			sel:     Selection{Profiles: []string{"agentic-factory"}, Without: []string{"container-runtime"}},
+			wantErr: "--without container-runtime: a choice group",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := ResolveSelection(validCatalog(), tc.sel)
+			if tc.wantErr != "" {
+				assertValidation(t, err, tc.wantErr)
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.check(t, d)
+		})
+	}
+}
