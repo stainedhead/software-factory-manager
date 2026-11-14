@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**43 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 9/9, F 6/6, G 0/5, H 0/4)
+**48 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 8/8 + T-D9, E 9/9, F 6/6, G 5/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -214,23 +214,23 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream G — TUI (parallel with F)
 
-**T-G1 — Model, screens and keys.** *Depends:* E · *Est:* 3 h
+**✅ T-G1 — Model, screens and keys.** *Depends:* E · *Est:* 3 h
 - **Test first:** state machine: Scan → (`Enter`) Plan → (`Enter`) Review → (`Enter` = consent) Run → Summary; `Esc` back from Plan/Review/Summary keeps selections; `q` quits from any screen except Run with no runner call; `?` help overlay; `Tab` shows "Manage and Files arrive in a later increment"; header shows profile `agentic-factory`; golden test of the Scan screen.
 - **Done when:** `adapter/tui` README; Bubble Tea major recorded in ADR (S-3).
 
-**T-G2 — Plan screen.** *Depends:* T-G1 · *Est:* 3 h
+**✅ T-G2 — Plan screen.** *Depends:* T-G1 · *Est:* 3 h
 - **Test first (I1-13):** grouped by state; required missing pre-checked; optional unchecked; `space` toggles only selectable rows (`absent`, not conflict, not unavailable); foreign/duplicate/drifted not selectable; `unavailable-here` greyed with reason (Paperclip: npm backend); `i` shows source, why needed, which profile asked, and conflict evidence; `/` filters; choice group single-select (or none); goldens.
 - **Done when:** README updated.
 
-**T-G3 — Review screen.** *Depends:* T-G2 · *Est:* 2 h
+**✅ T-G3 — Review screen.** *Depends:* T-G2 · *Est:* 2 h
 - **Test first:** every command in order with sudo and unverified markers, dependency order, tap and trust steps, glibc and other warnings; only `Enter` here consents (consent recorded `user@time`); empty selection → "Nothing to install" and `Enter` goes to Summary without consent; goldens.
 - **Done when:** README updated.
 
-**T-G4 — Run screen.** *Depends:* T-G3 · *Est:* 3 h
+**✅ T-G4 — Run screen.** *Depends:* T-G3 · *Est:* 3 h
 - **Test first:** `Progress` messages update per-item spinner/status and a log tail; a `NeedsSudo` command arrives as an `execRequest` message and the model returns a `tea.ExecProcess` command built by an injected exec factory, whose callback writes the exit code to the request's reply channel (R-4, AD-16); `Ctrl+C` asks for confirmation, then stops after the current command; `q` ignored during Run; goldens with deterministic spinner frame.
 - **Done when:** README updated.
 
-**T-G5 — Summary screen.** *Depends:* T-G4, T-E9 · *Est:* 1.5 h
+**✅ T-G5 — Summary screen.** *Depends:* T-G4, T-E9 · *Est:* 1.5 h
 - **Test first:** per-item results, "not installed: conflict", sign-in next steps, shell profile lines, log paths; golden; full-flow golden test Scan → Summary with fixtures.
 - **Done when:** README updated.
 

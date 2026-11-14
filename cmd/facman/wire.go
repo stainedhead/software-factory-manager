@@ -22,6 +22,7 @@ import (
 	"github.com/stainedhead/software-factory-manager/internal/adapter/session"
 	"github.com/stainedhead/software-factory-manager/internal/adapter/sqlite"
 	"github.com/stainedhead/software-factory-manager/internal/adapter/statedir"
+	"github.com/stainedhead/software-factory-manager/internal/adapter/tui"
 	"github.com/stainedhead/software-factory-manager/internal/domain/catalog"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/bootstrap"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/scan"
@@ -66,7 +67,7 @@ type options struct {
 	Signals func() (<-chan os.Signal, func())
 	// DetectorTimeout bounds each detector (zero: 10 s).
 	DetectorTimeout time.Duration
-	// TUI opens the TUI; nil until workstream G.
+	// TUI replaces the TUI (tests); nil means adapter/tui over the session.
 	TUI cli.TUIRunner
 }
 
@@ -180,6 +181,10 @@ func newApp(o options) *cli.App {
 		Clock:     clk, User: userName(o.User), Machine: machine, Home: home, BasePath: env("PATH"),
 		DetectorTimeout: o.DetectorTimeout,
 	})
-	return &cli.App{Engine: sess, TUI: o.TUI, Stdio: cli.Stdio{In: o.Stdin, Out: o.Stdout, Err: o.Stderr},
+	tuiRunner := o.TUI
+	if tuiRunner == nil {
+		tuiRunner = tui.New(tui.Options{Engine: tui.SessionEngine{Session: sess}, Runner: runner, Handoff: runner.Handoff, User: o.User})
+	}
+	return &cli.App{Engine: sess, TUI: tuiRunner, Stdio: cli.Stdio{In: o.Stdin, Out: o.Stdout, Err: o.Stderr},
 		Version: version, Now: o.Now, Signals: o.Signals}
 }

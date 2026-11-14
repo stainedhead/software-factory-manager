@@ -1,13 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/creack/pty"
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/inventory"
 	"github.com/stainedhead/software-factory-manager/internal/testkit/fakeworld"
@@ -550,5 +556,140 @@ func TestInstallerDownloadFailure(t *testing.T) {
 	}
 	if len(f.mutating()) != 0 {
 		t.Error("something ran after the download failed")
+	}
+}
+
+// screenReader collects what the TUI draws on the pseudo-terminal.
+type screenReader struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (s *screenReader) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *screenReader) text() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return ansi.Strip(s.buf.String())
+}
+
+// TestTUIInstall drives the real TUI on a pseudo-terminal (I1-13): Scan,
+// Plan, Review, Enter to consent, Run through the fake brew (sudo casks
+// get the terminal through tea.ExecProcess), Summary with the sign-in
+// steps, and the same audit rows as headless apply.
+func TestTUIInstall(t *testing.T) {
+	f := newFixture(t, machine{})
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		t.Skipf("no pseudo-terminal: %v", err)
+	}
+	defer func() { _ = ptmx.Close(); _ = tty.Close() }()
+	if err := pty.Setsize(ptmx, &pty.Winsize{Rows: 60, Cols: 160}); err != nil {
+		t.Fatal(err)
+	}
+	screen := &screenReader{}
+	go func() { _, _ = io.Copy(screen, ptmx) }()
+	o := f.o
+	o.Stdin, o.Stdout = tty, tty
+	code := make(chan int, 1)
+	go func() { code <- run(nil, o) }()
+	waitFor := func(s string) {
+		t.Helper()
+		deadline := time.Now().Add(20 * time.Second)
+		for !strings.Contains(screen.text(), s) {
+			if time.Now().After(deadline) {
+				t.Fatalf("the TUI never showed %q:\n%s", s, screen.text())
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+	}
+	press := func(k string) {
+		t.Helper()
+		if _, err := ptmx.WriteString(k); err != nil {
+			t.Fatal(err)
+		}
+	}
+	waitFor("Press enter to see what is missing")
+	press("\r")
+	waitFor("Tick what to install")
+	press("\r")
+	waitFor("Pressing enter is your consent")
+	if len(f.mutating()) != 0 {
+		t.Fatal("something ran before consent")
+	}
+	press("\r")
+	waitFor("Next steps (installed, sign-in required)")
+	press("q")
+	select {
+	case c := <-code:
+		f.want(0, c)
+	case <-time.After(20 * time.Second):
+		t.Fatalf("the TUI did not exit:\n%s", screen.text())
+	}
+	ops := f.operations()
+	if len(ops) == 0 {
+		t.Fatal("no operations")
+	}
+	for _, op := range ops {
+		if op.ConsentBy != consent || op.Status != inventory.StatusSucceeded {
+			t.Errorf("operation = %+v", op)
+		}
+	}
+	for _, id := range []string{"jq", "claude-code", "orca"} {
+		if f.records()[id].State != inventory.StateManaged {
+			t.Errorf("%s record = %+v", id, f.records()[id])
+		}
+	}
+	if !strings.Contains(screen.text(), "Claude Code (CLI): installed, sign-in required") {
+		t.Errorf("summary:\n%s", screen.text())
+	}
+}
+
+// q before consent changes nothing; stdin that is not a terminal is 64.
+func TestTUIQuitAndNoTerminal(t *testing.T) {
+	f := newFixture(t, machine{})
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		t.Skipf("no pseudo-terminal: %v", err)
+	}
+	defer func() { _ = ptmx.Close(); _ = tty.Close() }()
+	screen := &screenReader{}
+	go func() { _, _ = io.Copy(screen, ptmx) }()
+	o := f.o
+	o.Stdout = tty
+	f.want(64, run(nil, o)) // stdin is a strings.Reader
+	o.Stdin = tty
+	code := make(chan int, 1)
+	start := time.Now()
+	go func() { code <- run(nil, o) }()
+	deadline := time.Now().Add(20 * time.Second)
+	// First frame (PRD NFR: < 500 ms), through the real wiring.
+	for !strings.Contains(screen.text(), "Agentic Software Factory Manager") {
+		if time.Now().After(deadline) {
+			t.Fatalf("no first frame:\n%s", screen.text())
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if took := time.Since(start); took > 500*time.Millisecond {
+		t.Errorf("first TUI frame after %s, want < 500ms", took)
+	} else {
+		t.Logf("first TUI frame after %s", took)
+	}
+	for !strings.Contains(screen.text(), "Press enter to see what is missing") {
+		if time.Now().After(deadline) {
+			t.Fatalf("no Scan screen:\n%s", screen.text())
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if _, err := ptmx.WriteString("q"); err != nil {
+		t.Fatal(err)
+	}
+	f.want(0, <-code)
+	if len(f.mutating()) != 0 || len(f.operations()) != 0 {
+		t.Error("q changed something")
 	}
 }

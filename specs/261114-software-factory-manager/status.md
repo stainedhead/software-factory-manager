@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 43 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D, E and F done; then G, H |
+| 5 | Implementation | In Progress | 48 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D, E, F and G done; then H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -75,6 +75,11 @@
 | T-F4 `cmd/facman` wiring | ✅ Done | `wire.go` `options`/`newApp`; new `adapter/session` composes the use cases, holds the lock, `Replanner` (I-37, I-38); TUI seam (I-39) |
 | T-F5 End-to-end tests | ✅ Done | In-process fixtures, schema-validated JSON, pty consent, second run 4, crash recovery via test-binary helper (I-40) |
 | T-F6 Performance smoke tests | ✅ Done | Numbers in I-41; TUI frame budget with G |
+| T-G1 TUI model, screens and keys | ✅ Done | Bubble Tea v2.1.1 (I-42, ADR); state machine, help, tabs notice, Scan golden |
+| T-G2 Plan screen | ✅ Done | Grouped by state, ticks as `catalog.Selection` re-resolved by the domain (I-43), info with evidence, filter, choice groups |
+| T-G3 Review screen | ✅ Done | Every command with sudo/unverified/tap/trust/order marks; Enter is the only consent (I-46); empty plan → Summary |
+| T-G4 Run screen | ✅ Done | Progress over a channel, `tea.ExecProcess` hand-off via `execrunner.Handoff` (I-44, I-45), Ctrl+C confirm, `q` ignored; race fix I-47 |
+| T-G5 Summary screen | ✅ Done | Results, sign-in next steps, profile lines, logs; full-flow goldens; TUI wired in `cmd/facman`, pty e2e (I1-13), first frame 20–52 ms; stdin not a tty → 64 (I-49) |
 
 ## Blockers
 
@@ -92,3 +97,4 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | Step 3, workstream D: `brew` (locator, shellenv, info parsing, detector, formula/cask backends, tap/trust state), `detect` (PATH, bundle, npm), `fsprobe`; detection-only `gemini-cli` entry (T-D9). Coverage: 95.6% overall. Deviations I-16 to I-24. |
 | 2026-11-14 | Step 3, workstream E: bootstrap, scan, conflicts, planning, execute, doctor, status and summary use cases; `inventory.InstallRef` shared by scan and execute; `statedir.OpenLog`. Coverage: 96.4% overall, 100% domain, usecase ≥ 97.2% per package. Deviations I-26 to I-31. |
 | 2026-11-14 | Step 3, workstream F: report schema v1, installer, `adapter/session` and `adapter/cli`, `cmd/facman` wiring, e2e and perf smoke tests. Coverage: 96.4% overall. Deviations I-32 to I-41. |
+| 2026-11-14 | Step 3, workstream G: `adapter/tui` (Bubble Tea v2) Scan → Plan → Review → Run → Summary, wired as `facman` with no command; `catalog.ResolveSelection`, `session.Run.Resolve`/`PlanSelection`/`Request.Runner`, `execrunner.Handoff`. Deviations I-42 to I-51. |

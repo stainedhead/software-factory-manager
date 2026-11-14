@@ -1,0 +1,27 @@
+facman · Agentic Software Factory Manager
+Profile: agentic-factory   Scan > [Plan] > Review > Run > Summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Tick what to install (4 ticked). Required missing packages start ticked; optional ones do not.
+choose one (or none)
+      container-runtime        choice           picked colima
+  ( )   orbstack               absent
+> (x)   colima                 absent
+absent: missing, can be installed (6)
+  [x] jq                       absent           required by agentic-factory
+  [x] codex                    absent           required by agentic-factory
+  [x] orca                     absent           required by agentic-factory
+  [ ] gcloud-cli               absent           optional in agentic-factory
+  [x] colima                   absent           needed by container-runtime
+  [x] docker                   absent           needed by colima
+conflict: a file is in the way (i for evidence) (1)
+  [-] claude-code              conflict         /opt/homebrew/bin/claude held by orphan (dangling s…
+unavailable-here: not installable on this machine (1)
+  [-] paperclip                unavailable-here needs the npm backend (Increment 2)
+detection incomplete: never installed on top of the unknown (1)
+  [-] awscli                   absent           detection incomplete: brew timed out after 10s
+foreign: installed by you, not by facman (never touched) (1)
+      git                      foreign          brew; 2.47.0; /opt/homebrew/bin/git; adopt arrives …
+managed: installed by facman (1)
+      node                     managed          brew; 24.1.0; /opt/homebrew/opt/node@24/bin/node
+────────────────────────────────────────────────────────────────────────────────────────────────────
+↑/↓ j/k: move · space: tick · i: info · /: filter · enter: review · esc: back · ?: help · q: quit

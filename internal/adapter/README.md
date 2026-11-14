@@ -16,5 +16,5 @@ Implementations of the use case ports: subprocesses, filesystem, SQLite, YAML, H
 | [report/](report/) | Report schema v1 (embedded) and `--json` encoding | — |
 | [session/](session/) | Composes the use cases into one command run; holds the state lock; the replanner | `execute.Replanner` |
 | [cli/](cli/) | cobra commands, flag normalizer and validation, `[y/N]` prompt, progress, rendering, exit codes, signals; TUI seam | — (driving adapter) |
-
-The `tui` adapter is added by workstream G. Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).
+| [tui/](tui/) | Bubble Tea install flow Scan → Plan → Review → Run → Summary; sudo hand-off through `tea.ExecProcess` | `cli.TUIRunner`, `execute.Progress`, `execute.Confirmer`, `execute.CommandRunner` (hand-off wrapper) |
+ Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).

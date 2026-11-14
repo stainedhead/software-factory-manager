@@ -2,7 +2,7 @@
 // command tree, flag rules, exit codes, text and --json output, the
 // [y/N] consent prompt and signal handling. It runs commands through an
 // Engine (adapter/session) and hands the no-command case to a TUIRunner
-// (adapter/tui, workstream G).
+// (adapter/tui).
 package cli
 
 import (
@@ -49,8 +49,8 @@ type TUIRequest struct {
 	Stdio Stdio
 }
 
-// TUIRunner opens the interactive TUI. Implemented by adapter/tui
-// (workstream G); until then App.TUI is nil and facman says so.
+// TUIRunner opens the interactive TUI. Implemented by adapter/tui; when
+// App.TUI is nil, facman says so and points to the headless commands.
 type TUIRunner interface {
 	Run(ctx context.Context, req TUIRequest) error
 }
@@ -66,7 +66,7 @@ type Stdio struct {
 type App struct {
 	// Engine runs commands.
 	Engine Engine
-	// TUI opens the TUI; nil until workstream G.
+	// TUI opens the TUI (adapter/tui, wired in cmd/facman).
 	TUI TUIRunner
 	// Stdio are the streams.
 	Stdio Stdio
@@ -236,8 +236,13 @@ func (a *App) root(c *cobra.Command, fl *flags) error {
 	if !isTerminal(a.Stdio.Out) {
 		return a.write(a.Stdio.Out, appinfo.About(a.Version)+"\nstdout is not a terminal, so the TUI was not opened; use facman scan, plan or apply (see facman --help).\n")
 	}
+	if !isTerminal(a.Stdio.In) {
+		// Keys, and with them consent, only ever come from a terminal.
+		return failure.Usage("the TUI reads keys from the terminal, and stdin is not a terminal").
+			WithFix("run facman in a terminal, or use facman scan, plan --profile agentic-factory or apply --dry-run")
+	}
 	if a.TUI == nil {
-		return a.write(a.Stdio.Out, appinfo.About(a.Version)+"\nThe interactive TUI is not built yet (workstream G); use facman scan, plan --profile agentic-factory or apply --profile agentic-factory.\n")
+		return a.write(a.Stdio.Out, appinfo.About(a.Version)+"\nThe interactive TUI is not available in this build; use facman scan, plan --profile agentic-factory or apply --profile agentic-factory.\n")
 	}
 	if err := a.TUI.Run(c.Context(), TUIRequest{Profiles: profiles, With: with, CatalogDir: fl.catalog, Stdio: a.Stdio}); err != nil {
 		return asTyped(err)

@@ -144,7 +144,7 @@ func TestRootVersionAboutAndTUI(t *testing.T) {
 		t.Errorf("--help = %q", out.String())
 	}
 
-	// stdout a terminal: the TUI seam (stub until workstream G, then the runner).
+	// stdout a terminal: the TUI seam.
 	ptmx, tty, err := pty.Open()
 	if err != nil {
 		t.Skip(err)
@@ -152,10 +152,19 @@ func TestRootVersionAboutAndTUI(t *testing.T) {
 	defer func() { _ = ptmx.Close(); _ = tty.Close() }()
 	go drain(ptmx)
 	a.Stdio.Out = tty
-	if got := a.Execute(context.Background(), nil); got != 0 {
-		t.Errorf("stub exit %d", got)
-	}
 	tui := &fakeTUI{}
+	a.TUI = tui
+	// stdin not a terminal: keys (and consent) only come from a terminal.
+	errBuf := &strings.Builder{}
+	a.Stdio.Err = errBuf
+	if got := a.Execute(context.Background(), nil); got != 64 || tui.got != nil || !strings.Contains(errBuf.String(), "stdin is not a terminal") {
+		t.Errorf("stdin not a tty: exit %d, tui %+v, stderr %q", got, tui.got, errBuf.String())
+	}
+	a.Stdio.In = tty
+	a.TUI = nil
+	if got := a.Execute(context.Background(), nil); got != 0 {
+		t.Errorf("no TUI wired: exit %d", got)
+	}
 	a.TUI = tui
 	if got := a.Execute(context.Background(), []string{"--profile", "x", "--with", "colima", "--catalog", "./c"}); got != 0 {
 		t.Fatalf("tui exit %d", got)
