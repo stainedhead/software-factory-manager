@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-14
 
-Purpose: the data shapes these fixes add or constrain. The Increment 1 data dictionary ([../archive/261114-software-factory-manager/data-dictionary.md](../archive/261114-software-factory-manager/data-dictionary.md)) stays authoritative for everything else.
+Purpose: the data shapes these fixes add or constrain. The Increment 1 data dictionary ([../archive/261114-software-factory-manager/data-dictionary.md](../data-dictionary.md)) stays authoritative for everything else.
 
 ## Entities
 

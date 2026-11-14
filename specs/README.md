@@ -8,13 +8,14 @@ Active feature specs live here; completed ones move to `specs/archive/` (via `/a
 
 | Spec | Scope | Status |
 |---|---|---|
-| [261114-software-factory-manager-auto-review/](261114-software-factory-manager-auto-review/) | Increment 1 review fixes (26 requirements from the Step 5 code review) | In progress |
+None. The next increment gets its own `YYMMDD-<feature>/` directory here.
 
 ## Archived specs
 
 | Spec | Scope | Archived |
 |---|---|---|
-| [archive/261114-software-factory-manager/](archive/261114-software-factory-manager/) | `facman` Increment 1 (Phase 0 + Phase 1 MVP): detect, plan and install brew packages safely, from the TUI and the CLI | 2026-11-14, 100% complete; review findings moved to the auto-review PRD |
+| [archive/261114-software-factory-manager/](archive/261114-software-factory-manager/) | `facman` Increment 1 (Phase 0 + Phase 1 MVP): detect, plan and install brew packages safely, from the TUI and the CLI | 2026-11-14, 100% complete |
+| [archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/](archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/) | Increment 1 review fixes: 26 requirements from the Step 5 code review (kept inside the Increment 1 archive) | 2026-11-14; 21 done, 3 partly done, 2 deferred (see its implementation-notes.md) |
 
 ## Naming
 

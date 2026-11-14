@@ -3,7 +3,7 @@
 **Created:** 2026-11-14
 **Jira:** N/A
 **Status:** Reviewed (2026-11-14, `/review-prd`, dev-flow Step 6), ready for spec. Written by `/review-code` in dev-flow `/implm-frm-prd` Step 5, run unattended. The review log is Appendix A.
-**Source review:** the whole diff from `origin/main` (`f0776c9`) to `11fed13` on branch `claude/project-thread-ys3kmd` (226 files, about 30,000 lines added), reviewed against [spec.md](../archive/261114-software-factory-manager/spec.md) and acceptance criteria I1-1 to I1-16.
+**Source review:** the whole diff from `origin/main` (`f0776c9`) to `11fed13` on branch `claude/project-thread-ys3kmd` (226 files, about 30,000 lines added), reviewed against [spec.md](../spec.md) and acceptance criteria I1-1 to I1-16.
 **Spec it fixes:** `specs/archive/261114-software-factory-manager/` (Increment 1, Phase 0 + Phase 1 MVP)
 
 ## Executive Summary

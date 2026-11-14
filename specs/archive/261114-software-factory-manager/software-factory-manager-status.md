@@ -4,7 +4,7 @@
 **Spec:** specs/archive/261114-software-factory-manager (archived in Step 7; was specs/261114-software-factory-manager)
 **Branch:** claude/project-thread-ys3kmd
 **Review PRD:** software-factory-manager-auto-review-PRD.md (moved into the review spec in Step 8)
-**Review Spec:** specs/261114-software-factory-manager-auto-review (created in Step 8)
+**Review Spec:** [261114-software-factory-manager-auto-review/](261114-software-factory-manager-auto-review/) (created in Step 8 as `specs/261114-software-factory-manager-auto-review/`, archived here in Step 10)
 **Process Start:** 2026-11-14T18:37:38Z
 **Process End:** —
 **Total Runtime:** —
@@ -21,8 +21,8 @@
 | 6  | Prepare Review PRD              | ✅ Complete | 2026-11-14T21:33:34Z | 2026-11-14T21:34:52Z | 1 |
 | 7  | Archive Original Spec           | ✅ Complete | 2026-11-14T21:35:22Z | 2026-11-14T21:36:21Z | 1 |
 | 8  | Spec Review Fixes               | ✅ Complete | 2026-11-14T21:37:53Z | 2026-11-14T21:39:38Z | 2 |
-| 9  | Implement Review Fixes          | 🔄 In Progress | 2026-11-14T21:39:38Z | — | — |
-| 10 | Archive Fixes Spec              | ⬜ Pending | — | — | — |
+| 9  | Implement Review Fixes          | ✅ Complete | 2026-11-14T21:39:38Z | 2026-11-14T22:34:10Z | 55 |
+| 10 | Archive Fixes Spec              | ✅ Complete | 2026-11-14T22:34:29Z | 2026-11-14T22:35:44Z | 1 |
 | 11 | Final Quality Pass              | ⬜ Pending | — | — | — |
 | 12 | Process Analysis Report         | ⬜ Pending | — | — | — |
 | 13 | Archive Spec                    | ⬜ Pending | — | — | — |
@@ -41,3 +41,5 @@
 - Step 6: `/review-prd` on the review PRD: Needs revision (Warnings on functional completeness and acceptance criteria, no Fail) → Ready for spec. FR-001, FR-005, FR-007 and FR-010 split into atomic parts (26 requirements from 19 findings), four untestable criteria rewritten, FR-001d moved P1 → P2, FR-013 narrowed; TDD, per-fix review, teammates and worktrees guidance confirmed; no P0. Log in the PRD's Appendix A.
 - Step 7: `/archive-spec`: status.md showed Phase 6 "Not Started" only because archiving is Phase 6, so it was set Complete with an archival note (the review findings move to the fixes spec; the I1 checkboxes wait for FR-017's evidence table). Confirmations skipped (unattended run). Moved to `specs/archive/261114-software-factory-manager/` with the PRD and this dashboard. Relative links inside the archive were rewritten one level deeper, and every link into the old path (root README, specs READMEs, docs, user-docs, 23 package READMEs, the review PRD) was updated. A link check over all Markdown found 0 broken links. The review PRD stays at the repo root for Step 8.
 - Step 8: `/create-spec` on the review PRD created `specs/261114-software-factory-manager-auto-review/` (inline templates; `prd-to-spec` not installed), with one task per requirement (T-1a to T-19). The review PRD moved into it and its link to the Increment 1 spec was fixed; root README and specs/README point at the new spec.
+- Step 9: TDD fixes in priority order, one worker (RF-0). 21 of 26 requirements done; FR-003, FR-006 and FR-019 partly done, and FR-008 and FR-010a deferred, each with a rationale in the review spec's implementation-notes.md. The new contract test caught the Homebrew 7.0.11 cask `target` shape on macOS CI, and the parser was fixed (RF-12). `make integration` now shows `--- PASS` for `TestIntegrationReadOnly`, `TestIntegrationApplyHello` and `TestIntegrationBrewContract` on macOS. New gates: `make archcheck`, `make doccheck`, `make fuzz`. Coverage 96.5% overall, domain 100%, usecase 97.4 to 100% per package. CI green on every push.
+- Step 10: `/archive-spec` on the review spec (unattended, confirmations skipped): status.md Phases 5 and 6 set Complete, with the 3 partial and 2 deferred items carried as open items. Moved to `specs/archive/`, then into `specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/`. Relative links in the moved files were rewritten two levels deeper, and the root README, specs READMEs, this dashboard and user-docs/field-check.md were updated. A link check over all Markdown found 0 broken links.

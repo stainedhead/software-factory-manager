@@ -1,9 +1,9 @@
 # Status: software-factory-manager auto-review fixes
 
 **Feature:** Increment 1 review fixes (`facman`, the Agentic Software Factory Manager)
-**Spec directory:** `specs/261114-software-factory-manager-auto-review/`
+**Spec directory:** `specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/` (created as `specs/261114-software-factory-manager-auto-review/`)
 **Created:** 2026-11-14
-**Orchestration dashboard:** [../archive/261114-software-factory-manager/software-factory-manager-status.md](../archive/261114-software-factory-manager/software-factory-manager-status.md)
+**Orchestration dashboard:** [../archive/261114-software-factory-manager/software-factory-manager-status.md](../software-factory-manager-status.md)
 
 > **MANDATORY:** update this file after every task and phase.
 
@@ -16,8 +16,8 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md, plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 26 tasks (T-1a to T-19) |
-| 5 | Implementation | In Progress | 26 / 26 tasks closed (done or deferred) |
-| 6 | Completion & archival | Not Started | |
+| 5 | Implementation | Complete | 26 / 26 tasks closed: 21 done, 3 partly done, 2 deferred (rationale in implementation-notes.md, *Deferred items*) |
+| 6 | Completion & archival | Complete | Archived 2026-11-14 into `specs/archive/261114-software-factory-manager/` (dev-flow Step 10); the open items below carry the deferred work |
 
 ## Phase 0 Checklist
 
@@ -63,7 +63,7 @@ None.
 
 ## Open Items
 
-- **FR-003 (J):** clean-machine bootstrap on a macOS VM and real `brew` output capture: [user-docs/field-check.md](../../user-docs/field-check.md) parts 2 and 3; record the run in implementation-notes.md, *macOS clean-machine run*.
+- **FR-003 (J):** clean-machine bootstrap on a macOS VM and real `brew` output capture: [user-docs/field-check.md](../../../../user-docs/field-check.md) parts 2 and 3; record the run in implementation-notes.md, *macOS clean-machine run*.
 - **FR-006 AC1 (deferred):** second Ctrl+C stops a hung command; needs a design note and an ADR (it changes the "never killed" promise).
 - **FR-008 (deferred):** per-scan probe log and a reason on every `unknown` detection; do it with the I1-16 feedback.
 - **FR-010a (deferred):** move pre-flight and re-plan rules from `adapter/session` into a use case, with Increment 2's npm backend.
@@ -75,3 +75,5 @@ None.
 |---|---|
 | 2026-11-14 | Spec created from the review PRD (dev-flow Step 8) |
 | 2026-11-14 | FR-001a, FR-001b, FR-001c done (P1) |
+| 2026-11-14 | FR-004, FR-005a, FR-007a/b, FR-010b/c, FR-011 to FR-018 done; FR-006 and FR-019 partly; FR-008, FR-010a deferred |
+| 2026-11-14 | Archived inside the Increment 1 spec archive (dev-flow Step 10) |

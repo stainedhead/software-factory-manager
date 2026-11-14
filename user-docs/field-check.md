@@ -53,7 +53,7 @@ Run this on a disposable VM, because it really installs Homebrew.
    ```
 
    The prompt must list the Homebrew installer first, as `/bin/bash <temp file>` marked **unverified script**, and then `brew install hello`. Answer `y`. The installer asks for your password itself; `facman` never sees it.
-4. Record the result. Copy this block into the fixes spec's `implementation-notes.md` (entry "macOS clean-machine run"), or into an issue:
+4. Record the result. Copy this block into the review-fixes spec's [implementation-notes.md](../specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/implementation-notes.md#macos-clean-machine-run) (entry "macOS clean-machine run"), or into an issue:
 
    ```text
    date:               <UTC date>

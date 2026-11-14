@@ -32,7 +32,7 @@ Purpose: decisions, per-fix reviews, edge cases and deferrals made while impleme
 | `facman apply` exit code | — |
 | `packages` rows (`homebrew`, one cask) | — |
 
-The run is step 2 of [user-docs/field-check.md](../../user-docs/field-check.md#part-2-clean-machine-bootstrap-review-fr-003), handed to J next to I1-16.
+The run is step 2 of [user-docs/field-check.md](../../../../user-docs/field-check.md#part-2-clean-machine-bootstrap-review-fr-003), handed to J next to I1-16.
 
 - **RF-10 (FR-005b).** `inventory.HolderLabel(pid)` gives "PID unknown" for 0 or less, used by the three lock messages (`session`, `scan`, `statedir.Lock`). Domain is the right home: it is pure formatting of a value the inventory already owns (the lock holder), and both the use case and the adapters may import domain.
 - **RF-11 (FR-009, port change).** `execute.HomebrewInstaller.Download` now returns `InstallerScript{Path, SHA256, Size}` instead of a path, and `ActionResult` gained `Installer`. `execute` writes `# installer: sha256=… bytes=…` into the log before the runner's own header (the runner writes `$ argv` and `# env:`; both are header lines at the top). Report schema v1 gained the optional `results[].installer` object (compatible). A custom `http.Client` without `CheckRedirect` gets a copy with the https-only rule, so the rule holds for injected clients too. The execute-level test was written after the port change it tests; the adapter tests were red first.

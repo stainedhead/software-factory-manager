@@ -1,6 +1,6 @@
 # specs/archive/261114-software-factory-manager
 
-Active spec for **Increment 1 (Phase 0 + Phase 1 MVP)** of `facman`, the Agentic Software Factory Manager: detect, plan and install brew packages safely, from the TUI and the CLI. Later increments get their own spec directories.
+Archived spec for **Increment 1 (Phase 0 + Phase 1 MVP)** of `facman`, the Agentic Software Factory Manager: detect, plan and install brew packages safely, from the TUI and the CLI. Later increments get their own spec directories.
 
 Back to [specs/archive/](../README.md) and [specs/](../../README.md). Source of intent: [INTENT.md](../../../INTENT.md); rules: [AGENTS.md](../../../AGENTS.md).
 
@@ -16,5 +16,6 @@ Back to [specs/archive/](../README.md) and [specs/](../../README.md). Source of 
 | [plan.md](plan.md) | Workstreams, parallelism, critical path, testing strategy, rollout |
 | [tasks.md](tasks.md) | 52 TDD-ordered tasks in workstreams A to H |
 | [implementation-notes.md](implementation-notes.md) | Decisions (D-*, review R-*), edge cases, deviations, measurements, lessons |
+| [261114-software-factory-manager-auto-review/](261114-software-factory-manager-auto-review/) | The review-fixes spec: 26 requirements from the Step 5 code review, with its PRD, status and implementation notes (archived here in Step 10) |
 
-How it fits: this directory drives the code under `cmd/facman` and `internal/`. When Increment 1 is complete in `status.md`, `/archive-spec` moves it to `specs/archive/`.
+How it fits: this directory drives the code under `cmd/facman` and `internal/`. Increment 1 is complete and archived (Step 7); its review fixes were archived inside it (Step 10).

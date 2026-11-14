@@ -1,6 +1,6 @@
-# specs/261114-software-factory-manager-auto-review
+# specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review
 
-Active spec for the **Increment 1 review fixes** of `facman`, the Agentic Software Factory Manager: the 26 requirements from the Step 5 code review (0 P0, 5 P1, 21 P2). Back to [specs/](../README.md). The spec it fixes is [../archive/261114-software-factory-manager/](../archive/261114-software-factory-manager/).
+Archived spec for the **Increment 1 review fixes** of `facman`, the Agentic Software Factory Manager: the 26 requirements from the Step 5 code review (0 P0, 5 P1, 21 P2). It is archived inside the spec it fixes, [261114-software-factory-manager/](../README.md) (Increment 1). Back to [specs/archive/](../../README.md). Outcome: 21 done, 3 partly done (FR-003, FR-006, FR-019), 2 deferred (FR-008, FR-010a); see [implementation-notes.md](implementation-notes.md#deferred-items) and the open items in [status.md](status.md#open-items).
 
 | File | Purpose |
 |---|---|

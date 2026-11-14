@@ -2,8 +2,8 @@
 
 **Created:** 2026-11-14 (dev-flow `/implm-frm-prd` Step 8, `/create-spec`, run unattended)
 **Source PRD:** [software-factory-manager-auto-review-PRD.md](software-factory-manager-auto-review-PRD.md) (moved here from the repo root)
-**Spec it fixes:** [../archive/261114-software-factory-manager/spec.md](../archive/261114-software-factory-manager/spec.md)
-**Status:** Implementation
+**Spec it fixes:** [../archive/261114-software-factory-manager/spec.md](../spec.md)
+**Status:** Archived (implementation complete; deferred items in implementation-notes.md)
 
 ## Executive Summary
 
@@ -105,6 +105,6 @@ Single unattended run on 2026-11-14 (dev-flow Step 9): P1 fixes first, then P2s.
 
 ## References
 
-- Source PRD: [specs/261114-software-factory-manager-auto-review/software-factory-manager-auto-review-PRD.md](software-factory-manager-auto-review-PRD.md)
-- Increment 1 spec: [../archive/261114-software-factory-manager/spec.md](../archive/261114-software-factory-manager/spec.md)
-- [AGENTS.md](../../AGENTS.md), [INTENT.md](../../INTENT.md)
+- Source PRD: [software-factory-manager-auto-review-PRD.md](software-factory-manager-auto-review-PRD.md)
+- Increment 1 spec: [../archive/261114-software-factory-manager/spec.md](../spec.md)
+- [AGENTS.md](../../../../AGENTS.md), [INTENT.md](../../../../INTENT.md)

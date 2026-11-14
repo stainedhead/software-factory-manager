@@ -5,7 +5,7 @@
 
 ## Architecture Overview
 
-No new components. The fixes harden the existing Clean Architecture layers (see [../archive/261114-software-factory-manager/architecture.md](../archive/261114-software-factory-manager/architecture.md)).
+No new components. The fixes harden the existing Clean Architecture layers (see [../archive/261114-software-factory-manager/architecture.md](../architecture.md)).
 
 ## Component Architecture
 
