@@ -58,6 +58,10 @@ The full reasoning is in [docs/design/](docs/design/software-factory-installer-d
 - No secrets in configuration files. Files list env var names only.
 - No multi-user brew ownership. `facman` assumes single-user machines and stops if the brew prefix belongs to someone else.
 
+## Where it stands
+
+The product is delivered in increments that follow the design's phase plan. **Increment 1 (detect, plan and install brew packages safely, from the TUI and the CLI) is built.** Management and npm, configuration lists, file formats and per-tool setup follow in that order. Building it settled a few details without changing any decision above. For example, `node@24` is put on PATH and never force-linked, and headless `apply` asks `[y/N]` on the terminal, with no `--yes`. Those details are logged in [docs/architecture-decision-record.md](docs/architecture-decision-record.md). What ships today is in [docs/product-details.md](docs/product-details.md).
+
 ## How we work on it
 
 The design comes before code: read [docs/design/](docs/design/) and [AGENTS.md](AGENTS.md) first. Features follow the PRD → spec → implementation flow in `specs/`. Every change updates its docs in the same PR. This file changes only when the product's purpose, audience, scope or key decisions change.

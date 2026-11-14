@@ -1,6 +1,8 @@
-# Software Factory Installer: Design (v0.3 draft)
+# Software Factory Installer: Design (v0.4 draft)
 
-*Status: draft v0.3 for review by J · 2026-11-14 · Binary name: `facman` (J, 2026-11-14)*
+*Status: draft v0.4 for review by J · 2026-11-14 · Binary name: `facman` (J, 2026-11-14)*
+
+*v0.4 changes (Increment 1 build, 2026-11-14): points the design left open are now settled by the shipped code. The Homebrew installer runs without `NONINTERACTIVE=1` (§4a). `node@24` is never force-linked: its keg `bin` goes first on children's PATH, and the Summary prints the profile line (§2 row 15, §4a). Linux and WSL state lives under `${XDG_STATE_HOME:-~/.local/state}/facman/`, next to `facman.lock` and `logs/` (§6). The TUI is Bubble Tea v2 and Lip Gloss v2 without `bubbles` or `huh` (§8). The `-cl` short-flag normalizer (option A) is in place (§7a). Profile union with conflicting pins is exit 3 (§12 Q9). What Increment 1 actually ships is in [product-details.md](../product-details.md); the decisions are in the [ADR](../architecture-decision-record.md).*
 
 *v0.3 addition (J, 2026-11-14): `--no-paperclip` / `-nop` suppresses Paperclip from being considered for install (§7a).*
 
@@ -50,7 +52,7 @@ Researched 2026-11-14. "Cask" means a Homebrew cask (GUI app or prebuilt binary)
 | 12 | **git CLI** | git | **Formula** `git` | Apple git through the Command Line Tools (CLT) | `git` on PATH, but see the gotcha | **Gotcha:** `/usr/bin/git` is a *shim*. Running it on a Mac without CLT pops a GUI install dialog. Detect with `xcode-select -p` first and never run `/usr/bin/git` blindly. Apple git counts as "present (OS)". Decide whether the factory requires a minimum version (Q4). |
 | 13 | **sqlite** | SQLite CLI | **Formula** `sqlite` | Ships with macOS (`/usr/bin/sqlite3`) | `sqlite3` on PATH | The brew formula is **keg-only**: it is not linked onto PATH, which shadows the system copy only if you add it to PATH yourself. Default: treat the OS copy as satisfying the requirement unless a minimum version is set. Separate from this, `facman`'s own state store embeds SQLite (§6), so `facman` does not depend on this package. |
 | 14 | **AWS CLI** *(added by J, 2026-11-14)* | AWS CLI v2 (`aws`) | **Formula** `awscli` | AWS's official `.pkg` (macOS) or zip installer (Linux) | `aws` on PATH; `aws --version` must report `aws-cli/2.x` | Works the same on macOS, Linux and WSL. Watch for an old **v1** `aws` installed through pip, which shadows v2 on PATH; detect it and report it as `duplicate`. Credentials (`~/.aws`, SSO profiles) are out of scope for v1. |
-| 15 | **Node.js** *(explicit prerequisite)* | Node.js runtime, plus pnpm through corepack | **Formula** `node@24` (pinned LTS line, which satisfies Paperclip's ≥ 24.11) | `node` (latest) | `node --version`; provenance tells brew from nvm, fnm, asdf or Volta | Now a **first-class catalog entry**, not an implicit dependency. Packages declare `requires: node`, and the planner orders it first. `node@24` is keg-only, so `facman` must put it on PATH (`brew link --force node@24` or a shell snippet). If a version manager already supplies Node ≥ 24.11, it counts as satisfied and `foreign` (Q5). Paperclip also needs **pnpm**, which `facman` enables through `corepack enable` as part of Paperclip's install, not as a separate package. |
+| 15 | **Node.js** *(explicit prerequisite)* | Node.js runtime, plus pnpm through corepack | **Formula** `node@24` (pinned LTS line, which satisfies Paperclip's ≥ 24.11) | `node` (latest) | `node --version`; provenance tells brew from nvm, fnm, asdf or Volta | Now a **first-class catalog entry**, not an implicit dependency. Packages declare `requires: node`, and the planner orders it first. `node@24` is keg-only, so `facman` must put it on PATH. **Settled in v0.4:** never `brew link --force`. `facman` prepends `{brew_prefix}/opt/node@24/bin` to every child's PATH and prints the profile line in the Summary. Writing the managed profile block follows with §4a's persistence. If a version manager already supplies Node ≥ 24.11, it counts as satisfied and `foreign` (Q5). Paperclip also needs **pnpm**, which `facman` enables through `corepack enable` as part of Paperclip's install, not as a separate package. |
 | 16 | **Codex CLI** *(added 2026-11-14)* | OpenAI's coding agent (`codex`) | **Cask** `codex` | npm `@openai/codex` | `codex` on PATH | macOS and Linux (x86_64, ARM64). Orca and T3 Code both drive it alongside Claude Code. **Default on.** |
 | 17 | **uv** *(added)* | Astral's Python package and project manager (`uv`, `uvx`) | **Formula** `uv` | Astral install script | `uv` on PATH; provenance tells brew from `~/.local/bin` (script) | Needed to launch most Python MCP servers through `uvx`. All platforms. **Default on.** |
 | 18 | **jq** *(added)* | JSON processor | **Formula** `jq` | — | `jq` on PATH | macOS 15+ ships `/usr/bin/jq`, which counts as present (OS). All platforms. **Default on.** |
@@ -230,12 +232,12 @@ On every launch, before the Scan screen, `facman` runs a **bootstrap check**. It
 | 4. Shell environment | `brew shellenv` applied | Set for this process automatically. **Prompt** before adding it to the shell profile. | Set for this process. Profile change controlled by `bootstrap.persist_shellenv` |
 | 5. **Node / npm** | `node` ≥ 24.11 and `npm` from any provenance | Checked always. **Prompted only if a selected package uses the npm backend** (today Paperclip) | Auto, if any listed package needs npm |
 
-**How Homebrew is installed.** Download Homebrew's official `install.sh` to a temp file and run it with `NONINTERACTIVE=1`, as the invoking user and never as root. On macOS the script needs **an admin account and sudo**, to create `/opt/homebrew` and install CLT. On Linux it needs sudo to create `/home/linuxbrew`, or it falls back to an unsupported home-directory prefix, which `facman` refuses.
+**How Homebrew is installed.** Download Homebrew's official `install.sh` to a temp file and run it as the invoking user and never as root. **Settled in v0.4:** it runs as `/bin/bash <0600 temp file>` with the terminal handed over and **without** `NONINTERACTIVE=1`. With that variable set, `install.sh` checks sudo with `sudo -n` and aborts for admins whose sudo needs a password. The script turns non-interactive mode on itself when stdin is not a terminal. The download is retried 3 times and is never piped to a shell. On macOS the script needs **an admin account and sudo**, to create `/opt/homebrew` and install CLT. On Linux it needs sudo to create `/home/linuxbrew`, or it falls back to an unsupported home-directory prefix, which `facman` refuses.
 
 - **TUI:** the sudo prompt is passed through to the terminal (`tea.ExecProcess`), so the password goes straight to `sudo`.
 - **`-cl`:** `facman` first checks `sudo -n true`. If that fails (no cached credential and no NOPASSWD rule), it **stops immediately with exit code 4** and tells the operator how to fix the image: pre-install Homebrew, or grant the build user NOPASSWD for the bootstrap. It never hangs on a prompt. Bootstrap is the one place where `-cl` may use sudo, and only when `bootstrap.allow_sudo: true` (default `true` for bootstrap, separate from `policy.allow_sudo` for package installs).
 
-**npm comes from the catalog's `node` entry** (`node@24` through brew, §2 row 15). There is no separate npm install. `node@24` is keg-only, so `facman` links it (`brew link --force node@24`) or adds `$(brew --prefix node@24)/bin` to the managed PATH block. If a developer's nvm, fnm or Volta Node is ≥ 24.11, it satisfies the check as `foreign`, and npm packages are installed into it (Q5 still decides whether that is the long-term rule). Corepack/pnpm for Paperclip is enabled as part of Paperclip's own install.
+**npm comes from the catalog's `node` entry** (`node@24` through brew, §2 row 15). There is no separate npm install. `node@24` is keg-only, so `facman` adds `$(brew --prefix node@24)/bin` to the PATH (never `brew link --force`; settled in v0.4). If a developer's nvm, fnm or Volta Node is ≥ 24.11, it satisfies the check as `foreign`, and npm packages are installed into it (Q5 still decides whether that is the long-term rule). Corepack/pnpm for Paperclip is enabled as part of Paperclip's own install.
 
 **Shell environment.** A freshly installed Homebrew is not on PATH, so later steps (and later shells) can't find `brew`, `node` or anything installed with them.
 - **Within the run:** `facman` evaluates `brew shellenv` and applies it to its own environment and to every child process. This always happens.
@@ -449,7 +451,7 @@ The catalog and profiles live in **one git repo** owned by the platform team. `f
 
 ## 6. State store (inventory)
 
-Use **SQLite**, embedded through a pure-Go driver (`modernc.org/sqlite`, no cgo). It is a single file at `~/Library/Application Support/facman/state.db` (macOS) or `%LOCALAPPDATA%\facman\state.db` (Windows).
+Use **SQLite**, embedded through a pure-Go driver (`modernc.org/sqlite`, no cgo). It is a single file at `~/Library/Application Support/facman/state.db` (macOS), `${XDG_STATE_HOME:-~/.local/state}/facman/state.db` (Linux and WSL; settled in v0.4) or `%LOCALAPPDATA%\facman\state.db` (Windows). The same directory holds `facman.lock`, an exclusive `flock` that mutating runs hold, and `logs/<YYYYMMDD-HHMMSS>-<operation id>-<package id>.log`, which is pruned after 90 days. Migrations are numbered and embedded. A database from a newer `facman`, or a corrupt one, is refused and never touched. Increment 1 also adds a `tap_trust` table for item-level trust grants (§3b).
 
 ```sql
 packages(        -- one row per package facman knows about on this machine
@@ -698,7 +700,7 @@ J asked for `-cl` as the short form. Most Go CLI libraries, including `spf13/pfl
 | B. Go stdlib `flag` | Register both `configuration-list` and `cl`. Stdlib `flag` accepts `-cl` and `--cl` natively. | No special-casing, but you lose cobra's subcommand tree and shell completion, or have to rebuild them. |
 | C. Use `-c` only | A standard single-letter shorthand. | Doesn't match J's ask. |
 
-**Recommendation: A.** `-cl`, `-c` and `--configuration-list` all work and are documented, and shell completion still offers `--configuration-list`.
+**Recommendation: A.** `-cl`, `-c` and `--configuration-list` all work and are documented, and shell completion still offers `--configuration-list`. **Built in v0.4 (Increment 1):** the normalizer rewrites `-cl`, `-c`, `-hs`, `-ps`, `-os`, `-ts` and `-nop` only as exact tokens, and never after `--`. A collision test guards against clashes with cobra's own shorthands. Until each feature ships, its flags exit 64 and name the increment.
 
 ### Per-tool setup flags: `--hermes-setup`, `--paperclip-setup`, `--orca-setup` (J, 2026-11-14)
 
@@ -846,6 +848,8 @@ User-facing instructions for each file live in [`user-docs/`](../../user-docs/RE
 
 **Recommendation: Go + Bubble Tea (charmbracelet: bubbletea, bubbles, lipgloss, huh for forms).**
 
+**Settled in v0.4:** Increment 1 uses Bubble Tea v2 (`charm.land/bubbletea/v2` v2.1.1) and Lip Gloss v2 (v2.1.0), with cobra for the CLI. `bubbles` and `huh` are not used yet, because the install-only flow needs no widget beyond a few lines of its own code. Sudo steps use `tea.ExecProcess`, as planned.
+
 | Criterion | Go + Bubble Tea | Python + Textual | Rust + Ratatui |
 |---|---|---|---|
 | Runs on a fresh Mac with nothing installed | ✅ single static binary | ❌ needs a Python runtime, which macOS no longer ships usefully; bundling with PyInstaller is fragile | ✅ static binary |
@@ -911,7 +915,7 @@ Distribution: a signed and notarized universal macOS binary on GitHub Releases, 
 6. ~~Machine model~~ **Answered:** usually single-user, so the developer owns Homebrew (§9.1).
 7. **Claude Code channel.** Is the brew `claude-code` (stable, upgraded by `facman`) the standard, or do you prefer native auto-update with managed-settings version floors?
 8. **Adoption default.** When `gh` and others are already brew-installed by the developer, offer adoption interactively (current design), or auto-adopt in lab policy mode?
-9. **"Multiple software factories."** Can one machine belong to several factories at once (profile union), and can two factories conflict, for example by pinning different versions of the same tool?
+9. **"Multiple software factories."** Can one machine belong to several factories at once (profile union), and can two factories conflict, for example by pinning different versions of the same tool? *Default in Increment 1 (v0.4):* `--profile` is repeatable and the union is wanted, required beats optional, and conflicting pins are exit 3 naming both profiles. J can still change this.
 10. **Distribution.** Is Jamf (or another MDM) available in the lab to push `facman`, or is it a self-serve `brew install`/curl?
 11. **WSL host apps.** On Windows/WSL machines, is report-only acceptable for GUI apps in v1, or should `facman` install them on the Windows host through WinGet from the start? That means a second consent scope, and possibly admin rights on Windows.
 12. **Linux desktops.** Are there Linux desktop machines (not just headless boxes) in the lab? If so, VS Code and Claude desktop would need an apt/dnf or Flatpak backend, because Homebrew has no Linux casks for them.
