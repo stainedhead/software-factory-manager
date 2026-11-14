@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 48 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D, E, F and G done; then H |
+| 5 | Implementation | Complete | 52 / 52 tasks (+ T-D9). Workstreams A to H done; `make check` green, coverage 96.6% (domain 100%, usecase ≥ 97.2%) |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -80,6 +80,10 @@
 | T-G3 Review screen | ✅ Done | Every command with sudo/unverified/tap/trust/order marks; Enter is the only consent (I-46); empty plan → Summary |
 | T-G4 Run screen | ✅ Done | Progress over a channel, `tea.ExecProcess` hand-off via `execrunner.Handoff` (I-44, I-45), Ctrl+C confirm, `q` ignored; race fix I-47 |
 | T-G5 Summary screen | ✅ Done | Results, sign-in next steps, profile lines, logs; full-flow goldens; TUI wired in `cmd/facman`, pty e2e (I1-13), first frame 20–52 ms; stdin not a tty → 64 (I-49) |
+| T-H1 Real-Homebrew integration tests | ✅ Done | `cmd/facman/integration_test.go` (`integration` tag): read-only scan/plan/doctor with a temp HOME; `hello` install via `testdata/catalogs/integration` only with `FACMAN_INTEGRATION_MUTATE=1` on darwin. Skips here (root, no brew); real run on macOS CI (I-52) |
+| T-H2 CI wiring | ✅ Done | `make integration` step, `FACMAN_INTEGRATION_MUTATE` set only on macOS; golangci-lint lints the `integration` tag; `.github/README.md` updated. `make build-all` already present (T-A1) |
+| T-H3 Documentation | ✅ Done | Root README, technical-details, product-details, ADR, getting-started, configuration, new usage-examples; missing folder READMEs added (I-53) |
+| T-H4 Quality gate | ✅ Done | `make check` green; `make cover` 96.6% total, domain 100%, usecase 97.2–100%; `go mod tidy` clean; README audit of `internal`, `cmd`, `testdata`, `specs`, `docs` clean |
 
 ## Blockers
 
@@ -97,4 +101,5 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | Step 3, workstream D: `brew` (locator, shellenv, info parsing, detector, formula/cask backends, tap/trust state), `detect` (PATH, bundle, npm), `fsprobe`; detection-only `gemini-cli` entry (T-D9). Coverage: 95.6% overall. Deviations I-16 to I-24. |
 | 2026-11-14 | Step 3, workstream E: bootstrap, scan, conflicts, planning, execute, doctor, status and summary use cases; `inventory.InstallRef` shared by scan and execute; `statedir.OpenLog`. Coverage: 96.4% overall, 100% domain, usecase ≥ 97.2% per package. Deviations I-26 to I-31. |
 | 2026-11-14 | Step 3, workstream F: report schema v1, installer, `adapter/session` and `adapter/cli`, `cmd/facman` wiring, e2e and perf smoke tests. Coverage: 96.4% overall. Deviations I-32 to I-41. |
+| 2026-11-14 | Step 3, workstream H: real-Homebrew integration tests, CI `make integration` with macOS-only mutation, docs for Increment 1, folder README audit, quality gate. Phase 5 complete. Deviations I-52, I-53. |
 | 2026-11-14 | Step 3, workstream G: `adapter/tui` (Bubble Tea v2) Scan → Plan → Review → Run → Summary, wired as `facman` with no command; `catalog.ResolveSelection`, `session.Run.Resolve`/`PlanSelection`/`Request.Runner`, `execrunner.Handoff`. Deviations I-42 to I-51. |

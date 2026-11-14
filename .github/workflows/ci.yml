@@ -37,7 +37,10 @@ jobs:
       - name: Test
         run: make cover
       - name: Integration tests
-        run: go test -race -tags integration ./...
+        run: make integration
+        env:
+          # The one test that installs (and removes) GNU hello runs on macOS only (spec I1-14).
+          FACMAN_INTEGRATION_MUTATE: ${{ runner.os == 'macOS' && '1' || '' }}
       - name: Build
         run: make build
       - name: Smoke test

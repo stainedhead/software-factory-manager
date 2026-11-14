@@ -1,4 +1,8 @@
 version: "2"
+run:
+  # Lint the real-Homebrew integration tests too (cmd/facman/integration_test.go).
+  build-tags:
+    - integration
 linters:
   default: standard
   enable:

@@ -2,7 +2,7 @@
 
 **Agentic Software Factory Manager** — the home of `facman`.
 
-> **Status:** design complete in draft (v0.3); Increment 1 (MVP) is specified in [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/) and in implementation: the domain model, use cases, adapters and the headless CLI (`facman scan`, `plan`, `apply`, `status`, `doctor`, each with `--json`) are in place; the TUI is next. Sections marked _TBD_ are filled in as the product takes shape.
+> **Status:** Increment 1 (MVP) is built: the TUI (`facman`) and the headless commands `scan`, `plan`, `apply`, `status` and `doctor`, each with `--json`, on macOS, Linux and WSL 2 through Homebrew. Upgrades, uninstall, adoption, the npm backend, configuration lists (`-cl`), templates and per-tool setup flags arrive in later increments; see [What works today](#what-works-today). The spec is [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/).
 
 ## Overview
 
@@ -14,14 +14,32 @@ Start with [INTENT.md](INTENT.md) for purpose, scope and key decisions, then [do
 
 ## Quick start
 
-Requires the latest stable Go (1.27+).
+Requires the latest stable Go (1.27+), and a normal user account (`facman` refuses to run as root, as Homebrew does).
 
 ```sh
 git clone https://github.com/stainedhead/software-factory-manager.git
 cd software-factory-manager
-make build   # builds bin/facman
-make test
+make build                                   # static binary at bin/facman
+bin/facman --version
+bin/facman scan                              # what is installed, and how (read-only)
+bin/facman plan --profile agentic-factory    # the exact commands it would run (read-only)
+bin/facman                                   # the TUI: Scan → Plan → Review → Run → Summary
 ```
+
+Nothing changes on the machine until you consent: press `Enter` on the TUI's Review screen, or answer `y` to `apply`'s `Proceed? [y/N]`. The full walk-through is in [Getting started](user-docs/getting-started.md).
+
+## What works today
+
+| Command | What it does | Changes the machine |
+|---|---|---|
+| `facman` | The TUI. Opens on a terminal; otherwise prints the about text | Only after `Enter` on Review |
+| `facman scan [--json]` | Detects every catalog package, its ownership state, provenance, version and path | No |
+| `facman plan --profile P [--with X] [--json]` | Prints the exact, ordered commands that would install what profile `P` is missing | No |
+| `facman apply --profile P [--with X] [--dry-run] [--json]` | Shows the plan, asks `Proceed? [y/N]` on the terminal, runs it, records every step | Yes, after `y` |
+| `facman status [--json]` | Lists managed, adopted, foreign, drifted and duplicate packages | No |
+| `facman doctor [--json]` | Checks the whole catalog for link conflicts and untrusted taps; exit 2 when something needs fixing | No |
+
+Every command except `--version` and `--about` also takes `--catalog <dir>` to use a catalog directory instead of the built-in one. Flags, exit codes and state paths are in [Configuration](user-docs/configuration.md); worked examples are in [Usage examples](user-docs/usage-examples.md).
 
 ## Documentation
 
@@ -31,10 +49,12 @@ make test
 
 | Guide | What it covers |
 |---|---|
-| [Getting started](user-docs/getting-started.md) | Installing and running for the first time |
-| [Configuration](user-docs/configuration.md) | Settings, environment variables, and options |
-| [Configuration lists (`-cl`)](user-docs/configuration-list.md) | The same tools on every machine, with no prompts |
-| [Per-tool setup](user-docs/README.md) | Hermes, Paperclip, Orca and T3 Code setup files, templates and validation |
+| [Getting started](user-docs/getting-started.md) | Build or run `facman`, first scan, plan, apply and the TUI |
+| [Usage examples](user-docs/usage-examples.md) | Common tasks: scripting with `--json`, optional packages, custom catalogs, conflicts, diagnosis |
+| [Configuration](user-docs/configuration.md) | Every flag, `--catalog`, `--profile`, `--with`, environment variables, state paths and exit codes |
+| [Configuration lists (`-cl`)](user-docs/configuration-list.md) | *Increment 3:* the same tools on every machine, with no prompts |
+| [Templates and validation](user-docs/templates-and-validation.md) | *Increment 4:* templates, schemas and `facman validate` |
+| [Hermes setup (`-hs`)](user-docs/hermes-setup.md), [Paperclip setup (`-ps`)](user-docs/paperclip-setup.md), [Orca setup (`-os`)](user-docs/orca-setup.md), [T3 Code setup (`-ts`)](user-docs/t3-setup.md) | *Increment 5:* per-tool setup files |
 
 **For contributors and maintainers** — [docs/](docs/)
 
@@ -55,9 +75,9 @@ Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](sp
 | `make build` | Compile a static (`CGO_ENABLED=0`) `bin/facman` |
 | `make build-all` | Cross-compile darwin and linux, amd64 and arm64, into `bin/<os>-<arch>/facman` |
 | `make test` | Run tests with the race detector |
-| `make integration` | Run tests including the `integration` build tag (real Homebrew; skips when absent) |
+| `make integration` | Tests including the `integration` build tag: read-only checks against real Homebrew (skip without it or as root); the GNU `hello` install runs only with `FACMAN_INTEGRATION_MUTATE=1` |
 | `make lint` | Run golangci-lint |
-| `make cover` | Tests with a coverage report |
+| `make cover` | Tests with a coverage report (target ≥ 80% overall; Increment 1 is at about 96%) |
 | `make check` | fmt + lint + test (run before every commit) |
 
 Contributor and AI-agent rules — architecture, TDD, and documentation standards — are in [AGENTS.md](AGENTS.md).

@@ -14,8 +14,8 @@
 |------|------|--------|-------|-----|---------------|
 | 1  | Create Spec from PRD            | ✅ Complete | 2026-11-14T18:40:04Z | 2026-11-14T18:49:31Z | 9 |
 | 2  | Review Spec                     | ✅ Complete | 2026-11-14T18:49:31Z | 2026-11-14T18:51:30Z | 2 |
-| 3  | Implement Product               | 🔄 In Progress (A–G done; H next) | 2026-11-14T18:53:07Z | — | — |
-| 4  | Documentation and User Docs     | ⬜ Pending | — | — | — |
+| 3  | Implement Product               | ✅ Complete | 2026-11-14T18:53:07Z | 2026-11-14T21:10:52Z | 137 |
+| 4  | Documentation and User Docs     | 🔄 In Progress | 2026-11-14T21:10:52Z | — | — |
 | 5  | Code and Design Review          | ⬜ Pending | — | — | — |
 | 6  | Prepare Review PRD              | ⬜ Pending | — | — | — |
 | 7  | Archive Original Spec           | ⬜ Pending | — | — | — |
@@ -34,3 +34,4 @@
 - Scope: this run implements **Increment 1 (Phase 0 + Phase 1 MVP)** from the PRD's Delivery plan, not the whole PRD.
 - Step 1: `/create-spec` created `specs/261114-software-factory-manager/` (Increment 1 only: in-scope FRs, deferred FRs, I1-1 to I1-16, 52 tasks in 8 workstreams). PRD and this dashboard moved into the spec directory. `~/.claude/skills/prd-to-spec/` is not installed, so the inline templates in `create-spec.md` were used.
 - Step 2: `/review-spec` verdict **Needs revision** (no Fail; Warnings on acceptance criteria, technical approach, component coverage and edge cases). All gaps resolved in the spec (R-1 to R-9, see spec.md *Spec review log*) → **Implementation-ready**. Next: Step 3, Implement Product.
+- Step 3: workstreams A to H done (52 tasks + T-D9). `make check` green, coverage 96.6% (domain 100%, usecase ≥ 97.2%). The real-Homebrew integration tests skip in the cloud container (root, no Homebrew); their first real run is macOS CI. Deviations I-1 to I-53 in implementation-notes.md.

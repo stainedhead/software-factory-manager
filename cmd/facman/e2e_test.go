@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/creack/pty"
 
+	"github.com/stainedhead/software-factory-manager/internal/adapter/catalogyaml"
 	"github.com/stainedhead/software-factory-manager/internal/domain/inventory"
 	"github.com/stainedhead/software-factory-manager/internal/testkit/fakeworld"
 )
@@ -691,5 +693,31 @@ func TestTUIQuitAndNoTerminal(t *testing.T) {
 	f.want(0, <-code)
 	if len(f.mutating()) != 0 || len(f.operations()) != 0 {
 		t.Error("q changed something")
+	}
+}
+
+// The one-entry catalog of the real-Homebrew test (I1-14) loads and
+// validates everywhere, so a data mistake shows up before macOS CI runs it.
+func TestIntegrationCatalogLoads(t *testing.T) {
+	dir, err := filepath.Abs("../../testdata/catalogs/integration")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src, err := catalogyaml.Dir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cat, err := src.Load(context.Background())
+	if err != nil {
+		t.Fatalf("loading %s: %v", dir, err)
+	}
+	if err := cat.Validate(); err != nil {
+		t.Fatalf("validating %s: %v", dir, err)
+	}
+	if len(cat.Entries) != 1 || cat.Entries[0].ID != "hello" {
+		t.Errorf("entries = %v, want only hello", cat.Entries)
+	}
+	if _, ok := cat.Profiles["integration"]; !ok {
+		t.Errorf("profiles = %v, want integration", cat.Profiles)
 	}
 }

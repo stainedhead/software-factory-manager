@@ -1,0 +1,18 @@
+# A one-entry catalog for the real-Homebrew integration test (I1-14):
+# GNU hello is small, has no dependencies and is safe to install and remove.
+apiVersion: facman/v1
+packages:
+  hello:
+    display: GNU hello
+    kind: cli
+    detect:
+      commands: [hello]
+      provenance:
+        brew: "{brew_prefix}/Cellar/hello/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: hello
+      linux:
+        - backend: brew-formula
+          id: hello
