@@ -4,6 +4,6 @@ One subdirectory per binary. Each is a thin entry point that wires dependencies 
 
 | Directory | Binary |
 |---|---|
-| [software-factory-manager/](software-factory-manager/) | Main application (currently a stub) |
+| [facman/](facman/) | `facman`, the main application (currently a stub) |
 
 Back to the [root README](../README.md).

@@ -1,6 +1,6 @@
-# cmd/software-factory-manager
+# cmd/facman
 
-Entry point for the `software-factory-manager` binary. Keep this package thin: parse flags, wire dependencies from `internal/`, and run. No business logic.
+Entry point for the `facman` binary. Keep this package thin: parse flags, wire dependencies from `internal/`, and run. No business logic.
 
 | File | Purpose |
 |---|---|
