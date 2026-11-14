@@ -1,0 +1,16 @@
+facman · Agentic Software Factory Manager
+Profile: agentic-factory   [Scan] > Plan > Review > Run > Summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Machine:  darwin/arm64
+Homebrew: /opt/homebrew/bin/brew; 4.6.0
+Node:     24.1.0; brew
+
+Scanned 13 catalog packages: 9 absent, 1 conflict, 1 foreign, 1 managed, 1 unavailable-here.
+
+Findings:
+  info: gemini-cli is installed; it is superseded by antigravity-cli
+    fix: remove it yourself when you no longer need it
+
+Nothing has changed. Press enter to see what is missing.
+────────────────────────────────────────────────────────────────────────────────────────────────────
+enter: plan · ?: help · q: quit

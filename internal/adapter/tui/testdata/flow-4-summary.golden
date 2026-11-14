@@ -1,0 +1,27 @@
+facman · Agentic Software Factory Manager
+Profile: agentic-factory   Scan > Plan > Review > Run > [Summary]
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  jq: installed
+  Codex CLI: installed, sign-in required
+  Orca: installed
+  docker: installed
+  colima: installed
+  awscli: not installed: detection incomplete (detection incomplete: brew timed out after 10s)
+  Claude Code: not installed: conflict (/opt/homebrew/bin/claude is held by orphan (); remove the d…
+  paperclip: not installed: unavailable here (needs the npm backend (Increment 2))
+
+Next steps (installed, sign-in required):
+  Sign in to Codex CLI: run codex and follow its prompts
+
+Logs:
+  /state/logs/20261114-190000-1-jq.log
+  /state/logs/20261114-190000-2-codex.log
+  /state/logs/20261114-190000-3-orca.log
+  /state/logs/20261114-190000-4-orca.log
+  /state/logs/20261114-190000-5-orca.log
+  /state/logs/20261114-190000-6-docker.log
+  /state/logs/20261114-190000-7-colima.log
+
+facman exits 1: not everything was installed: awscli not installed (detection-incomplete); claude-c…
+────────────────────────────────────────────────────────────────────────────────────────────────────
+q: quit

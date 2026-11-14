@@ -20,6 +20,9 @@ internal/
 - `usecase` imports `domain` only. Interfaces are declared where they are consumed.
 - `adapter` and `cmd` may import inward layers; never the reverse.
 - Wire dependencies explicitly in `cmd/`; no globals or `init()` side effects.
+- **Exception: `internal/usecase/process`.** It holds only the value types of the command-runner port (`Cmd`, `Result`, `ErrTimeout`, `ErrNotFound`) and no interfaces. Every use case that runs commands imports it and declares its own `CommandRunner` interface over those types, so one adapter (`execrunner`) satisfies them all. Keep it value types only.
+- The two front ends, `adapter/cli` and `adapter/tui`, never import each other; `cmd/facman` adapts one to the other (`cli.TUIFunc`).
+- `make archcheck` (part of `make check` and CI) enforces these rules: `domain` imports only `domain` and the standard library, `usecase` never imports `adapter`, `cmd` or `testkit`, and `cli`/`tui` never import each other.
 
 ## Commands
 
@@ -28,11 +31,16 @@ Use the `Makefile`; do not invent ad-hoc invocations.
 | Command | Purpose |
 |---|---|
 | `make build` | Compile binaries from `./cmd/...` into `bin/` (produces `bin/facman`) |
+| `make build-all` | Cross-compile the release matrix (darwin/linux × amd64/arm64) into `bin/<os>-<arch>/facman`; CI runs it on Linux |
 | `make test` | `go test -race ./...` |
+| `make integration` | The `TestIntegration*` tests with `-tags integration`, verbose: read-only checks against real Homebrew, which skip without Homebrew or as root. `FACMAN_INTEGRATION_MUTATE=1` (CI sets it on macOS only) also installs and removes GNU `hello`, and turns those skips into failures. Never set it on a machine you care about |
 | `make lint` | `golangci-lint run` (v2, config in `.golangci.yml`) |
 | `make fmt` | `gofmt -w .` |
 | `make cover` | Tests with coverage report; target **≥ 80%** overall, new code fully covered |
-| `make check` | fmt + lint + test — must pass before every commit |
+| `make archcheck` | Check the Clean Architecture import rules above (`scripts/archcheck`) |
+| `make doccheck` | Check that every `.PHONY` target has a row in this table and every later-increment user guide carries its status note (`scripts/doccheck`) |
+| `make fuzz` | Fuzz each external-input parser for `FUZZTIME` (default 10 s); CI runs it on Linux. Commit a crasher's `testdata/fuzz/<FuzzName>/` file with the fix |
+| `make check` | fmt + lint + archcheck + doccheck + test — must pass before every commit |
 
 ## Development — TDD
 
@@ -81,7 +89,7 @@ Every push to `main` and every pull request runs the full pipeline; a release ru
 
 | Trigger | Workflow | What it does |
 |---|---|---|
-| Pull request, push to `main` | `.github/workflows/ci.yml` | `go mod tidy` check, `golangci-lint`, `make cover`, integration tests (`-tags integration`), `make build` and a `facman --version` smoke test, on Linux and macOS |
+| Pull request, push to `main` | `.github/workflows/ci.yml` | `go mod tidy` check, `golangci-lint`, `make archcheck`, `make doccheck`, `make cover`, `make integration`, `make build` and a `facman --version` smoke test, on Linux and macOS; on Linux also `make fuzz` and `make build-all` |
 | Tag `v*` | `.github/workflows/release.yml` | `make check`, then GoReleaser builds linux/darwin (amd64, arm64) binaries and publishes them with checksums to GitHub Releases (`.goreleaser.yaml`) |
 
 Rules:

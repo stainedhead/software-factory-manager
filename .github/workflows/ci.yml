@@ -29,16 +29,33 @@ jobs:
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
-          git diff --exit-code go.mod go.sum
+          git diff --exit-code -- go.mod go.sum
       - name: Lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.15.0
+      - name: Architecture rules
+        run: make archcheck
+      - name: Docs checks
+        run: make doccheck
       - name: Test
         run: make cover
       - name: Integration tests
-        run: go test -race -tags integration ./...
+        run: make integration
+        env:
+          # The one test that installs (and removes) GNU hello runs on macOS only (spec I1-14).
+          FACMAN_INTEGRATION_MUTATE: ${{ runner.os == 'macOS' && '1' || '' }}
+      - name: Fuzz
+        # The external-input parsers, 10 s each (review FR-014); Linux only, to keep the macOS job short.
+        if: runner.os == 'Linux'
+        run: make fuzz
       - name: Build
         run: make build
       - name: Smoke test
         run: bin/facman --version
+      - name: Cross-compile the release matrix
+        # The same darwin/linux x amd64/arm64 matrix GoReleaser builds (review FR-019).
+        if: runner.os == 'Linux'
+        run: |
+          make build-all
+          for p in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64; do test -x "bin/$p/facman" || { echo "missing bin/$p/facman"; exit 1; }; done

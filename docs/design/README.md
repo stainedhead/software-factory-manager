@@ -1,10 +1,10 @@
 # docs/design
 
-The working design for `facman`, the software-factory installer. It is the detailed source that the product and technical docs in [`../`](../) summarize.
+The working design for `facman`, the Agentic Software Factory Manager (v0.4: Increment 1 is built, and the points it settled are marked in the doc). It is the detailed source that the product and technical docs in [`../`](../) summarize.
 
 | File | Purpose |
 |---|---|
-| [software-factory-installer-design.md](software-factory-installer-design.md) | Package research, ownership states, architecture, manifest and inventory formats, TUI flow, configuration lists, per-tool setup, phased plan, and open questions |
+| [software-factory-installer-design.md](software-factory-installer-design.md) | Design v0.4: package research, ownership states, architecture, manifest and inventory formats, TUI flow, configuration lists, per-tool setup, phased plan, and open questions |
 
 ## How design changes land
 

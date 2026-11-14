@@ -1,0 +1,5 @@
+apiVersion: facman/v1
+profile: integration
+description: GNU hello only, for the real-Homebrew integration test
+packages:
+  - hello

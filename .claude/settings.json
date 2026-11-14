@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "dev-flow@shared-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "shared-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "stainedhead/shared-plugins"
+      }
+    }
+  }
+}

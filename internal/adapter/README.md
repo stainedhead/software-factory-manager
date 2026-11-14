@@ -1,0 +1,20 @@
+# internal/adapter
+
+Implementations of the use case ports: subprocesses, filesystem, SQLite, YAML, HTTP, and the driving adapters (CLI, TUI). Adapters may import `internal/domain/...` and `internal/usecase/...`; nothing inward imports an adapter. Each adapter asserts at compile time that it satisfies its ports.
+
+| Package | Purpose | Ports implemented |
+|---|---|---|
+| [catalogyaml/](catalogyaml/) | Embedded catalog v1 and profiles; `--catalog <dir>` | `scan`/`planning`/`doctor.CatalogSource` |
+| [execrunner/](execrunner/) | Subprocesses (argv only, env sanitizing, timeouts, log tee, interactive), system clock and user | `bootstrap`/`scan`/`execute.CommandRunner`, `bootstrap.PathLookup`, `execute.Clock`, `execute.UserInfo` |
+| [platform/](platform/) | OS, arch, WSL, display, glibc, distro, UID probe | `bootstrap.PlatformProbe` |
+| [statedir/](statedir/) | State directory paths, log names and pruning, exclusive lock | `scan.StateDir`, `execute.StateDir` |
+| [brew/](brew/) | Locate brew and `shellenv`, `brew info --json=v2` parsing, brew detector, `brew-formula`/`brew-cask` backends, tap and trust state | `bootstrap.HomebrewLocator`, `scan.Detector`, `planning`/`conflicts.Backend`, `doctor.TapChecker` |
+| [detect/](detect/) | PATH, app-bundle and npm detectors | `scan.Detector` |
+| [fsprobe/](fsprobe/) | Conflict evidence and owner of a path | `conflicts.PathProbe` |
+| [sqlite/](sqlite/) | Inventory database and migrations | `scan`/`execute`/`status.Inventory` |
+| [installer/](installer/) | Homebrew installer download to a temp file (never piped), retries | `execute.HomebrewInstaller` |
+| [report/](report/) | Report schema v1 (embedded) and `--json` encoding | — |
+| [session/](session/) | Composes the use cases into one command run; holds the state lock; the replanner | `execute.Replanner` |
+| [cli/](cli/) | cobra commands, flag normalizer and validation, `[y/N]` prompt, progress, rendering, exit codes, signals; TUI seam | — (driving adapter) |
+| [tui/](tui/) | Bubble Tea install flow Scan → Plan → Review → Run → Summary; sudo hand-off through `tea.ExecProcess` | `cli.TUIRunner`, `execute.Progress`, `execute.Confirmer`, `execute.CommandRunner` (hand-off wrapper) |
+ Wired in [../../cmd/facman/](../../cmd/facman/). Back to [internal](../README.md).

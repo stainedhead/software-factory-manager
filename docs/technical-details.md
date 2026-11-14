@@ -1,12 +1,167 @@
 # Technical Details
 
-No code exists yet. The planned architecture is in the design doc, and it maps onto the Clean Architecture layers in [AGENTS.md](../AGENTS.md) as follows.
+This is how `facman` Increment 1 is built: its components, the data flow of each command, the ports between layers, and its dependencies. The rules for changing it are in [AGENTS.md](../AGENTS.md). The working design is in [design/](design/software-factory-installer-design.md). The decisions behind this structure are in the [architecture decision record](architecture-decision-record.md) and in the spec's [architecture.md](../specs/archive/261114-software-factory-manager/architecture.md) (AD-1 to AD-16).
 
-| Design component ([§4](design/software-factory-installer-design.md#4-architecture)) | Layer |
+## Layers
+
+```
+cmd/facman            wiring only: options (environment facts, streams) → newApp
+  │
+internal/adapter      driving:  cli (cobra), tui (Bubble Tea v2), session (composes the use cases)
+  │                   driven:   execrunner, platform, statedir, sqlite, catalogyaml, brew, detect,
+  │                             fsprobe, installer, report
+internal/usecase      bootstrap, scan, conflicts, planning, execute, doctor, status, summary
+  │                   (each declares its own ports; process holds the shared Cmd/Result values)
+internal/domain       appinfo, version, platform, catalog, plan, inventory, ownership, failure
+```
+
+Dependencies point inward only. The domain packages import only other domain packages. Every use case imports the domain, plus the value-only `usecase/process` package for runner command and result types (implementation-notes I-8). Adapters implement the ports, and `cmd/facman` wires them together. Nothing uses globals or `init()` side effects.
+
+## Components
+
+### Domain (`internal/domain`)
+
+Pure logic with no I/O. Every safety rule lives here, as a function or an invariant tested by table-driven tests. Coverage is 100%.
+
+| Package | Provides |
 |---|---|
-| Package, ownership state, plan, action, consent | `internal/domain` |
-| Planner/reconciler, manifest loading rules, apply and setup flows | `internal/usecase` (declares Backend, Detector, Inventory and Runner ports) |
-| Homebrew formula/cask, npm, script and dmg/pkg backends; detectors; SQLite inventory (`modernc.org/sqlite`); service manager (launchd/systemd) | `internal/adapter` |
-| TUI (Bubble Tea) and CLI (cobra) wiring | `cmd/facman` |
+| `appinfo` | The name (`facman`), title ("Agentic Software Factory Manager") and the version and about text. It is the only place the name is written. |
+| `version` | Parsing and comparing versions and constraints. |
+| `platform` | `Platform` (OS, arch, WSL, display, glibc, distro, UID), bootstrap `Finding`s with `Severity` and `BlocksApply`, and the `Command`s that decide fatality. |
+| `catalog` | `Catalog`, `Entry`, `Profile`, `Validate` (every problem in one error, including the value allow-lists for IDs, taps, detect commands and control characters), `Resolve`/`ResolveSelection` (profile union, pins, `--with`, choice groups, transitive `requires`), `SelectInstall` (per-platform install step), and provenance glob expansion and matching. |
+| `plan` | `Command` (argv only), `Action`, `Plan`, `Conflict`, consent, `OrderPackages` (stable requires-first order), `Validate` (allows only `brew install`/`tap`/`trust`, no option after the subcommand but `--cask`/`--formula`, and no short or long form of `--force`/`--overwrite` anywhere; never `link`); `Command.String` escapes control characters for every consent screen, and `ExcludeWithDependents`. |
+| `inventory` | `Record` (managed or adopted), `Operation` (the audit row), tap-trust grants, statuses, and `InstallRef` parsing. |
+| `ownership` | `Detection`, `PackageStatus`, `Classify`: absent, managed, adopted, foreign, drifted, duplicate, conflict, unavailable-here, with incomplete detection and OS-bundled rules. |
+| `failure` | Typed errors (usage, bootstrap, validation, operation, drift) with a fix and details, mapped to exit codes 64, 4, 3, 1 and 2, and `Worst` for precedence. |
 
-Manifest format: [§5](design/software-factory-installer-design.md#5-manifest-format). State store: [§6](design/software-factory-installer-design.md#6-state-store-inventory). Language choice: [§8](design/software-factory-installer-design.md#8-language-and-framework-recommendation). This page will describe the real components, data flow and dependencies as they are built.
+### Use cases (`internal/usecase`)
+
+Application logic. Each package declares the small interfaces it consumes, and is tested with in-memory fakes. Coverage is 97 to 100% per package.
+
+| Package | Does | Key ports |
+|---|---|---|
+| `bootstrap` | Builds the bootstrap report: platform, UID, CLT, Linux prerequisites, Homebrew location and prefix owner, `shellenv`, Node. Computes the child environment. | `PlatformProbe`, `HomebrewLocator`, `CommandRunner`, `PathLookup` |
+| `scan` | Runs the detectors in parallel (10 s each), reconciles interrupted operations (AD-8), classifies every entry and saves a detection snapshot when it holds the lock. | `Detector`, `Inventory`, `StateDir`, `CommandRunner` |
+| `conflicts` | Runs the link-path pre-flight for brew items and classifies who owns a conflicting file. | `Backend` (link paths), `PathProbe` |
+| `planning` | Turns the desired set, statuses and bootstrap report into a `Plan`: installer, tap, trust and install actions with exclusions and warnings. | `Backend` (`InstallActions`) |
+| `execute` | Runs a consented plan. It writes each `operations` row before the action runs, runs the commands, records the result, skips dependents of failures, re-plans after the Homebrew bootstrap, and stops after the current command on cancel. | `Confirmer`, `CommandRunner`, `Inventory`, `StateDir`, `Replanner`, `HomebrewInstaller`, `Progress`, `Clock`, `UserInfo` |
+| `doctor` | Runs the whole-catalog conflict check and the tap-trust check for the catalog's own taps. Exit 0 or 2. | `ConflictChecker`, `TapChecker` |
+| `status` | Builds the managed, adopted, foreign, drifted and duplicate view, with provenance. | `Inventory` |
+| `summary` | Per-package results, "not installed" reasons, sign-in next steps and shell-profile lines. | none |
+| `process` | The `Cmd` and `Result` value types that every `CommandRunner` port shares. | none |
+
+### Adapters (`internal/adapter`)
+
+| Package | Role |
+|---|---|
+| `cli` | cobra command tree, the short-flag normalizer, the exit-code mapping (usage errors are decided before any I/O), text rendering, the `Proceed? [y/N]` prompt on stderr, and signal handling. Deferred commands and flags exit 64, naming their increment. |
+| `tui` | The Bubble Tea v2 program: Scan → Plan → Review → Run → Summary. It holds no business logic. Ticks become a `catalog.Selection`, re-resolved by the domain. `Enter` on Review is the only consent, and the consent covers exactly the plan shown. Sudo steps are handed the terminal through `tea.ExecProcess` (AD-16). It never imports `cli`: `cli` declares `TUIRunner`, and `cmd/facman` adapts `tui.Runner` to it with `cli.TUIFunc`. |
+| `session` | Composes the use cases in the right order for every command and for the TUI. It holds the state lock from the scan through the run, and `Machine`, the located brew and child environment, which is updated after the Homebrew bootstrap. |
+| `execrunner` | `os/exec` runner. It takes an argument list only (never a shell), sanitizes the environment, applies timeouts, writes a log header (variable names, not values) and an outcome footer (`# result:`, `# time:`; a signal kill is exit 128+signo), runs children in their own process group, and builds `Handoff` for interactive commands. Also provides the system clock and user. |
+| `platform` | Probes OS, arch, WSL (`/proc/version`, `WSL_DISTRO_NAME`), display, glibc (`getconf`, `ldd`) and distro (`/etc/os-release`). |
+| `statedir` | Resolves the state directory per platform, the `flock` lock with holder PID, log naming and 90-day pruning. |
+| `sqlite` | Inventory on `modernc.org/sqlite` (pure Go, WAL) with numbered embedded migrations, each under `BEGIN IMMEDIATE` so concurrent first launches are safe. It refuses newer or corrupt databases (exit 4). |
+| `catalogyaml` | Catalog v1 and profiles embedded in the binary, and `--catalog <dir>`. Strict decoding with `file:line:col` errors. |
+| `brew` | Locating brew, `shellenv`, parsing `brew info --json=v2`, the brew detector, the `brew-formula` and `brew-cask` backends, link paths, and tap and trust state. |
+| `detect` | PATH (with the CLT `git` shim rule), app-bundle (Spotlight, then a directory scan) and npm global detectors. |
+| `fsprobe` | Conflict evidence (`ls -l` line, file type, symlink target, dangling) and the owner class of a path. |
+| `installer` | Downloads the Homebrew installer to a `0600` temp file (3 tries with backoff), never piped to a shell. Runs it as `/bin/bash <file>`. A body over 4 MiB is an error (never a truncated script), redirects must stay on `https`, and the SHA-256 and size of the saved bytes go into the operation log (`# installer: sha256=… bytes=…`) and `apply --json` (`results[].installer`). |
+| `report` | Report schema v1 (`schema/report.v1.json`, embedded) and the JSON encoding for every command. |
+
+`internal/testkit` and `testdata/fakecmd` provide the fake multi-call `brew` (and `mdfind`, `getconf`, …) used by the end-to-end tests. They are imported only by tests.
+
+## Data flow
+
+Every command except `--version`, `--about` and `--help` runs the same steps through `session`:
+
+1. **Flags** (`cli`). Usage errors exit 64 before any I/O.
+2. **Bootstrap check** (`bootstrap`). UID 0 and other fatal findings exit 4. `BlocksApply` findings (missing Linux prerequisites, a brew prefix owned by another user) exit 4 only for `apply` and the TUI Run.
+3. **State** (`statedir`, `sqlite`). Opens the state directory, prunes old logs, and opens and migrates the DB. Mutating runs take the lock (a held lock exits 4 and names the PID).
+4. **Catalog** (`catalogyaml`). Loads the embedded catalog or `--catalog <dir>` and validates it. Errors exit 3.
+5. **Scan** (`scan`). Runs the detectors in parallel and classifies. Then, per command:
+
+| Command | After the scan |
+|---|---|
+| `scan` | Render the statuses. |
+| `plan` | `catalog.Resolve`, then the conflict pre-flight for absent brew items, then `planning`, then `plan.Validate`. Print the ordered commands. |
+| `apply` | As `plan`. Then `--dry-run` prints and stops, an empty plan says "Nothing to install", otherwise the prompt. On `y`, `execute` runs, then `summary`. |
+| `status` | `status` view of the records and statuses. |
+| `doctor` | Conflict and tap-trust checks for the whole catalog. Exit 0 or 2. |
+| `facman` (TUI) | Scan screen. Plan re-resolves the selection on every toggle. Review shows the plan. `Enter` runs `execute` in a goroutine, with progress and hand-off requests on one channel. Then Summary. |
+
+**Homebrew missing at `apply`.** The plan starts with the installer action. After it runs, `execute` asks the `Replanner` (composed from bootstrap, scan and conflicts) to locate brew again, refresh `shellenv`, re-detect and re-check conflicts. Then it only *removes* actions: packages now present become `already-present`, and new conflicts are excluded. It never runs a command that was not shown.
+
+**Crash recovery.** Each action's row is written as `in_progress` before it runs. At the next start, leftover rows are marked `interrupted`, and the package is recorded `managed` if it is now detected through that backend, or left `absent` so the next `apply` proposes it (AD-8).
+
+**Exit codes.** Usage (64) > bootstrap (4) > validation (3) > operation (1) > 0. `doctor` alone returns 2, which ranks below all the others.
+
+## Safety properties and where they are enforced
+
+| Property | Enforced in |
+|---|---|
+| Nothing mutating runs without consent that names the exact commands | `execute` (consent on every row), `tui` consent equality check, `cli` prompt |
+| Catalog values cannot inject options, paths or terminal escapes | `catalog.Validate` allow-lists at load (exit 3); `plan.Validate` as the second line; `Command.String` escapes control characters |
+| No `--force` (or `-f`, or any brew option from data), no `brew link`, only `install`/`tap`/`trust` | `plan.Validate`. The e2e tests also assert on every recorded invocation (`testkit.AssertSafeInvocations`). |
+| Installs go to the Homebrew that was scanned | `execute.Service.Brew` (and the bootstrap re-plan's `Replan.Brew`): a consented `brew …` runs as the located brew's absolute path, whatever is first on the child `PATH`. Review and the consent string keep `brew …`; the TUI Review names the path once |
+| Inherited Homebrew settings are visible | `bootstrap` records the names of inherited `HOMEBREW_*` variables (`HomebrewInfo.InheritedEnv`) and warns `homebrew-cask-opts` for `--no-quarantine`; Review, the headless header, `--json` and each log header name them, never their values |
+| No program from the current directory | `execrunner.lookPath`, the PATH detector and `brew.Locate` skip relative and empty PATH entries; `scan` warns `path-relative-entry` |
+| No shell strings, and no inherited tap-trust bypass | `execrunner` (argv only; `HOMEBREW_NO_REQUIRE_TAP_TRUST*` removed) |
+| Detection makes no network calls | `scan` env (`HOMEBREW_NO_AUTO_UPDATE=1`, `HOMEBREW_NO_ENV_HINTS=1`). `brew info --installed` is local. |
+| Never install over files `facman` does not own | `conflicts` pre-flight, then `ownership.Classify` (`conflict`), then `planning` exclusion |
+| Unknown means "do not install" | `planning` never plans a package with incomplete detection |
+| Passwords never pass through `facman` | `tui` `tea.ExecProcess` hand-off, and headless inherited stdio |
+
+## Testing
+
+| Level | Where | What |
+|---|---|---|
+| Unit | beside the code | Table-driven, with fakes for ports. Domain and use cases at 97 to 100%. |
+| End-to-end | `cmd/facman/*_test.go` | In-process through the real wiring, with injected `options` (R-3) and a fake `brew` built from `testdata/fakecmd`. Every JSON document is validated against the schema. Consent goes through a pseudo-terminal. Covers crash recovery, the TUI on a pty, and Linux-no-display and WSL fixtures. |
+| Integration | `cmd/facman/integration_test.go` (`integration` tag) | Real Homebrew. `scan`, `plan` and `doctor` run read-only with a temp state directory, and skip without brew or as root (they fail instead when `FACMAN_INTEGRATION_MUTATE=1`, and `make integration` is verbose so CI shows each PASS or SKIP). The GNU `hello` install through `testdata/catalogs/integration` runs only with `FACMAN_INTEGRATION_MUTATE=1`, which CI sets on macOS only. |
+| Performance smoke | `cmd/facman/perf_test.go`, `adapter/tui` | `--version` well under its budget, scan of the full catalog on the fake machine in about 0.5 s, and the first TUI frame in 20 to 52 ms. |
+
+`make cover` reports 96.5% overall, 100% on every domain package and 97.4 to 100% on the use cases. CI runs the `go mod tidy` check, lint, `make archcheck`, `make doccheck`, `make cover`, `make integration`, `make build` and a `facman --version` smoke test on Linux and macOS, plus `make fuzz` and `make build-all` on Linux (see [.github/README.md](../.github/README.md)).
+
+## Dependencies
+
+| Module | Used for |
+|---|---|
+| `github.com/spf13/cobra`, `github.com/spf13/pflag` | Command tree and flags (AD-3) |
+| `charm.land/bubbletea/v2` v2.1.1, `charm.land/lipgloss/v2` v2.1.0, `github.com/charmbracelet/x/ansi` | TUI (no `bubbles`) |
+| `golang.org/x/term` | Terminal detection for the TUI and the prompt |
+| `modernc.org/sqlite` | State DB without cgo, so the binary stays static (`CGO_ENABLED=0`) |
+| `go.yaml.in/yaml/v3` | Catalog YAML with line and column numbers |
+| `github.com/creack/pty`, `github.com/santhosh-tekuri/jsonschema/v6` | Tests only: pseudo-terminals and schema validation |
+
+Go 1.27 (the `go` directive in `go.mod`). Binaries are static for darwin and linux, amd64 and arm64 (`make build-all`, GoReleaser).
+
+## Acceptance evidence
+
+Each Increment 1 acceptance criterion (archived [spec.md](../specs/archive/261114-software-factory-manager/spec.md), *Acceptance Criteria*) and what proves it. The e2e tests are in `cmd/facman/` and run on Linux and macOS in CI. Every e2e test also ends with the invocation-log safety check (`testkit.UnsafeReasons`: no `--force`, `-f` or `--overwrite`, no option from data on brew, no `upgrade`/`uninstall`/`untap`/`link`, no tap-trust bypass).
+
+| Criterion | Proof |
+|---|---|
+| I1-1 Identity | `TestVersionAboutAndNoCommand`, `TestVersionIsFast`; CI `make build` and the `make build-all` step, which checks the four binaries |
+| I1-2 Scan | `TestScanJSON` (schema v1, read-only fake `brew`, under 5 s) |
+| I1-3 Ownership states | `internal/domain/ownership` `TestClassify` (every state), `internal/adapter/detect` `TestPathDetectorOSProvenanceAndCLT` (no `/usr/bin/git` without CLT; "present (OS)") |
+| I1-4 Catalog and profiles | `TestCatalogDirAndProfileUnion`; `internal/adapter/catalogyaml` `TestEmbeddedCatalogContents`, `TestEmbeddedProfiles`, `TestDirSource*`; `internal/domain/catalog` validation tests |
+| I1-5 Bootstrap | `TestNoHomebrew` (installer first, temp file, unverified, decline changes nothing, consented install records `homebrew` with `bootstrap = 1`), `TestLinuxbrewOffPathAndGlibc`, `TestExitCodesAndUsage` (UID 0) |
+| I1-6 Plan and dry run | `TestPlanAndDryRun` |
+| I1-7 Apply and audit | `TestApplyAuditAndIdempotence`, `TestApplyDecline` |
+| I1-8 Hands off foreign | The invocation-log safety check at the end of every e2e test (`harness_test.go`) |
+| I1-9 Conflict refusal | `TestConflictRefusal`, `TestDoctorTapTrust` |
+| I1-10 Tap trust | `TestApplyAuditAndIdempotence` (separate tap and item-trust steps, `tap_trust` row), `TestDoctorTapTrust`, and the invocation-log safety check (no tap-trust bypass in any child environment) |
+| I1-11 Crash recovery | `TestCrashRecovery` (`crash_test.go`) |
+| I1-12 Exit codes and usage | `TestExitCodesAndUsage`, `internal/adapter/cli` `TestExitCodePrecedence` |
+| I1-13 TUI | `internal/adapter/tui` golden tests (`TestFullFlow`, `TestScanScreen`, `TestPlanScreen`, `TestReviewScreen`, ...), `TestTUIInstall`, `TestTUIQuitAndNoTerminal`, `TestHeadlessLinuxAndWSL` |
+| I1-14 Real Homebrew | `integration_test.go` (`TestIntegrationReadOnly`, `TestIntegrationApplyHello`) and `internal/adapter/brew` `TestIntegrationBrewContract`, in CI's `make integration` step on macOS (verbose, and a skip fails there) |
+| I1-15 Quality gates | `make check` (fmt, lint, archcheck, doccheck, test) and `make cover` in CI |
+| I1-16 Field check | Manual, handed to J: [user-docs/field-check.md](../user-docs/field-check.md) part 1 |
+
+## Data formats
+
+- Catalog and profile YAML, `apiVersion: facman/v1`, and the state DB tables: [catalog-format.md](catalog-format.md), and the user reference in [user-docs/configuration.md](../user-docs/configuration.md#catalog-directories).
+- Report schema v1 (`--json`): [internal/adapter/report/schema/report.v1.json](../internal/adapter/report/schema/report.v1.json) and [data dictionary §7](../specs/archive/261114-software-factory-manager/data-dictionary.md#7-report-schema-v1---json).
+- State DB tables (`meta`, `packages`, `operations`, `detections`, `tap_trust`, and `services`, which is reserved for Increment 2): [catalog-format.md](catalog-format.md#state-database) and `internal/adapter/sqlite`.
+
+Back to [docs](README.md).

@@ -1,5 +1,7 @@
 # T3 Code setup (`--t3-setup` / `-ts`)
 
+> **Status: planned for Increment 5.** This guide describes a designed feature that does not ship yet: `-ts`/`--t3-setup` exits 64 until then, with a message naming Increment 5. See [user-docs](README.md) for what ships today.
+
 Use a T3 setup to point T3 Code at the right agent binaries and models (Codex, Claude Code and others), and to set its server options.
 
 ## What T3 Code reads

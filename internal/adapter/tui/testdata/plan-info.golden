@@ -1,0 +1,17 @@
+facman · Agentic Software Factory Manager
+Profile: agentic-factory   Scan > [Plan] > Review > Run > Summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Claude Code (claude-code)
+State:   conflict
+Source:  brew-cask claude-code
+Why:     required by profile agentic-factory
+Conflict:
+  path:    /opt/homebrew/bin/claude
+  owner:   orphan
+  ls -l:   lrwxr-xr-x 1 j admin 40 Nov 1 10:00 /opt/homebrew/bin/claude ->
+/Users/j/.local/bin/claude
+  link to: /Users/j/.local/bin/claude (dangling)
+  would fail: brew install --cask claude-code
+  fix:     remove the dangling link yourself: rm /opt/homebrew/bin/claude
+────────────────────────────────────────────────────────────────────────────────────────────────────
+i/esc: close

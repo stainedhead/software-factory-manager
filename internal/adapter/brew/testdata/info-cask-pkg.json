@@ -1,0 +1,14 @@
+{
+  "formulae": [],
+  "casks": [
+    { "token": "session-manager-plugin", "full_token": "session-manager-plugin", "tap": "homebrew/cask",
+      "installed": null,
+      "artifacts": [ { "pkg": [ "SessionManagerPlugin.pkg" ] }, { "binary": [ "/usr/local/sessionmanagerplugin/bin/session-manager-plugin" ] }, { "uninstall": [ { "pkgutil": "session-manager-plugin" } ] } ] },
+    { "token": "gcloud-cli", "full_token": "gcloud-cli", "tap": "homebrew/cask",
+      "installed": null,
+      "artifacts": [ { "installer": [ { "script": { "executable": "google-cloud-sdk/install.sh", "args": [ "--quiet" ] } } ] }, { "binary": [ "google-cloud-sdk/bin/gcloud" ] } ] },
+    { "token": "iterm2", "full_token": "iterm2", "tap": "homebrew/cask",
+      "installed": null,
+      "artifacts": [ { "app": [ "iTerm.app", { "target": "iTerm2.app" } ] } ] }
+  ]
+}

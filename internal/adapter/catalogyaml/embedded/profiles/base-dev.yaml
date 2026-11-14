@@ -1,0 +1,14 @@
+# Developer basics, included by agentic-factory (PRD Appendix E, decided in
+# review 2026-11-14). iterm2 is darwin-only, so it is not offered elsewhere.
+apiVersion: facman/v1
+profile: base-dev
+description: Developer basics every factory machine needs
+packages:
+  - git
+  - gh
+  - tmux
+  - visual-studio-code
+  - iterm2
+  - sqlite
+  - node
+  - awscli

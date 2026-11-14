@@ -1,0 +1,31 @@
+# A two-entry catalog for the end-to-end tests (--catalog, crash recovery).
+apiVersion: facman/v1
+packages:
+  jq:
+    display: jq
+    kind: cli
+    detect:
+      commands: [jq]
+      provenance:
+        brew: "{brew_prefix}/Cellar/jq/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: jq
+      linux:
+        - backend: brew-formula
+          id: jq
+  gh:
+    display: GitHub CLI
+    kind: cli
+    detect:
+      commands: [gh]
+      provenance:
+        brew: "{brew_prefix}/Cellar/gh/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: gh
+      linux:
+        - backend: brew-formula
+          id: gh

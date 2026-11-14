@@ -1,0 +1,370 @@
+// Package execrunner runs subprocesses for facman: argv only (never a
+// shell), with the child environment built from a base plus per-command
+// overrides and every HOMEBREW_NO_REQUIRE_TAP_TRUST* variable removed,
+// optional timeouts, output teed to a log whose header lists environment
+// variable names only, and interactive hand-off of the terminal for sudo
+// prompts. It also provides the system Clock and UserInfo.
+package execrunner
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/stainedhead/software-factory-manager/internal/domain/plan"
+	"github.com/stainedhead/software-factory-manager/internal/usecase/bootstrap"
+	"github.com/stainedhead/software-factory-manager/internal/usecase/execute"
+	"github.com/stainedhead/software-factory-manager/internal/usecase/process"
+	"github.com/stainedhead/software-factory-manager/internal/usecase/scan"
+)
+
+// waitDelay bounds how long Run waits for output pipes after the child
+// exits or is killed (a grandchild may hold them open).
+const waitDelay = 2 * time.Second
+
+// Options configure a Runner.
+type Options struct {
+	// BaseEnv is the base environment as KEY=VALUE pairs (usually os.Environ()).
+	BaseEnv []string
+	// Stdin, Stdout and Stderr are the parent's terminal, given to
+	// interactive commands. Nil means os.Stdin, os.Stdout, os.Stderr.
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+// Runner runs commands. It is safe for concurrent use.
+type Runner struct {
+	base   map[string]string
+	stdin  io.Reader
+	stdout io.Writer
+	stderr io.Writer
+}
+
+var (
+	_ bootstrap.CommandRunner = (*Runner)(nil)
+	_ scan.CommandRunner      = (*Runner)(nil)
+	_ execute.CommandRunner   = (*Runner)(nil)
+	_ bootstrap.PathLookup    = (*Runner)(nil)
+)
+
+// New returns a Runner.
+func New(opts Options) *Runner {
+	r := &Runner{base: parseEnv(opts.BaseEnv), stdin: opts.Stdin, stdout: opts.Stdout, stderr: opts.Stderr}
+	if r.stdin == nil {
+		r.stdin = os.Stdin
+	}
+	if r.stdout == nil {
+		r.stdout = os.Stdout
+	}
+	if r.stderr == nil {
+		r.stderr = os.Stderr
+	}
+	return r
+}
+
+func parseEnv(kvs []string) map[string]string {
+	m := make(map[string]string, len(kvs))
+	for _, kv := range kvs {
+		if k, v, ok := strings.Cut(kv, "="); ok && k != "" {
+			m[k] = v
+		}
+	}
+	return m
+}
+
+// Environ returns the child environment for overrides: base + overrides,
+// minus every HOMEBREW_NO_REQUIRE_TAP_TRUST* variable, sorted by name.
+func (r *Runner) Environ(overrides map[string]string) []string {
+	merged := make(map[string]string, len(r.base)+len(overrides))
+	for k, v := range r.base {
+		merged[k] = v
+	}
+	for k, v := range overrides {
+		merged[k] = v
+	}
+	out := make([]string, 0, len(merged))
+	for k, v := range merged {
+		if strings.HasPrefix(k, plan.TapTrustEnvPrefix) {
+			continue
+		}
+		out = append(out, k+"="+v)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// LookPath finds name on the base PATH. A name with a slash is checked as
+// is. Relative and empty PATH entries are ignored.
+func (r *Runner) LookPath(name string) (string, error) {
+	return lookPath(name, r.base["PATH"])
+}
+
+func lookPath(name, path string) (string, error) {
+	if strings.Contains(name, "/") {
+		if isExecutable(name) {
+			return name, nil
+		}
+		return "", fmt.Errorf("%w: %s", process.ErrNotFound, name)
+	}
+	for _, dir := range filepath.SplitList(path) {
+		// A relative or empty entry ("", ".", "bin") would run a program
+		// from the current directory; skip it like os/exec's ErrDot
+		// (review FR-002).
+		if !filepath.IsAbs(dir) {
+			continue
+		}
+		p := filepath.Join(dir, name)
+		if isExecutable(p) {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("%w: %s not on PATH", process.ErrNotFound, name)
+}
+
+func isExecutable(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && !fi.IsDir() && fi.Mode().Perm()&0o111 != 0
+}
+
+// lockedWriter serializes writes from stdout and stderr copiers.
+type lockedWriter struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+func (l *lockedWriter) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.w.Write(p)
+}
+
+// Run runs cmd. Argv[0] is looked up on the child PATH. A non-zero exit is
+// a Result, not an error. Errors wrap process.ErrNotFound (the program does
+// not exist), process.ErrTimeout (Timeout elapsed; the child was killed) or
+// the context error (ctx was cancelled; the child was killed). Callers that
+// must let a command finish, such as installs, pass a context that is not
+// cancelled.
+func (r *Runner) Run(ctx context.Context, cmd process.Cmd) (process.Result, error) {
+	if len(cmd.Argv) == 0 {
+		return process.Result{}, fmt.Errorf("running command: %w: empty argv", process.ErrNotFound)
+	}
+	env := r.Environ(cmd.Env)
+	childPath := r.base["PATH"]
+	if p, ok := cmd.Env["PATH"]; ok {
+		childPath = p
+	}
+	prog, err := lookPath(cmd.Argv[0], childPath)
+	if err != nil {
+		return process.Result{ExitCode: -1}, fmt.Errorf("running %s: %w", cmd.Argv[0], err)
+	}
+	log := io.Discard
+	if cmd.Log != nil {
+		log = &lockedWriter{w: cmd.Log}
+		if err := writeHeader(log, cmd, r.inheritedBrewEnv(cmd.Env)); err != nil {
+			return process.Result{ExitCode: -1}, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+		}
+	}
+
+	runCtx := ctx
+	if cmd.Timeout > 0 {
+		var cancel context.CancelFunc
+		runCtx, cancel = context.WithTimeout(ctx, cmd.Timeout)
+		defer cancel()
+	}
+	c := exec.CommandContext(runCtx, prog, cmd.Argv[1:]...) //nolint:gosec // argv comes from the reviewed plan or a catalog probe; never a shell
+	c.Args[0] = cmd.Argv[0]
+	c.Env = env
+	c.Dir = cmd.Dir
+	c.WaitDelay = waitDelay
+	var stdout, stderr bytes.Buffer
+	if cmd.Interactive {
+		c.Stdin, c.Stdout, c.Stderr = r.stdin, r.stdout, r.stderr
+	} else {
+		// Its own process group: a Ctrl+C at the terminal reaches facman,
+		// which stops after this command, but never kills it midway.
+		c.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		c.Stdout = io.MultiWriter(&stdout, log)
+		c.Stderr = io.MultiWriter(&stderr, log)
+	}
+	start := time.Now()
+	runErr := c.Run()
+	res := process.Result{Stdout: stdout.String(), Stderr: stderr.String()}
+	if c.ProcessState != nil {
+		res.ExitCode = c.ProcessState.ExitCode()
+		setSignal(&res, c.ProcessState.Sys())
+	}
+	var exitErr *exec.ExitError
+	var outcome string
+	switch {
+	case runErr == nil:
+	case runCtx.Err() != nil && ctx.Err() == nil:
+		res.ExitCode, res.Signal = -1, ""
+		runErr = fmt.Errorf("running %s: %w after %s", cmd.Argv[0], process.ErrTimeout, cmd.Timeout)
+		outcome = fmt.Sprintf("timed out after %s; killed", cmd.Timeout)
+	case ctx.Err() != nil:
+		res.ExitCode, res.Signal = -1, ""
+		runErr = fmt.Errorf("running %s: %w", cmd.Argv[0], ctx.Err())
+		outcome = "cancelled; killed"
+	case errors.As(runErr, &exitErr):
+		runErr = nil // a non-zero exit is reported in the result
+	default:
+		res.ExitCode = -1
+		runErr = fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+		outcome = "error: " + runErr.Error()
+	}
+	if err := writeFooter(log, res, outcome, start); err != nil && runErr == nil {
+		return res, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+	}
+	return res, runErr
+}
+
+// setSignal records a death by signal as 128+signo with the signal's name.
+func setSignal(res *process.Result, sys any) {
+	if ws, ok := sys.(syscall.WaitStatus); ok && ws.Signaled() {
+		res.ExitCode = 128 + int(ws.Signal())
+		res.Signal = signalName(ws.Signal())
+	}
+}
+
+// signalNames are the signals a child is commonly killed by.
+var signalNames = map[syscall.Signal]string{
+	syscall.SIGHUP: "SIGHUP", syscall.SIGINT: "SIGINT", syscall.SIGQUIT: "SIGQUIT", syscall.SIGILL: "SIGILL",
+	syscall.SIGABRT: "SIGABRT", syscall.SIGBUS: "SIGBUS", syscall.SIGFPE: "SIGFPE", syscall.SIGKILL: "SIGKILL",
+	syscall.SIGSEGV: "SIGSEGV", syscall.SIGPIPE: "SIGPIPE", syscall.SIGALRM: "SIGALRM", syscall.SIGTERM: "SIGTERM",
+	syscall.SIGUSR1: "SIGUSR1", syscall.SIGUSR2: "SIGUSR2",
+}
+
+func signalName(s syscall.Signal) string {
+	if n, ok := signalNames[s]; ok {
+		return n
+	}
+	return fmt.Sprintf("signal %d", int(s))
+}
+
+// writeFooter ends a log with how the command ended and when (review
+// FR-007a). outcome overrides the exit line for timeouts and errors.
+func writeFooter(w io.Writer, res process.Result, outcome string, start time.Time) error {
+	if outcome == "" {
+		outcome = fmt.Sprintf("exit %d", res.ExitCode)
+		if res.Signal != "" {
+			outcome = fmt.Sprintf("killed by signal %s (exit %d)", res.Signal, res.ExitCode)
+		}
+	}
+	end := time.Now()
+	_, err := fmt.Fprintf(w, "# result: %s\n# time: started %s, ended %s, took %s\n", outcome,
+		start.UTC().Format(time.RFC3339), end.UTC().Format(time.RFC3339), end.Sub(start).Round(time.Millisecond))
+	return err
+}
+
+// Handoff prepares an interactive command for a front end that hands the
+// terminal over itself (the TUI's tea.ExecProcess, AD-16): the returned
+// exec.Cmd has the child environment and program resolved as Run would,
+// and its stdio left unset for the front end to fill. The log header is
+// written now. finish turns the error of running it into a Result (a
+// non-zero exit is a Result, not an error) and logs the exit code.
+func (r *Runner) Handoff(cmd process.Cmd) (c *exec.Cmd, finish func(runErr error) (process.Result, error), err error) {
+	if len(cmd.Argv) == 0 {
+		return nil, nil, fmt.Errorf("preparing command: %w: empty argv", process.ErrNotFound)
+	}
+	childPath := r.base["PATH"]
+	if p, ok := cmd.Env["PATH"]; ok {
+		childPath = p
+	}
+	prog, err := lookPath(cmd.Argv[0], childPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("preparing %s: %w", cmd.Argv[0], err)
+	}
+	log := io.Discard
+	if cmd.Log != nil {
+		log = &lockedWriter{w: cmd.Log}
+		cmd.Interactive = true
+		if err := writeHeader(log, cmd, r.inheritedBrewEnv(cmd.Env)); err != nil {
+			return nil, nil, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+		}
+	}
+	c = exec.Command(prog, cmd.Argv[1:]...) //nolint:gosec // argv comes from the reviewed plan; never a shell
+	c.Args[0] = cmd.Argv[0]
+	c.Env = r.Environ(cmd.Env)
+	c.Dir = cmd.Dir
+	start := time.Now()
+	finish = func(runErr error) (process.Result, error) {
+		var res process.Result
+		var exitErr *exec.ExitError
+		switch {
+		case runErr == nil:
+		case errors.As(runErr, &exitErr):
+			res.ExitCode = exitErr.ExitCode()
+			setSignal(&res, exitErr.Sys())
+		default:
+			res.ExitCode = -1
+			err := fmt.Errorf("running %s: %w", cmd.Argv[0], runErr)
+			_ = writeFooter(log, res, "error: "+err.Error(), start)
+			return res, err
+		}
+		if err := writeFooter(log, res, "", start); err != nil {
+			return res, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
+		}
+		return res, nil
+	}
+	return c, finish, nil
+}
+
+// writeHeader logs the argv and the names (never values) of the variables
+// set for the command.
+// inheritedBrewEnv returns the sorted names of the HOMEBREW_* variables a
+// command inherits from the base environment (not overridden, and not the
+// stripped tap-trust bypass). They can change what a reviewed brew command
+// does, so the log names them (review FR-013).
+// brewEnvName matches the names inheritedBrewEnv reports; any other
+// character keeps a name out of the log.
+var brewEnvName = regexp.MustCompile(`^HOMEBREW_[A-Za-z0-9_]*$`)
+
+func (r *Runner) inheritedBrewEnv(overrides map[string]string) []string {
+	var names []string
+	for k := range r.base {
+		if _, over := overrides[k]; over || !brewEnvName.MatchString(k) || strings.HasPrefix(k, plan.TapTrustEnvPrefix) {
+			continue
+		}
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func writeHeader(w io.Writer, cmd process.Cmd, inherited []string) error {
+	quoted := make([]string, len(cmd.Argv))
+	for i, a := range cmd.Argv {
+		quoted[i] = strconv.Quote(a)
+	}
+	names := make([]string, 0, len(cmd.Env))
+	for k := range cmd.Env {
+		if !strings.HasPrefix(k, plan.TapTrustEnvPrefix) {
+			names = append(names, k)
+		}
+	}
+	sort.Strings(names)
+	header := "$ " + strings.Join(quoted, " ") + "\n# env: " + strings.Join(names, " ") + "\n"
+	if len(inherited) == 0 {
+		header += "# inherited HOMEBREW_*: none\n"
+	} else {
+		header += "# inherited HOMEBREW_*: " + strings.Join(inherited, " ") + "\n"
+	}
+	if cmd.Interactive {
+		header += "# interactive: output went to the terminal\n"
+	}
+	_, err := io.WriteString(w, header)
+	return err
+}

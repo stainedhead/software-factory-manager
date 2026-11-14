@@ -1,5 +1,7 @@
 # Orca setup (`--orca-setup` / `-os`)
 
+> **Status: planned for Increment 5.** This guide describes a designed feature that does not ship yet: `-os`/`--orca-setup` exits 64 until then, with a message naming Increment 5. See [user-docs](README.md) for what ships today.
+
 Use an Orca setup to register repositories, scheduled automations, skills and the runtime service in Orca, so a new machine is ready to run parallel agents.
 
 ## What Orca reads

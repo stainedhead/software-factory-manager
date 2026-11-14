@@ -1,0 +1,17 @@
+facman · Agentic Software Factory Manager
+Profile: agentic-factory   Scan > Plan > Review > [Run] > Summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Installing: 1 of 5 actions done.
+
+  ok    1. jq                     brew install jq
+  |     2. codex                  brew install --cask codex
+        3. orca                   brew tap stablyai/orca
+        4. orca                   brew trust --cask stablyai/orca/orca
+        5. orca                   brew install --cask stablyai/orca/orca
+
+The terminal is with: brew install --cask x
+
+Log:
+  ==> Pouring jq--1.7.1.arm64_sequoia.bottle.tar.gz
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ctrl+c: stop after the current command · q is ignored while installing

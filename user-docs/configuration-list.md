@@ -1,5 +1,7 @@
 # Configuration lists (`--configuration-list` / `-cl`)
 
+> **Status: planned for Increment 3.** This guide describes a designed feature that does not ship yet: `-cl`/`--configuration-list` (and `--set`, `--check`) exit 64 until then, with a message naming Increment 3. See [user-docs](README.md) for what ships today.
+
 A **configuration list** is a YAML file that records every answer `facman` would otherwise ask for: which tools, which versions, which options, and how to treat tools already on the machine. Applying it asks no questions, which makes it the way to set up **build machines and CI runners**, or to make every developer machine in a factory identical.
 
 ## Build one

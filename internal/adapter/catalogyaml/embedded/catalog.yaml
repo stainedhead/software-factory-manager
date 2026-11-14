@@ -1,0 +1,574 @@
+# facman catalog v1 (PRD Appendix E, design §2, §2a and §5).
+#
+# Every package facman knows how to detect and install. Profiles under
+# profiles/ say which packages a factory wants. Rules for this file:
+#   - kind: cli | gui on every entry except choice groups.
+#   - install blocks per platform (darwin, linux, wsl); a missing block means
+#     "not offered here". wsl inherits linux for cli entries; gui entries
+#     without a wsl block are Windows-host items (winget hint from detect).
+#   - backends: brew-formula, brew-cask, npm (no adapter until Increment 2),
+#     report and host-report (never install; show the hint).
+#   - tap items use the full tap path as id, the tap, and trust: item.
+#   - provenance globs use {brew_prefix}, {npm_prefix} and ~.
+#   - link: force is not supported (D-3).
+#   - superseded_by marks a detection-only entry: no install block, never in
+#     a profile; when found it is reported foreign with an info finding.
+# Facts marked "unverified" are checked in the I1-16 field run.
+apiVersion: facman/v1
+packages:
+  claude-code:
+    display: Claude Code (CLI)
+    category: agent-cli
+    kind: cli
+    detect:
+      commands: [claude]
+      npm_package: "@anthropic-ai/claude-code"
+      version: { cmd: [claude, --version], regex: '^(\S+)' }
+      provenance:
+        native: "~/.local/share/claude/**"
+        brew-cask: "{brew_prefix}/Caskroom/claude-code*/**"
+        npm: "{npm_prefix}/lib/node_modules/@anthropic-ai/claude-code/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: claude-code          # stable channel
+        - backend: npm             # fallback when brew is unavailable (Increment 2)
+          id: "@anthropic-ai/claude-code"
+      linux:
+        - backend: brew-cask       # same cask on Linux x86_64 and ARM64
+          id: claude-code
+    version_policy: track
+    sign_in_required: true
+
+  claude-desktop:
+    display: Claude (desktop app)
+    category: agent-app
+    kind: gui
+    detect:
+      bundle_ids: [com.anthropic.claudefordesktop]
+      winget_id: Anthropic.Claude
+    install:
+      darwin:
+        - backend: brew-cask
+          id: claude
+      linux:
+        - backend: report
+          hint: "No Linux cask: see Anthropic's Linux desktop install docs"
+      wsl:
+        - backend: host-report
+          hint: "Install on the Windows host: winget install Anthropic.Claude"
+    version_policy: delegate
+    sign_in_required: true
+
+  copilot-cli:
+    display: GitHub Copilot CLI
+    category: agent-cli
+    kind: cli
+    detect:
+      commands: [copilot]
+      npm_package: "@github/copilot"
+      version: { cmd: [copilot, --version], regex: '(\d+\.\d+\.\d+\S*)' }
+      provenance:
+        brew-cask: "{brew_prefix}/Caskroom/copilot-cli*/**"
+        npm: "{npm_prefix}/lib/node_modules/@github/copilot/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: copilot-cli
+      linux:
+        - backend: brew-cask
+          id: copilot-cli
+    version_policy: delegate
+    sign_in_required: true
+
+  github-copilot-app:
+    display: GitHub Copilot app
+    category: agent-app
+    kind: gui
+    detect:
+      bundle_ids: [com.github.CopilotApp]   # unverified
+    install:
+      darwin:
+        - backend: brew-cask
+          id: github-copilot-app
+      linux:
+        - backend: brew-cask
+          id: github-copilot-app
+    version_policy: delegate
+    sign_in_required: true
+
+  antigravity-cli:
+    display: Google Antigravity CLI (agy)
+    category: agent-cli
+    kind: cli
+    detect:
+      commands: [agy]
+      version: { cmd: [agy, --version], regex: '(\d+\.\d+\.\d+\S*)' }
+      provenance:
+        brew-cask: "{brew_prefix}/Caskroom/antigravity-cli*/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: antigravity-cli
+      linux:
+        - backend: brew-cask
+          id: antigravity-cli
+    version_policy: track
+    sign_in_required: true
+
+  gemini-cli:
+    display: Gemini CLI (superseded by Antigravity CLI)
+    category: agent-cli
+    kind: cli
+    superseded_by: antigravity-cli   # detection-only: never installed (PRD FR-040, Appendix C Scan)
+    detect:
+      commands: [gemini]
+      npm_package: "@google/gemini-cli"
+      version: { cmd: [gemini, --version], regex: '(\d+\.\d+\.\d+\S*)' }
+      provenance:
+        npm: "{npm_prefix}/lib/node_modules/@google/gemini-cli/**"
+        brew: "{brew_prefix}/Cellar/gemini-cli/**"
+
+  codex:
+    display: OpenAI Codex CLI
+    category: agent-cli
+    kind: cli
+    detect:
+      commands: [codex]
+      npm_package: "@openai/codex"
+      version: { cmd: [codex, --version], regex: '(\d+\.\d+\.\d+\S*)' }
+      provenance:
+        brew-cask: "{brew_prefix}/Caskroom/codex*/**"
+        npm: "{npm_prefix}/lib/node_modules/@openai/codex/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: codex
+      linux:
+        - backend: brew-cask
+          id: codex
+    version_policy: track
+
+  hermes-agent:
+    display: Hermes Agent (Nous Research)
+    category: agent-cli
+    kind: cli
+    detect:
+      commands: [hermes]
+      version: { cmd: [hermes, --version], regex: '(\d+\.\d+\.\d+\S*)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/hermes-agent/**"
+        script: "~/.hermes/hermes-agent/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: hermes-agent         # never bare "hermes"
+      linux:
+        - backend: brew-formula
+          id: hermes-agent
+    version_policy: track          # brew upgrade, not `hermes update`
+
+  orca:
+    display: Orca (agent IDE, Stably AI)
+    category: agent-app
+    kind: gui
+    detect:
+      commands: [orca]
+      bundle_ids: [dev.orca.app]   # unverified (S-1)
+    install:
+      darwin:
+        - backend: brew-cask
+          id: stablyai/orca/orca   # never bare "orca" (an unrelated Plotly cask)
+          tap: stablyai/orca
+          trust: item
+      linux:
+        - backend: report
+          hint: "Orca's Linux support is unverified; see orca.dev"
+    version_policy: delegate
+
+  t3-code:
+    display: T3 Code (beta)
+    category: agent-app
+    kind: gui
+    detect:
+      bundle_ids: [com.t3tools.t3code]   # unverified; matched by ID because the app name has "(Beta)"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: t3-code
+      linux:
+        - backend: brew-cask       # x86_64 AppImage
+          id: t3-code
+    version_policy: delegate
+
+  paperclip:
+    display: Paperclip (agent orchestration server)
+    category: agent-server
+    kind: cli
+    detect:
+      commands: [paperclipai]
+      npm_package: paperclipai
+      provenance:
+        npm: "{npm_prefix}/lib/node_modules/paperclipai/**"
+    install:
+      darwin:
+        - backend: npm             # no Homebrew path; npm backend arrives in Increment 2
+          id: paperclipai           # no hint: "needs the npm backend (Increment 2)" already says it (review FR-016)
+      linux:
+        - backend: npm
+          id: paperclipai
+    requires:
+      - { package: node, min_version: "24.11" }
+    service:                       # kept opaque until Increment 2 (design §6a)
+      manager: auto
+      install_cmd: "paperclipai service install"
+      health: { http: "http://127.0.0.1:3100", timeout: 30s }
+      backup_before_upgrade:
+        - "~/.paperclip/instances/default/secrets/master.key"
+        - "~/.paperclip/instances/default/db"
+      run_as: invoking-user
+
+  git:
+    display: git
+    category: base
+    kind: cli
+    detect:
+      commands: [git]
+      version: { cmd: [git, --version], regex: 'git version (\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/git/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: git
+      linux:
+        - backend: brew-formula
+          id: git
+
+  gh:
+    display: GitHub CLI
+    category: base
+    kind: cli
+    detect:
+      commands: [gh]
+      version: { cmd: [gh, --version], regex: 'gh version (\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/gh/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: gh
+      linux:
+        - backend: brew-formula
+          id: gh
+
+  tmux:
+    display: tmux
+    category: base
+    kind: cli
+    detect:
+      commands: [tmux]
+      version: { cmd: [tmux, -V], regex: 'tmux (\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/tmux/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: tmux
+      linux:
+        - backend: brew-formula
+          id: tmux
+
+  visual-studio-code:
+    display: Visual Studio Code
+    category: editor
+    kind: gui
+    detect:
+      commands: [code]
+      bundle_ids: [com.microsoft.VSCode]
+      winget_id: Microsoft.VisualStudioCode
+      provenance:
+        brew-cask: "{brew_prefix}/Caskroom/visual-studio-code/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: visual-studio-code
+      linux:
+        - backend: report
+          hint: "Install from Microsoft's apt/rpm repository"
+      wsl:
+        - backend: host-report
+          hint: "Install on the Windows host: winget install Microsoft.VisualStudioCode, then add the WSL extension"
+    version_policy: delegate
+
+  iterm2:
+    display: iTerm2
+    category: terminal
+    kind: gui
+    platforms: [darwin]
+    detect:
+      bundle_ids: [com.googlecode.iterm2]
+    install:
+      darwin:
+        - backend: brew-cask
+          id: iterm2
+    version_policy: delegate
+
+  sqlite:
+    display: SQLite CLI
+    category: base
+    kind: cli
+    detect:
+      commands: [sqlite3]
+      version: { cmd: [sqlite3, --version], regex: '^(\S+)' }
+      provenance:
+        brew: "{brew_prefix}/opt/sqlite/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: sqlite               # keg-only
+      linux:
+        - backend: brew-formula
+          id: sqlite
+
+  node:
+    display: Node.js (LTS 24)
+    category: runtime
+    kind: cli
+    detect:
+      commands: [node]
+      version: { cmd: [node, --version], regex: 'v(\S+)' }
+      provenance:
+        brew: "{brew_prefix}/opt/node@24/**"
+        nvm: "~/.nvm/versions/node/**"
+        fnm: "~/.local/state/fnm_multishells/**"
+        asdf: "~/.asdf/installs/nodejs/**"
+        volta: "~/.volta/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: node@24              # keg-only; never linked with --force (D-3)
+      linux:
+        - backend: brew-formula
+          id: node@24
+    satisfies_if: { min_version: "24.11" }   # any provenance at or above counts
+
+  awscli:
+    display: AWS CLI v2
+    category: cloud
+    kind: cli
+    detect:
+      commands: [aws]
+      version: { cmd: [aws, --version], regex: 'aws-cli/(\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/awscli/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: awscli
+      linux:
+        - backend: brew-formula
+          id: awscli
+    reject_if: { version_lt: "2.0" }   # pip v1 is not the wanted tool
+
+  uv:
+    display: uv (Astral)
+    category: base
+    kind: cli
+    detect:
+      commands: [uv]
+      version: { cmd: [uv, --version], regex: 'uv (\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/uv/**"
+        script: "~/.local/bin/uv"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: uv
+      linux:
+        - backend: brew-formula
+          id: uv
+
+  jq:
+    display: jq
+    category: base
+    kind: cli
+    detect:
+      commands: [jq]
+      version: { cmd: [jq, --version], regex: 'jq-(\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/jq/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: jq
+      linux:
+        - backend: brew-formula
+          id: jq
+
+  ripgrep:
+    display: ripgrep
+    category: base
+    kind: cli
+    detect:
+      commands: [rg]
+      version: { cmd: [rg, --version], regex: 'ripgrep (\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/ripgrep/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: ripgrep
+      linux:
+        - backend: brew-formula
+          id: ripgrep
+
+  container-runtime:
+    display: Container runtime (choose one)
+    category: containers
+    choice:
+      - id: orbstack
+        platforms: [darwin]
+      - id: colima
+        platforms: [darwin, linux]
+      - id: docker-desktop
+        platforms: [darwin]
+        host_on: [wsl]
+    satisfied_by_any_present: true
+
+  orbstack:
+    display: OrbStack
+    category: containers
+    kind: gui
+    platforms: [darwin]
+    detect:
+      commands: [orb]
+      bundle_ids: [dev.kdrag0n.MacVirt]
+    install:
+      darwin:
+        - backend: brew-cask
+          id: orbstack
+    version_policy: delegate
+
+  colima:
+    display: Colima (with the Docker CLI)
+    category: containers
+    kind: cli
+    detect:
+      commands: [colima]
+      version: { cmd: [colima, version], regex: 'colima version (\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/colima/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: colima
+      linux:
+        - backend: brew-formula
+          id: colima
+    requires:
+      - docker
+      - docker-compose
+
+  docker-desktop:
+    display: Docker Desktop
+    category: containers
+    kind: gui
+    platforms: [darwin, wsl]
+    detect:
+      bundle_ids: [com.docker.docker]
+      winget_id: Docker.DockerDesktop
+    install:
+      darwin:
+        - backend: brew-cask
+          id: docker-desktop
+      wsl:
+        - backend: host-report
+          hint: "Install Docker Desktop on the Windows host (winget install Docker.DockerDesktop) and enable WSL integration"
+    version_policy: delegate
+
+  docker:
+    display: Docker CLI (Colima helper)
+    category: containers
+    kind: cli
+    detect:
+      commands: [docker]
+      version: { cmd: [docker, --version], regex: 'Docker version ([^,\s]+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/docker/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: docker
+      linux:
+        - backend: brew-formula
+          id: docker
+
+  docker-compose:
+    display: Docker Compose (Colima helper)
+    category: containers
+    kind: cli
+    detect:
+      commands: [docker-compose]
+      version: { cmd: [docker-compose, version], regex: 'v?(\d+\.\d+\.\d+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/docker-compose/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: docker-compose
+      linux:
+        - backend: brew-formula
+          id: docker-compose
+
+  session-manager-plugin:
+    display: AWS Session Manager plugin
+    category: cloud
+    kind: cli
+    detect:
+      commands: [session-manager-plugin]
+      provenance:
+        brew-cask: "{brew_prefix}/Caskroom/session-manager-plugin/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: session-manager-plugin
+      linux:
+        - backend: report
+          hint: "Install AWS's .deb or .rpm: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html"
+    requires:
+      - awscli
+
+  gcloud-cli:
+    display: Google Cloud CLI
+    category: cloud
+    kind: cli
+    detect:
+      commands: [gcloud]
+      version: { cmd: [gcloud, --version], regex: 'Google Cloud SDK (\S+)' }
+      provenance:
+        brew-cask: "{brew_prefix}/Caskroom/gcloud-cli/**"
+    install:
+      darwin:
+        - backend: brew-cask
+          id: gcloud-cli
+      linux:
+        - backend: brew-cask
+          id: gcloud-cli
+
+  azure-cli:
+    display: Azure CLI
+    category: cloud
+    kind: cli
+    detect:
+      commands: [az]
+      version: { cmd: [az, --version], regex: 'azure-cli\s+(\S+)' }
+      provenance:
+        brew: "{brew_prefix}/Cellar/azure-cli/**"
+    install:
+      darwin:
+        - backend: brew-formula
+          id: azure-cli
+      linux:
+        - backend: brew-formula
+          id: azure-cli

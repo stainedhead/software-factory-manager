@@ -1,5 +1,7 @@
 # Templates and validation
 
+> **Status: planned for Increment 4.** This guide describes a designed feature that does not ship yet: `facman template` and `facman validate` exit 64 until then, with a message naming Increment 4. See [user-docs](README.md) for what ships today.
+
 Every file you write for `facman` can be generated from a template and checked before you commit it.
 
 ## Templates
