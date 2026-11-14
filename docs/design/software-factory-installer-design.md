@@ -1,4 +1,4 @@
-# Software Factory Installer: Design (v0.1 draft)
+# Software Factory Installer: Design (v0.3 draft)
 
 *Status: draft v0.3 for review by J · 2026-11-14 · Working name: `sfi` (rename freely)*
 
