@@ -1,11 +1,13 @@
 # internal/usecase/execute
 
-Runs a consented plan with the operations log (T-E6, T-E7). Ports: `CommandRunner`, `Inventory` (start/finish operation, upsert record, record tap trust), `HomebrewInstaller`, `StateDir`, `Clock`, `UserInfo`, `Progress`, `Confirmer`; result types `ActionResult`, `ActionStatus`.
+Runs a consented plan with the operations log (T-E6, T-E7). Ports: `CommandRunner`, `Inventory` (start/finish operation, upsert record, record tap trust), `HomebrewInstaller`, `StateDir` (`LogPath`, `OpenLog`, `PruneLogs`), `Clock`, `UserInfo`, `Progress`, `Confirmer`, `Replanner` (re-locate brew, refresh shellenv, re-scan after the bootstrap; returns `Replan`); result types `ActionResult`, `ActionStatus` (`succeeded`, `failed`, `skipped`, `not-started`, `already-present`).
 
 | File | Contents |
 |---|---|
 | `ports.go` | Port interfaces (or shared port types), declared here where they are consumed (AD-4) |
-| `ports_test.go` | Compile-time checks that in-memory fakes satisfy the ports |
+| `execute.go` | `Service.Apply(ctx, plan, Options{DryRun})`: a dry run or an empty plan returns at once, a decline writes nothing, consent is `<user>@<RFC 3339 UTC>`. `Service.Run(ctx, plan, consent)` → `Outcome` (`Results` per action, `Plan` with re-plan exclusions, `Env`, `BrewInstalled`, `Cancelled`, `Warnings`; `Outcome.Err` is exit 4 for an installer download failure, else exit 1 when anything failed, was skipped, not started, cancelled or excluded for a conflict, a dependency or incomplete detection). Per action: dependencies must have succeeded (or be already present) or it is skipped; `StartOperation(in_progress)` before the runner, then the log, each command under `context.WithoutCancel` with the child env and `Interactive` for sudo, `FinishOperation` with the exit code and log path; then `UpsertRecord(managed)` (install, homebrew bootstrap record with `bootstrap=true`, backend `script`) or `RecordTapTrust` (trust). No retries. The bootstrap downloads the installer first and runs only the consented program on the downloaded file; after it succeeds `Replanner` drops packages now present and excludes new conflicts and incomplete detections with their dependents. A cancel stops after the current command; the rest are `not-started` |
+| `execute_test.go` | Order of writes versus runs, consent on every row, records and grants, failure skips dependents only, dry run/decline/empty, bootstrap re-plan (only consented commands run), download failure exit 4, cancel during a command, between commands and during the download, store errors |
+| `ports_test.go` | Compile-time checks that the test fakes satisfy the ports |
 
 **Architecture.** Use case layer: imports `internal/domain/...` (and `usecase/process` for runner types) only; never an adapter. Adapters implement these ports and carry compile-time assertions such as `var _ scan.Detector = (*PathDetector)(nil)`.
 

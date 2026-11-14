@@ -3,8 +3,6 @@ package scan
 import (
 	"context"
 	"fmt"
-	"slices"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,7 +15,7 @@ import (
 )
 
 // HomebrewRef is the backend reference of the Homebrew bootstrap record.
-const HomebrewRef = "script:homebrew-install.sh"
+const HomebrewRef = inventory.HomebrewRef
 
 // Service runs a scan: detect, reconcile, classify, persist (FR-010,
 // FR-011, FR-032, FR-061).
@@ -273,7 +271,7 @@ func (s *Service) reconcile(ctx context.Context, in Input, dets map[string][]own
 			}
 			rec = inventory.Record{ID: op.PackageID, Backend: inventory.BackendScript, BackendRef: HomebrewRef, Bootstrap: true}
 		case inventory.OpInstall:
-			backend, ref, ok := installRef(op.Commands)
+			backend, ref, ok := inventory.InstallRef(op.Commands)
 			if !ok {
 				continue
 			}
@@ -298,23 +296,6 @@ func (s *Service) reconcile(ctx context.Context, in Input, dets map[string][]own
 		res.Reconciled = append(res.Reconciled, rec.ID)
 	}
 	return nil
-}
-
-// installRef reads the backend and item from a recorded brew install
-// command (brew install [--cask] <id>).
-func installRef(cmds []plan.Command) (catalog.BackendID, string, bool) {
-	for _, c := range cmds {
-		if len(c.Argv) < 3 || !strings.HasSuffix(c.Argv[0], "brew") || c.Argv[1] != "install" {
-			continue
-		}
-		backend := catalog.BackendBrewFormula
-		if slices.Contains(c.Argv, "--cask") {
-			backend = catalog.BackendBrewCask
-		}
-		item := c.Argv[len(c.Argv)-1]
-		return backend, string(backend) + ":" + item, true
-	}
-	return "", "", false
 }
 
 func (s *Service) snapshots(statuses []ownership.PackageStatus) []inventory.DetectionSnapshot {

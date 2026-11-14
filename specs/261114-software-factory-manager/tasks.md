@@ -166,19 +166,19 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 - **Test first (I1-6, I1-10, part of I1-5/I1-9):** brew missing → first action `bootstrap-homebrew` (installer command, `Unverified`, `NeedsSudo`), every brew action depends on it; Orca → `tap`, `trust`, `install` actions in that order; already tapped/trusted → omitted; dependencies first (`awscli` before `session-manager-plugin` when `--with session-manager-plugin`); `conflict` → excluded with dependents; `unavailable-here`, `foreign`, `duplicate`, `drifted`, `managed`, `adopted`, `Incomplete` → no action (exclusion reasons where wanted); choice group satisfied when any member present; empty plan; `plan.Validate` passes on every produced plan.
 - **Done when:** README.
 
-**T-E6 — `usecase/execute`: operations log and results.** *Depends:* T-E5 · *Est:* 4 h
+**✅ T-E6 — `usecase/execute`: operations log and results.** *Depends:* T-E5 · *Est:* 4 h
 - **Test first (I1-7 unit part):** for each action: `StartOperation(in_progress)` is written **before** the runner is called (fake records the order), `FinishOperation` after with exit code and log path; `consent_by` on every row; success → `UpsertRecord(managed)` (homebrew with `bootstrap=true`, backend `script`), trust → `RecordTapTrust`; failure → dependents skipped, independent actions continue, result exit 1; no automatic retry; dry run → runner never called, no inventory writes; decline → nothing written; `NeedsSudo` commands run interactive.
 - **Done when:** README.
 
-**T-E7 — `usecase/execute`: bootstrap re-plan and cancellation.** *Depends:* T-E6 · *Est:* 3 h
+**✅ T-E7 — `usecase/execute`: bootstrap re-plan and cancellation.** *Depends:* T-E6 · *Est:* 3 h
 - **Test first:** after `bootstrap-homebrew` succeeds: brew re-located, `shellenv` refreshed in the runner env, re-scan; a package now present is dropped; a new conflict is excluded (exit 1); no command outside the consented plan is ever run (assert set inclusion); installer download fails 3 times → bootstrap failure exit 4, nothing else runs; cancel signal during a command → that command finishes and is recorded, remaining actions not started, exit 1.
 - **Done when:** README updated.
 
-**T-E8 — `usecase/doctor` and `usecase/status`.** *Depends:* T-E3, T-E4 · *Est:* 2.5 h
+**✅ T-E8 — `usecase/doctor` and `usecase/status`.** *Depends:* T-E3, T-E4 · *Est:* 2.5 h
 - **Test first:** doctor checks every catalog brew item available on this platform (not only selected), plus catalog tap items' trust state → findings; clean → exit 0; info-only → 0; conflict → 2; needed untrusted tap (`stablyai/orca` not trusted) → 2 with the exact `brew trust --cask stablyai/orca/orca` command as fix; status lists managed/adopted/foreign/drifted/duplicate with provenance.
 - **Done when:** README.
 
-**T-E9 — `usecase/summary`.** *Depends:* T-E6 · *Est:* 1.5 h
+**✅ T-E9 — `usecase/summary`.** *Depends:* T-E6 · *Est:* 1.5 h
 - **Test first:** per-package result lines; "not installed: conflict / dependency failed / detection incomplete / unavailable here (reason)"; "installed, sign-in required" for installed `sign_in_required` packages; profile lines (`eval "$(<prefix>/bin/brew shellenv)"`, `export PATH="<prefix>/opt/node@24/bin:$PATH"`) when brew was installed or is not on PATH, or node@24 was installed.
 - **Done when:** README.
 

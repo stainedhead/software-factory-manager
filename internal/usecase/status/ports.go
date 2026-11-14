@@ -1,6 +1,5 @@
 // Package status lists managed, adopted, foreign, drifted and duplicate
-// packages with their provenance. This file declares the ports it consumes;
-// the use case lands in workstream E (T-E8).
+// packages with their provenance. This file declares the ports it consumes.
 package status
 
 import (

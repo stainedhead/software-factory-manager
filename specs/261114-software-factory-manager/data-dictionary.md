@@ -198,7 +198,9 @@ Methods: `Key() PlatformKey` (wsl when `WSL`), `GlibcBelow(min) bool`.
 | `Backend` | `usecase/planning`, `usecase/conflicts` | `ID() BackendID`, `Available(ctx) bool`, `InstallCommands(ctx, entry, step) ([]plan.Command, error)`, `LinkPaths(ctx, entry, step) ([]string, error)`, `TapState(ctx, step) (tapped, trusted bool, err error)`, `Capabilities() Caps{NeedsSudo bool}` | `adapter/brew` (`brew-formula`, `brew-cask`) |
 | `PathProbe` | `usecase/conflicts` | `Inspect(ctx, path) (*plan.ConflictEvidence, error)` (nil = nothing there), `Owner(ctx, path, entry) (OwnerClass, detail string, error)` | `adapter/fsprobe` |
 | `HomebrewInstaller` | `usecase/execute` | `Download(ctx) (path string, err error)` (3 retries), `Command(path) plan.Command` | `adapter/installer` |
-| `StateDir` | `usecase/execute`, `usecase/scan` | `LogPath(opID, pkgID, t) string`, `Lock(ctx) (Unlock func(), err error)`, `TryLock() (ok bool, holder int)`, `PruneLogs(now)` | `adapter/statedir` |
+| `StateDir` | `usecase/execute`, `usecase/scan` | `LogPath(opID, pkgID, t) string`, `Lock(ctx) (Unlock func(), err error)`, `TryLock() (ok bool, holder int)`, `PruneLogs(now)`, `OpenLog(path) (io.WriteCloser, error)` (execute, I-28) | `adapter/statedir` |
+| `Replanner` | `usecase/execute` | `AfterBootstrap(ctx, remaining plan.Plan) (Replan{Env, Present, Conflicts, Incomplete}, error)` (I-29) | `cmd/facman` wiring over bootstrap, scan and conflicts |
+| `ConflictChecker` | `usecase/doctor` | `Check(ctx, entry, step) (*plan.Conflict, error)` (I-30) | `usecase/conflicts.Service` |
 | `Clock`, `UserInfo` | `usecase/execute` | `Now() time.Time`; `Username() string` | `adapter/execrunner` (system) and test fakes |
 | `Progress` | `usecase/execute` | `ActionStarted(Action)`, `CommandOutput(Action, line string)`, `ActionFinished(Action, Result)` | `adapter/cli` (text), `adapter/tui` (messages) |
 | `Confirmer` | `usecase/execute` (headless path is driven by `adapter/cli`) | `Confirm(ctx, plan) (bool, error)` | `adapter/cli` (`[y/N]`), `adapter/tui` (Review `Enter`) |

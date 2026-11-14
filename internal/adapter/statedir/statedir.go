@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -101,6 +102,19 @@ func (d *Dir) LogsPath() string { return filepath.Join(d.root, LogsDir) }
 func (d *Dir) LogPath(opID int64, pkgID string, t time.Time) string {
 	name := fmt.Sprintf("%s-%d-%s.log", t.UTC().Format("20060102-150405"), opID, pkgID)
 	return filepath.Join(d.LogsPath(), name)
+}
+
+// OpenLog opens the log at path for appending (0600), creating its
+// directory (0700) when needed.
+func (d *Dir) OpenLog(path string) (io.WriteCloser, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return nil, fmt.Errorf("creating the log directory: %w", err)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("opening log %s: %w", path, err)
+	}
+	return f, nil
 }
 
 // PruneLogs deletes regular files in logs/ last modified more than 90 days

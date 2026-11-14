@@ -6,6 +6,8 @@ package inventory
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/catalog"
@@ -206,4 +208,24 @@ type TapTrustGrant struct {
 	GrantedAt time.Time
 	// OperationID is the trust operation.
 	OperationID int64
+}
+
+// HomebrewRef is the backend reference of the Homebrew bootstrap record.
+const HomebrewRef = "script:homebrew-install.sh"
+
+// InstallRef reads the backend and item reference from the brew install
+// command among cmds (brew install [--cask] <id>), for example
+// brew-cask:claude-code. ok is false when there is none.
+func InstallRef(cmds []plan.Command) (backend catalog.BackendID, ref string, ok bool) {
+	for _, c := range cmds {
+		if len(c.Argv) < 3 || !strings.HasSuffix(c.Argv[0], "brew") || c.Argv[1] != "install" {
+			continue
+		}
+		backend = catalog.BackendBrewFormula
+		if slices.Contains(c.Argv, "--cask") {
+			backend = catalog.BackendBrewCask
+		}
+		return backend, string(backend) + ":" + c.Argv[len(c.Argv)-1], true
+	}
+	return "", "", false
 }

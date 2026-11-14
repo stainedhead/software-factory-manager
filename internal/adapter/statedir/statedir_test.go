@@ -234,3 +234,47 @@ func TestReadPIDGarbage(t *testing.T) {
 		t.Error("garbage PID should read as 0")
 	}
 }
+
+func TestOpenLog(t *testing.T) {
+	d, err := Open(filepath.Join(t.TempDir(), "facman"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := d.LogPath(3, "gh", time.Date(2026, 11, 14, 19, 0, 0, 0, time.UTC))
+	for _, line := range []string{"one\n", "two\n"} {
+		w, err := d.OpenLog(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write([]byte(line)); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	b, err := os.ReadFile(path)
+	fi, _ := os.Stat(path)
+	if err != nil || string(b) != "one\ntwo\n" || fi.Mode().Perm() != 0o600 {
+		t.Errorf("log = %q, %v, mode %v", b, err, fi.Mode())
+	}
+	// the logs dir is recreated when it was removed.
+	if err := os.RemoveAll(d.LogsPath()); err != nil {
+		t.Fatal(err)
+	}
+	w, err := d.OpenLog(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = w.Close()
+	file := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.OpenLog(filepath.Join(file, "x", "a.log")); err == nil {
+		t.Error("a log under a file must fail")
+	}
+	if _, err := d.OpenLog(d.LogsPath()); err == nil {
+		t.Error("opening a directory as a log must fail")
+	}
+}

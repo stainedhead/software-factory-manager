@@ -4,7 +4,7 @@ What facman keeps about what it installed: `Record` (only `managed` or `adopted`
 
 | File | Contents |
 |---|---|
-| `inventory.go` | Types, `Record.Validate`, `CanTransition`, `Operation.Finish`, `OpFor` |
+| `inventory.go` | Types, `Record.Validate`, `CanTransition`, `Operation.Finish`, `OpFor`, `HomebrewRef`, `InstallRef` (backend and `backend:item` ref from a recorded `brew install [--cask]` command; shared by scan reconcile and execute) |
 
 **Architecture.** Domain layer: no I/O. Imports `catalog`, `plan`. Used by `ownership` and by `adapter/sqlite`, which stores these types (data-dictionary §4).
 

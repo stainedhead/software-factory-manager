@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 33 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C and D done; E in progress (E2 to E5 done); then F, G, H |
+| 5 | Implementation | In Progress | 37 / 52 tasks (+ T-D9). Workstreams A (with T-E1), B, C, D and E done; then F, G, H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -65,6 +65,10 @@
 | T-E3 `usecase/scan` | ✅ Done | Parallel detectors, `Covers`, AD-8 reconcile, superseded finding; I-26 |
 | T-E4 `usecase/conflicts` | ✅ Done | `Check`, `CheckAll` (unreadable → `Failed`); 100% coverage |
 | T-E5 `usecase/planning` | ✅ Done | Installer first, tap/trust chain, exclusions, choice groups; I-27 |
+| T-E6 `usecase/execute` operations log | ✅ Done | Row before run, consent on every row, records/grants, skip dependents, no retry; `StateDir.OpenLog` (I-28) |
+| T-E7 `usecase/execute` re-plan and cancel | ✅ Done | `Replanner` port, `already-present`, `context.WithoutCancel` per command; download failure exit 4 (I-29) |
+| T-E8 `usecase/doctor` and `usecase/status` | ✅ Done | Whole-catalog pre-flight, tap trust (I-30); status rows with provenance |
+| T-E9 `usecase/summary` | ✅ Done | No ports; caller maps the execute outcome (I-31) |
 
 ## Blockers
 
@@ -80,3 +84,4 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | Step 3, workstream B: YAML loader (`adapter/catalogyaml`), embedded catalog v1 and profiles, `--catalog <dir>` source. |
 | 2026-11-14 | Step 3, workstream C: `execrunner`, `platform`, `statedir` and `sqlite` adapters. Coverage: 94.7% overall, 100% domain. |
 | 2026-11-14 | Step 3, workstream D: `brew` (locator, shellenv, info parsing, detector, formula/cask backends, tap/trust state), `detect` (PATH, bundle, npm), `fsprobe`; detection-only `gemini-cli` entry (T-D9). Coverage: 95.6% overall. Deviations I-16 to I-24. |
+| 2026-11-14 | Step 3, workstream E: bootstrap, scan, conflicts, planning, execute, doctor, status and summary use cases; `inventory.InstallRef` shared by scan and execute; `statedir.OpenLog`. Coverage: 96.4% overall, 100% domain, usecase ≥ 97.2% per package. Deviations I-26 to I-31. |

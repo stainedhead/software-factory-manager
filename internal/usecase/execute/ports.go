@@ -2,12 +2,12 @@
 // in_progress before running it, finishes it with the exit code and log
 // path, records managed packages and tap-trust grants, skips dependents of
 // failed actions, re-plans after the Homebrew bootstrap and stops after the
-// current command on cancel. This file declares the ports it consumes; the
-// use case lands in workstream E (T-E6, T-E7).
+// current command on cancel. This file declares the ports it consumes.
 package execute
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/inventory"
@@ -51,6 +51,31 @@ type StateDir interface {
 	TryLock() (unlock func(), holder int, err error)
 	// PruneLogs deletes logs older than 90 days.
 	PruneLogs(now time.Time) error
+	// OpenLog creates (or appends to) the log file at path, creating its
+	// directory, readable by the user only.
+	OpenLog(path string) (io.WriteCloser, error)
+}
+
+// Replan is what changed once Homebrew was bootstrapped: the refreshed
+// child environment and the re-scan of the packages still to install.
+type Replan struct {
+	// Env is the new child environment (brew shellenv plus the node@24 keg
+	// on PATH); it replaces the environment of every later command.
+	Env map[string]string
+	// Present are packages now found present: their actions are dropped.
+	Present []string
+	// Conflicts by package ID: these and their dependents are excluded.
+	Conflicts map[string]*plan.Conflict
+	// Incomplete holds packages whose detection or pre-flight could not
+	// finish, with the reason: these and their dependents are excluded.
+	Incomplete map[string]string
+}
+
+// Replanner re-locates brew, refreshes shellenv and re-scans the packages
+// of remaining right after the Homebrew bootstrap succeeds. Implemented in
+// cmd/facman wiring over the bootstrap, scan and conflicts use cases.
+type Replanner interface {
+	AfterBootstrap(ctx context.Context, remaining plan.Plan) (Replan, error)
 }
 
 // Clock tells the time. Implemented by adapter/execrunner (system clock).
@@ -74,6 +99,10 @@ const (
 	ActionSkipped ActionStatus = "skipped"
 	// ActionNotStarted means the run was cancelled before it.
 	ActionNotStarted ActionStatus = "not-started"
+	// ActionAlreadyPresent means the re-scan after the Homebrew bootstrap
+	// found the package present, so its action was dropped; dependents
+	// treat it as satisfied.
+	ActionAlreadyPresent ActionStatus = "already-present"
 )
 
 // ActionResult is the outcome of one action.

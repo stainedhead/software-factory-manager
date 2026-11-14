@@ -4,7 +4,7 @@ The state directory (PRD Appendix J), implementing `scan.StateDir` and `execute.
 
 | File | Contents |
 |---|---|
-| `statedir.go` | `Resolve(goos, getenv)`, `Open(root)`, `Dir` with `Root`, `DBPath`, `LockPath`, `LogsPath`, `LogPath`, `PruneLogs`, `TryLock`, `Lock` |
+| `statedir.go` | `Resolve(goos, getenv)`, `Open(root)`, `Dir` with `Root`, `DBPath`, `LockPath`, `LogsPath`, `LogPath`, `OpenLog` (append, 0600, recreates `logs/`), `PruneLogs`, `TryLock`, `Lock` |
 
 | Item | macOS | Linux / WSL |
 |---|---|---|

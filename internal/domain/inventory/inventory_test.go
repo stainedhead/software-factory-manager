@@ -101,3 +101,24 @@ func TestOpFor(t *testing.T) {
 		}
 	}
 }
+
+func TestInstallRef(t *testing.T) {
+	tests := []struct {
+		name    string
+		cmds    []plan.Command
+		backend string
+		ref     string
+	}{
+		{"cask", []plan.Command{{Argv: []string{"/opt/homebrew/bin/brew", "install", "--cask", "claude-code"}}}, "brew-cask", "brew-cask:claude-code"},
+		{"formula after tap", []plan.Command{{Argv: []string{"brew", "tap", "a/b"}}, {Argv: []string{"brew", "install", "gh"}}}, "brew-formula", "brew-formula:gh"},
+		{"none", []plan.Command{{Argv: []string{"/bin/bash", "x.sh"}}, {Argv: []string{"npm", "install", "-g", "x"}}}, "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b, ref, ok := InstallRef(tt.cmds)
+			if string(b) != tt.backend || ref != tt.ref || ok != (tt.ref != "") {
+				t.Errorf("InstallRef = %q %q %v", b, ref, ok)
+			}
+		})
+	}
+}
