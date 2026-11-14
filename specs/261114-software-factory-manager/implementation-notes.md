@@ -77,6 +77,13 @@ Recorded during Step 3 (workstreams A, B, C, unattended, 2026-11-14). Data-dicti
 | I-14 | `SelectInstall`: install steps are tried in order; the first `report`/`host-report` step makes the entry `unavailable-here` with its hint; the first implemented backend wins; unimplemented backends (npm) are skipped and named in the reason only when nothing else fits. A WSL `gui` entry with no `wsl` block is a host item with the catalog `winget_id` hint. | Matches design §2a and PRD FR-043 to FR-045. | `domain/catalog/install.go` |
 | I-15 | Catalog v1 data choices: `orca` has a Linux `report` step ("Linux support unverified") rather than no block; `docker-desktop` is `platforms: [darwin, wsl]` with a WSL `host-report`; detect `version.cmd` is a YAML list (a string is split on whitespace, never run through a shell); bundle IDs for `github-copilot-app` (`com.github.CopilotApp`) and `t3-code` (`com.t3tools.t3code`) are guesses marked unverified, like Orca's (S-1); `paperclip`'s npm pin is left out until the npm backend exists (Increment 2); no `gemini-cli` entry (a leftover Gemini CLI is not a catalog package in Increment 1). Profile files must be named for their `profile:`. | Safe, reviewable data; fixable after the I1-16 field run without code changes. | `adapter/catalogyaml/embedded/` |
 
+### Notes for the next workstreams (D to H)
+
+- **Runner and cancellation.** `execrunner.Run` kills the child when its ctx is done. `execute` must run install commands with a context that is not cancelled (for example `context.WithoutCancel(ctx)`) and check for cancellation between commands, so "stop after the current command" holds.
+- **Child environment.** The use cases own the overrides (shellenv, `{brew_prefix}/opt/node@24/bin` first on `PATH`, `HOMEBREW_NO_AUTO_UPDATE=1`/`HOMEBREW_NO_ENV_HINTS=1` for detection) and pass them in every `process.Cmd.Env`; the runner's base is `os.Environ()` from wiring. A `PATH` override also decides where `Argv[0]` is found.
+- **fakecmd.** `testkit.NewFake(t, world)` gives a bin dir; put only `f.Dir` on the runner's `PATH`. `fakeworld.Brew` emulates `info --json=v2`, `install [--cask]`, `tap`, `trust`, `shellenv`, `--prefix`; rules (`Cmd`, `Args`/`ArgsPrefix`, `Stdout`, `Stderr`, `Exit`, `SleepMS`, `Builtin`) answer anything else. Call `testkit.AssertSafeInvocations(t, f.Log(t))` at the end of every e2e test, and `testkit.RemoveBuild()` from `TestMain`. The fake's `brew info --json=v2` shape follows research.md RQ-1; T-D2 still needs fixtures captured from real Homebrew.
+- **Store.** `sqlite.Open(ctx, statedir.DBPath(), clock.Now)`; `Store.Operations` and `Store.Detections` exist for status views and tests beyond the ports.
+
 ## Measurements
 
 Fill in during T-F6 and the I1-16 field run.

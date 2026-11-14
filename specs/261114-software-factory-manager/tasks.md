@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**16 / 52 tasks complete** (A 11/11, B 4/4, C 0/5, D 0/8, E 1/9, F 0/6, G 0/5, H 0/4)
+**21 / 52 tasks complete** (A 11/11, B 4/4, C 5/5, D 0/8, E 1/9, F 0/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -82,23 +82,23 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream C — Infrastructure adapters (parallel with B, D, E)
 
-**T-C1 — `adapter/execrunner`.** *Depends:* T-A4 · *Est:* 3 h
+**✅ T-C1 — `adapter/execrunner`.** *Depends:* T-A4 · *Est:* 3 h
 - **Test first:** runs argv (no shell) and returns exit code/stdout/stderr; tees output to a log writer; timeout kills the child and returns a timeout error; env passed is `base + overrides` with every `HOMEBREW_NO_REQUIRE_TAP_TRUST*` removed; interactive mode attaches stdin/stdout/stderr of the parent; log header lists env var **names** only; system `Clock` and `UserInfo` (`os/user`, falling back to `$USER`).
 - **Done when:** README.
 
-**T-C2 — `adapter/platform`.** *Depends:* T-A3 · *Est:* 2 h
+**✅ T-C2 — `adapter/platform`.** *Depends:* T-A3 · *Est:* 2 h
 - **Test first:** fixture files for `/proc/version` (WSL and not), `/etc/os-release` (ubuntu, debian, fedora, rhel, alpine → unknown), `getconf` and `ldd` outputs via `fakecmd` (2.35, 2.39, missing); env for display/WSL.
 - **Done when:** paths and command names are constructor parameters; README.
 
-**T-C3 — `adapter/statedir`.** *Depends:* — · *Est:* 2.5 h
+**✅ T-C3 — `adapter/statedir`.** *Depends:* — · *Est:* 2.5 h
 - **Test first:** macOS path under `~/Library/Application Support/facman`; Linux path honours `XDG_STATE_HOME` and defaults to `~/.local/state/facman`; log name `20261114-190000-7-gh.log`; `PruneLogs` deletes files older than 90 days only inside `logs/`; `Lock` is exclusive across processes (child process test) and `TryLock` reports the holder PID; unwritable dir → bootstrap failure (exit 4).
 - **Done when:** README.
 
-**T-C4 — `adapter/sqlite` open and migrations.** *Depends:* T-A9 · *Est:* 2.5 h
+**✅ T-C4 — `adapter/sqlite` open and migrations.** *Depends:* T-A9 · *Est:* 2.5 h
 - **Test first:** fresh DB gets migration 1 tables (data-dictionary §4) and `meta.schema_version=1`, `machine_id`; re-open is a no-op; `schema_version=99` → bootstrap error "written by a newer facman"; garbage file → bootstrap error naming the path, file untouched.
 - **Done when:** pure Go (`modernc.org/sqlite`), `CGO_ENABLED=0 go test` passes; README.
 
-**T-C5 — `adapter/sqlite` inventory repository.** *Depends:* T-C4 · *Est:* 3 h
+**✅ T-C5 — `adapter/sqlite` inventory repository.** *Depends:* T-C4 · *Est:* 3 h
 - **Test first:** implements the `Inventory` port: `StartOperation`/`FinishOperation` round-trip with `commands_json`; `MarkInterrupted` changes only `in_progress` rows and returns them; `UpsertRecord`; `SaveDetections` keeps the last 10 scans per package; `RecordTapTrust`; times stored as RFC 3339 UTC; readable by `sqlite3` CLI when present (skip if absent).
 - **Done when:** README updated.
 

@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md (AD-1 to AD-16), plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 52 tasks in 8 workstreams (A to H) |
-| 5 | Implementation | In Progress | 16 / 52 tasks. Workstreams A (with T-E1) and B done; C in progress |
+| 5 | Implementation | In Progress | 21 / 52 tasks. Workstreams A (with T-E1), B and C done; next D, E (parallel), then F, G, H |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -47,6 +47,11 @@
 | T-B2 Embedded catalog v1 | ✅ Done | 30 entries (25 Appendix E + choice members and helpers); I-15 |
 | T-B3 Embedded profiles | ✅ Done | `agentic-factory` (includes `base-dev`), `base-dev` |
 | T-B4 `--catalog <dir>` source | ✅ Done | Git URL → 64; missing/invalid → 3; `dir:<abs>@<sha256>` |
+| T-C1 `adapter/execrunner` | ✅ Done | Argv only, env sanitizing, timeouts, log names-only header, interactive; system clock/user |
+| T-C2 `adapter/platform` | ✅ Done | Fixtures + fakecmd for getconf/ldd; 100% coverage |
+| T-C3 `adapter/statedir` | ✅ Done | Cross-process flock test with holder PID; I-10 |
+| T-C4 `adapter/sqlite` open and migrations | ✅ Done | Newer schema and garbage file → exit 4, file untouched; CGO_ENABLED=0 |
+| T-C5 `adapter/sqlite` inventory repository | ✅ Done | Implements scan/execute/status `Inventory`; last 10 scans kept; I-11 |
 
 ## Blockers
 
@@ -60,3 +65,4 @@ None. Open questions for J are listed in [spec.md](spec.md#open-questions); each
 | 2026-11-14 | `/review-spec` (dev-flow Step 2, unattended): verdict Needs revision (4 Warnings: acceptance criteria, technical approach, component coverage, edge cases), all resolved (R-1 to R-9) → Implementation-ready. Phases 0 to 4 complete. |
 | 2026-11-14 | Step 3, workstream A: domain model (version, failure, platform, catalog, plan, inventory, ownership), use case ports (T-E1), fakecmd and testkit, Makefile targets. Deviations I-1 to I-14 in implementation-notes.md. |
 | 2026-11-14 | Step 3, workstream B: YAML loader (`adapter/catalogyaml`), embedded catalog v1 and profiles, `--catalog <dir>` source. |
+| 2026-11-14 | Step 3, workstream C: `execrunner`, `platform`, `statedir` and `sqlite` adapters. Coverage: 94.7% overall, 100% domain. |
