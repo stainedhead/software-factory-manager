@@ -66,7 +66,7 @@ Every command except `--version` and `--about` also takes `--catalog <dir>` to u
 | [Architecture decision record](docs/architecture-decision-record.md) | Key design decisions and their rationale |
 | [Design](docs/design/) | The full working design for `facman` |
 
-Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/). The [Increment 1 (MVP) spec](specs/archive/261114-software-factory-manager/spec.md) is complete and archived; the product PRD is archived with it at [specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md](specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md). The code review's fixes are tracked in [software-factory-manager-auto-review-PRD.md](software-factory-manager-auto-review-PRD.md) until their spec is created.
+Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/). The [Increment 1 (MVP) spec](specs/archive/261114-software-factory-manager/spec.md) is complete and archived; the product PRD is archived with it at [specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md](specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md). The code review's fixes are tracked in their own spec, [specs/261114-software-factory-manager-auto-review/](specs/261114-software-factory-manager-auto-review/).
 
 ## Development
 

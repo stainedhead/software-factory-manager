@@ -3,7 +3,8 @@
 **PRD:** specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md (moved from the repo root in Step 1; archived with the spec in Step 7)
 **Spec:** specs/archive/261114-software-factory-manager (archived in Step 7; was specs/261114-software-factory-manager)
 **Branch:** claude/project-thread-ys3kmd
-**Review PRD:** software-factory-manager-auto-review-PRD.md
+**Review PRD:** software-factory-manager-auto-review-PRD.md (moved into the review spec in Step 8)
+**Review Spec:** specs/261114-software-factory-manager-auto-review (created in Step 8)
 **Process Start:** 2026-11-14T18:37:38Z
 **Process End:** —
 **Total Runtime:** —
@@ -19,8 +20,8 @@
 | 5  | Code and Design Review          | ✅ Complete | 2026-11-14T21:23:41Z | 2026-11-14T21:32:42Z | 9 |
 | 6  | Prepare Review PRD              | ✅ Complete | 2026-11-14T21:33:34Z | 2026-11-14T21:34:52Z | 1 |
 | 7  | Archive Original Spec           | ✅ Complete | 2026-11-14T21:35:22Z | 2026-11-14T21:36:21Z | 1 |
-| 8  | Spec Review Fixes               | ⬜ Pending | — | — | — |
-| 9  | Implement Review Fixes          | ⬜ Pending | — | — | — |
+| 8  | Spec Review Fixes               | ✅ Complete | 2026-11-14T21:37:53Z | 2026-11-14T21:39:38Z | 2 |
+| 9  | Implement Review Fixes          | 🔄 In Progress | 2026-11-14T21:39:38Z | — | — |
 | 10 | Archive Fixes Spec              | ⬜ Pending | — | — | — |
 | 11 | Final Quality Pass              | ⬜ Pending | — | — | — |
 | 12 | Process Analysis Report         | ⬜ Pending | — | — | — |
@@ -39,3 +40,4 @@
 - Step 5: `/review-code` over `origin/main...HEAD` (226 files). Verdict **Request changes** (no blocker): 19 findings, 0 P0, 3 P1 (catalog values unvalidated into argv/paths/terminal, relative PATH entries resolved, clean-machine bootstrap never run against real Homebrew), 16 P2. Import directions checked mechanically with `go list`: no violations. Written to `software-factory-manager-auto-review-PRD.md` at the repo root; no fixes implemented.
 - Step 6: `/review-prd` on the review PRD: Needs revision (Warnings on functional completeness and acceptance criteria, no Fail) → Ready for spec. FR-001, FR-005, FR-007 and FR-010 split into atomic parts (26 requirements from 19 findings), four untestable criteria rewritten, FR-001d moved P1 → P2, FR-013 narrowed; TDD, per-fix review, teammates and worktrees guidance confirmed; no P0. Log in the PRD's Appendix A.
 - Step 7: `/archive-spec`: status.md showed Phase 6 "Not Started" only because archiving is Phase 6, so it was set Complete with an archival note (the review findings move to the fixes spec; the I1 checkboxes wait for FR-017's evidence table). Confirmations skipped (unattended run). Moved to `specs/archive/261114-software-factory-manager/` with the PRD and this dashboard. Relative links inside the archive were rewritten one level deeper, and every link into the old path (root README, specs READMEs, docs, user-docs, 23 package READMEs, the review PRD) was updated. A link check over all Markdown found 0 broken links. The review PRD stays at the repo root for Step 8.
+- Step 8: `/create-spec` on the review PRD created `specs/261114-software-factory-manager-auto-review/` (inline templates; `prd-to-spec` not installed), with one task per requirement (T-1a to T-19). The review PRD moved into it and its link to the Increment 1 spec was fixed; root README and specs/README point at the new spec.

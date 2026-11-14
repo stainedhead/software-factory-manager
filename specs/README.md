@@ -8,7 +8,7 @@ Active feature specs live here; completed ones move to `specs/archive/` (via `/a
 
 | Spec | Scope | Status |
 |---|---|---|
-| none | The Increment 1 review fixes get a spec here next (from `../software-factory-manager-auto-review-PRD.md`) | — |
+| [261114-software-factory-manager-auto-review/](261114-software-factory-manager-auto-review/) | Increment 1 review fixes (26 requirements from the Step 5 code review) | In progress |
 
 ## Archived specs
 
