@@ -1,0 +1,28 @@
+# Baseline for the agentic software factory (design §5, PRD Appendix E).
+# Optional entries start unchecked in the TUI; headless runs name them with
+# --with <id> (for the container runtime, --with <member>, e.g. --with colima).
+apiVersion: facman/v1
+profile: agentic-factory
+description: Baseline for the agentic software factory
+include: [base-dev]
+packages:
+  - claude-desktop
+  - claude-code
+  - copilot-cli
+  - github-copilot-app: { optional: true }
+  - antigravity-cli
+  - codex
+  - uv
+  - jq
+  - ripgrep
+  - container-runtime: { optional: true }
+  - session-manager-plugin: { optional: true }
+  - gcloud-cli: { optional: true }
+  - azure-cli: { optional: true }
+  - orca
+  - t3-code: { optional: true }
+  - paperclip
+  - hermes-agent
+policy:
+  allow_unverified_scripts: false
+  allow_adopt: true

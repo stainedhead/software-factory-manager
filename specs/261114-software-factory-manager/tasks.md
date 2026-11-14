@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**12 / 52 tasks complete** (A 11/11, B 0/4, C 0/5, D 0/8, E 1/9, F 0/6, G 0/5, H 0/4)
+**16 / 52 tasks complete** (A 11/11, B 4/4, C 0/5, D 0/8, E 1/9, F 0/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -62,19 +62,19 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream B — Catalog v1 data and loader (parallel with C, D, E)
 
-**T-B1 — YAML decoder.** *Depends:* T-A5 · *Est:* 3 h
+**✅ T-B1 — YAML decoder.** *Depends:* T-A5 · *Est:* 3 h
 - **Test first:** decode a small catalog and profile into domain types; unknown key → `catalog.yaml:12:5 packages.jq.detekt: unknown field`; wrong type → line/col; order of `packages` preserved; `service:` and `policy:` accepted opaquely.
 - **Done when:** `adapter/catalogyaml` README.
 
-**T-B2 — Embedded catalog v1.** *Depends:* T-B1, T-A6 · *Est:* 4 h
+**✅ T-B2 — Embedded catalog v1.** *Depends:* T-B1, T-A6 · *Est:* 4 h
 - **Test first:** loads and validates; contains every FR-040 ID plus choice members and helpers; FR-041 defaults; `orca` uses `stablyai/orca/orca` with `tap` and `trust: item`; `hermes-agent` (never `hermes`); `iterm2` `platforms: [darwin]`; `paperclip` npm only; `sign_in_required` on the five entitlement tools; `node` `node@24` with `satisfies_if min_version 24.11` and no `link`.
 - **Done when:** `embedded/catalog.yaml` follows PRD Appendix E and design §5 (detect commands, bundle IDs, provenance globs, version probes).
 
-**T-B3 — Embedded profiles.** *Depends:* T-B2, T-A7 · *Est:* 1.5 h
+**✅ T-B3 — Embedded profiles.** *Depends:* T-B2, T-A7 · *Est:* 1.5 h
 - **Test first (I1-4):** `agentic-factory` resolves to its packages plus `base-dev` = git, gh, tmux, visual-studio-code, iterm2 (darwin), sqlite, node, awscli; optional items unselected; `--with gcloud-cli` selects it.
 - **Done when:** `embedded/profiles/{agentic-factory,base-dev}.yaml`.
 
-**T-B4 — `--catalog <dir>` source.** *Depends:* T-B1 · *Est:* 1.5 h
+**✅ T-B4 — `--catalog <dir>` source.** *Depends:* T-B1 · *Est:* 1.5 h
 - **Test first:** dir with `catalog.yaml` + `profiles/` loads and replaces the embedded catalog; missing dir/file → validation error (exit 3) with path; `https://…` or `git@…` → usage error (exit 64) "git catalogs arrive in a later increment"; `Revision` = `dir:<abs>@<sha256>` stable across runs.
 - **Done when:** README updated.
 
