@@ -115,64 +115,101 @@ func checkHeader(path string) error {
 	return nil
 }
 
+// querier is what schemaVersion reads through: the pool, or the one
+// connection that holds a migration's write lock.
+type querier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+// migrate brings the schema to SchemaVersion. Each step runs in its own
+// BEGIN IMMEDIATE transaction that re-reads the version inside the write
+// lock, so two first launches at the same moment never both create the
+// tables (review FR-005a): the second waits (busy_timeout), then sees the
+// work done and skips it.
 func (s *Store) migrate(ctx context.Context) error {
-	current, err := s.schemaVersion(ctx)
+	current, err := schemaVersion(ctx, s.db)
 	if err != nil {
 		return bootstrapErr(s.path, err)
 	}
-	if current > SchemaVersion {
-		return failure.Bootstrap("state database %s was written by a newer %s (schema %d; this build knows %d)",
-			s.path, appinfo.Name, current, SchemaVersion).
-			WithFix("upgrade " + appinfo.Name + "; it never migrates state down")
-	}
-	for v := current; v < SchemaVersion; v++ {
-		if err := s.apply(ctx, v); err != nil {
+	for {
+		if current > SchemaVersion {
+			return failure.Bootstrap("state database %s was written by a newer %s (schema %d; this build knows %d)",
+				s.path, appinfo.Name, current, SchemaVersion).
+				WithFix("upgrade " + appinfo.Name + "; it never migrates state down")
+		}
+		if current == SchemaVersion {
+			return nil
+		}
+		if current, err = s.step(ctx); err != nil {
 			return bootstrapErr(s.path, err)
 		}
 	}
-	return nil
 }
 
-func (s *Store) apply(ctx context.Context, from int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+// step runs the next migration under BEGIN IMMEDIATE and returns the schema
+// version it leaves. A version that is already current (or newer) when the
+// lock is taken is returned unchanged, with nothing applied.
+func (s *Store) step(ctx context.Context) (int, error) {
+	conn, err := s.db.Conn(ctx)
 	if err != nil {
-		return fmt.Errorf("starting migration %d: %w", from+1, err)
+		return 0, fmt.Errorf("starting migration: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.ExecContext(ctx, migrations[from]); err != nil {
-		return fmt.Errorf("migration %d: %w", from+1, err)
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, `BEGIN IMMEDIATE`); err != nil {
+		return 0, fmt.Errorf("starting migration: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_, _ = conn.ExecContext(context.WithoutCancel(ctx), `ROLLBACK`)
+		}
+	}()
+	from, err := schemaVersion(ctx, conn)
+	if err != nil {
+		return 0, err
+	}
+	if from >= SchemaVersion {
+		return from, nil // another process finished it while we waited
+	}
+	if _, err := conn.ExecContext(ctx, migrations[from]); err != nil {
+		return 0, fmt.Errorf("migration %d: %w", from+1, err)
 	}
 	if from == 0 {
 		id, err := newUUID()
 		if err != nil {
-			return err
+			return 0, err
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO meta(key, value) VALUES ('machine_id', ?), ('last_manifest_rev', '')`, id); err != nil {
-			return fmt.Errorf("seeding meta: %w", err)
+		if _, err := conn.ExecContext(ctx, `INSERT INTO meta(key, value) VALUES ('machine_id', ?), ('last_manifest_rev', '')`, id); err != nil {
+			return 0, fmt.Errorf("seeding meta: %w", err)
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO meta(key, value) VALUES ('schema_version', ?)
+	if _, err := conn.ExecContext(ctx, `INSERT INTO meta(key, value) VALUES ('schema_version', ?)
 ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(from+1)); err != nil {
-		return fmt.Errorf("recording schema version: %w", err)
+		return 0, fmt.Errorf("recording schema version: %w", err)
 	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing migration %d: %w", from+1, err)
+	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {
+		return 0, fmt.Errorf("committing migration %d: %w", from+1, err)
 	}
-	return nil
+	committed = true
+	return from + 1, nil
 }
 
 // schemaVersion is 0 for a fresh database.
-func (s *Store) schemaVersion(ctx context.Context) (int, error) {
+func schemaVersion(ctx context.Context, q querier) (int, error) {
 	var n int
-	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'meta'`).Scan(&n); err != nil {
+	if err := q.QueryRowContext(ctx, `SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'meta'`).Scan(&n); err != nil {
 		return 0, fmt.Errorf("reading schema: %w", err)
 	}
 	if n == 0 {
 		return 0, nil
 	}
-	v, err := s.Meta(ctx, "schema_version")
+	var v string
+	err := q.QueryRowContext(ctx, `SELECT value FROM meta WHERE key = 'schema_version'`).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("reading schema version: %w", err)
 	}
 	version, err := strconv.Atoi(v)
 	if err != nil {

@@ -60,7 +60,7 @@ Application logic. Each package declares the small interfaces it consumes, and i
 | `execrunner` | `os/exec` runner. It takes an argument list only (never a shell), sanitizes the environment, applies timeouts, writes a log header (variable names, not values) and an outcome footer (`# result:`, `# time:`; a signal kill is exit 128+signo), runs children in their own process group, and builds `Handoff` for interactive commands. Also provides the system clock and user. |
 | `platform` | Probes OS, arch, WSL (`/proc/version`, `WSL_DISTRO_NAME`), display, glibc (`getconf`, `ldd`) and distro (`/etc/os-release`). |
 | `statedir` | Resolves the state directory per platform, the `flock` lock with holder PID, log naming and 90-day pruning. |
-| `sqlite` | Inventory on `modernc.org/sqlite` (pure Go, WAL) with numbered embedded migrations. It refuses newer or corrupt databases (exit 4). |
+| `sqlite` | Inventory on `modernc.org/sqlite` (pure Go, WAL) with numbered embedded migrations, each under `BEGIN IMMEDIATE` so concurrent first launches are safe. It refuses newer or corrupt databases (exit 4). |
 | `catalogyaml` | Catalog v1 and profiles embedded in the binary, and `--catalog <dir>`. Strict decoding with `file:line:col` errors. |
 | `brew` | Locating brew, `shellenv`, parsing `brew info --json=v2`, the brew detector, the `brew-formula` and `brew-cask` backends, link paths, and tap and trust state. |
 | `detect` | PATH (with the CLT `git` shim rule), app-bundle (Spotlight, then a directory scan) and npm global detectors. |
@@ -115,7 +115,7 @@ Every command except `--version`, `--about` and `--help` runs the same steps thr
 |---|---|---|
 | Unit | beside the code | Table-driven, with fakes for ports. Domain and use cases at 97 to 100%. |
 | End-to-end | `cmd/facman/*_test.go` | In-process through the real wiring, with injected `options` (R-3) and a fake `brew` built from `testdata/fakecmd`. Every JSON document is validated against the schema. Consent goes through a pseudo-terminal. Covers crash recovery, the TUI on a pty, and Linux-no-display and WSL fixtures. |
-| Integration | `cmd/facman/integration_test.go` (`integration` tag) | Real Homebrew. `scan`, `plan` and `doctor` run read-only with a temp state directory, and skip without brew or as root. The GNU `hello` install through `testdata/catalogs/integration` runs only with `FACMAN_INTEGRATION_MUTATE=1`, which CI sets on macOS only. |
+| Integration | `cmd/facman/integration_test.go` (`integration` tag) | Real Homebrew. `scan`, `plan` and `doctor` run read-only with a temp state directory, and skip without brew or as root (they fail instead when `FACMAN_INTEGRATION_MUTATE=1`, and `make integration` is verbose so CI shows each PASS or SKIP). The GNU `hello` install through `testdata/catalogs/integration` runs only with `FACMAN_INTEGRATION_MUTATE=1`, which CI sets on macOS only. |
 | Performance smoke | `cmd/facman/perf_test.go`, `adapter/tui` | `--version` well under its budget, scan of the full catalog on the fake machine in about 0.5 s, and the first TUI frame in 20 to 52 ms. |
 
 `make cover` reports about 96% overall. CI runs `make cover`, `make integration`, `make build` and a `facman --version` smoke test on Linux and macOS (see [.github/README.md](../.github/README.md)).

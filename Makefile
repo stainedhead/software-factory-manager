@@ -18,9 +18,11 @@ build-all:
 test:
 	go test -race ./...
 
-# Integration tests: skip cleanly without Homebrew; mutate only with FACMAN_INTEGRATION_MUTATE=1.
+# Integration tests (TestIntegration*), verbose so the log shows PASS or SKIP for each.
+# They skip without Homebrew or as root; FACMAN_INTEGRATION_MUTATE=1 runs the install
+# test and turns those skips into failures. Unit tests run in make test / make cover.
 integration:
-	go test -race -tags integration ./...
+	go test -race -tags integration -v -run '^TestIntegration' ./...
 
 lint:
 	golangci-lint run

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -398,5 +399,52 @@ func TestClosedStoreErrors(t *testing.T) {
 		if err == nil {
 			t.Errorf("%s on a closed store returned nil", name)
 		}
+	}
+}
+
+// TestConcurrentFirstOpen opens one fresh file from 20 goroutines released
+// together: every Open succeeds, the schema is current and there is exactly
+// one machine ID (review FR-005a).
+func TestConcurrentFirstOpen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.db")
+	const n = 20
+	start := make(chan struct{})
+	errs := make(chan error, n)
+	stores := make(chan *Store, n)
+	var wg sync.WaitGroup
+	for range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			s, err := Open(context.Background(), path, nil)
+			if err != nil {
+				errs <- err
+				return
+			}
+			stores <- s
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	close(stores)
+	for err := range errs {
+		t.Errorf("Open: %v", err)
+	}
+	for s := range stores {
+		_ = s.Close()
+	}
+	s, err := Open(context.Background(), path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+	if v, err := schemaVersion(context.Background(), s.db); err != nil || v != SchemaVersion {
+		t.Errorf("schema version = %d, %v; want %d", v, err, SchemaVersion)
+	}
+	var ids int
+	if err := s.db.QueryRow(`SELECT count(*) FROM meta WHERE key = 'machine_id'`).Scan(&ids); err != nil || ids != 1 {
+		t.Errorf("machine_id rows = %d, %v; want 1", ids, err)
 	}
 }

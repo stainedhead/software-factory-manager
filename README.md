@@ -76,7 +76,7 @@ Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](sp
 | `make build` | Compile a static (`CGO_ENABLED=0`) `bin/facman` |
 | `make build-all` | Cross-compile darwin and linux, amd64 and arm64, into `bin/<os>-<arch>/facman` |
 | `make test` | Run tests with the race detector |
-| `make integration` | Tests including the `integration` build tag: read-only checks against real Homebrew (skip without it or as root); the GNU `hello` install runs only with `FACMAN_INTEGRATION_MUTATE=1` |
+| `make integration` | The `TestIntegration*` tests with the `integration` build tag, verbose: read-only checks against real Homebrew (skip without it or as root); `FACMAN_INTEGRATION_MUTATE=1` runs the GNU `hello` install and turns those skips into failures |
 | `make lint` | Run golangci-lint |
 | `make cover` | Tests with a coverage report (target ≥ 80% overall; Increment 1 is at about 96%) |
 | `make check` | fmt + lint + test (run before every commit) |

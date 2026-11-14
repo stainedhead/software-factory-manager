@@ -19,11 +19,17 @@ import (
 const captureEnv = "FACMAN_CAPTURE_DIR"
 
 // contractBrew returns the real brew, or skips: as root (Homebrew refuses
-// UID 0) or when Homebrew is not installed.
+// UID 0) or when Homebrew is not installed. Where CI is meant to prove the
+// contract (FACMAN_INTEGRATION_MUTATE=1, macOS) those cases fail instead
+// (review FR-004).
 func contractBrew(t *testing.T) string {
 	t.Helper()
+	skip := t.Skip
+	if os.Getenv("FACMAN_INTEGRATION_MUTATE") == "1" {
+		skip = func(args ...any) { t.Fatal(append([]any{"FACMAN_INTEGRATION_MUTATE=1 but"}, args...)...) }
+	}
 	if os.Getuid() == 0 {
-		t.Skip("running as root: Homebrew refuses UID 0")
+		skip("running as root: Homebrew refuses UID 0")
 	}
 	if p, err := exec.LookPath("brew"); err == nil && filepath.IsAbs(p) {
 		return p
@@ -34,7 +40,7 @@ func contractBrew(t *testing.T) string {
 			return p
 		}
 	}
-	t.Skip("Homebrew not found on PATH or at the known prefixes")
+	skip("Homebrew not found on PATH or at the known prefixes")
 	return ""
 }
 

@@ -18,17 +18,13 @@ import (
 	"github.com/stainedhead/software-factory-manager/internal/domain/inventory"
 )
 
-// mutateEnv opts in to the one integration test that changes the machine
-// (installs and then removes GNU hello). CI sets it on macOS only (I1-14).
-const mutateEnv = "FACMAN_INTEGRATION_MUTATE"
-
 // realBrew returns the path of the machine's Homebrew, or skips the test
 // when there is none or when running as root (Homebrew refuses root, and so
-// does facman).
+// does facman). With FACMAN_INTEGRATION_MUTATE=1 both cases fail instead.
 func realBrew(t *testing.T) string {
 	t.Helper()
 	if os.Getuid() == 0 {
-		t.Skip("running as root: Homebrew and facman refuse UID 0")
+		requireOrSkipEnv(t, "running as root: Homebrew and facman refuse UID 0")
 	}
 	if p, err := exec.LookPath("brew"); err == nil {
 		return p
@@ -39,7 +35,7 @@ func realBrew(t *testing.T) string {
 			return p
 		}
 	}
-	t.Skip("Homebrew not found on PATH or at the known prefixes")
+	requireOrSkipEnv(t, "Homebrew not found on PATH or at the known prefixes")
 	return ""
 }
 

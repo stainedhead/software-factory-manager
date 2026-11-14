@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md, plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 26 tasks (T-1a to T-19) |
-| 5 | Implementation | In Progress | 12 / 26 tasks closed (done or deferred) |
+| 5 | Implementation | In Progress | 14 / 26 tasks closed (done or deferred) |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -36,8 +36,8 @@
 | T-2 | FR-002 | P1 | ✅ Done | Relative/empty PATH entries skipped in `execrunner`, `detect` and `brew.Locate`; `path-relative-entry` warning; e2e `TestRelativePathEntryNeverRuns` (RF-6, RF-7) |
 | T-3 | FR-003 | P1 | 🟡 Partial (rest deferred) | Shape checker + read-only real-brew contract test; it found the Homebrew 7.0.11 cask `target` shape on CI, parser fixed (RF-12); field-check procedure. Container bootstrap job deferred (RF-8, RF-9) |
 | T-1d | FR-001d | P2 | ✅ Done | `statedir.LogPath` sanitizes the package ID; `TestLogPathStaysInLogs` |
-| T-4 | FR-004 | P2 | ⬜ Not started | |
-| T-5a | FR-005a | P2 | ⬜ Not started | |
+| T-4 | FR-004 | P2 | ✅ Done | verbose make integration; MUTATE=1 turns skips into failures |
+| T-5a | FR-005a | P2 | ✅ Done | BEGIN IMMEDIATE per step; 20-way test passes -count=100 |
 | T-5b | FR-005b | P2 | ✅ Done | `inventory.HolderLabel`: "PID unknown" in all three lock messages (RF-10) |
 | T-6 | FR-006 | P2 | ⬜ Not started | |
 | T-7a | FR-007a | P2 | ✅ Done | # result/# time footer in Run and Handoff |
