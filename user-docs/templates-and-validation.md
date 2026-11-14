@@ -1,26 +1,26 @@
 # Templates and validation
 
-Every file you write for `sfi` can be generated from a template and checked before you commit it.
+Every file you write for `facman` can be generated from a template and checked before you commit it.
 
 ## Templates
 
 | Command | Creates |
 |---|---|
-| `sfi template config-list [--profile P]` | A configuration list ([guide](configuration-list.md)) |
-| `sfi template hermes` | A Hermes setup spec + `assets/` ([guide](hermes-setup.md)) |
-| `sfi template paperclip` | A Paperclip setup spec + `company/` skeleton ([guide](paperclip-setup.md)) |
-| `sfi template orca` | An Orca setup spec ([guide](orca-setup.md)) |
-| `sfi template t3` | A T3 setup spec + `settings.fragment.json` ([guide](t3-setup.md)) |
+| `facman template config-list [--profile P]` | A configuration list ([guide](configuration-list.md)) |
+| `facman template hermes` | A Hermes setup spec + `assets/` ([guide](hermes-setup.md)) |
+| `facman template paperclip` | A Paperclip setup spec + `company/` skeleton ([guide](paperclip-setup.md)) |
+| `facman template orca` | An Orca setup spec ([guide](orca-setup.md)) |
+| `facman template t3` | A T3 setup spec + `settings.fragment.json` ([guide](t3-setup.md)) |
 
 Flags: `-o <file>` (output path), `--minimal` (no comments), `--from-machine` (pre-fill from this machine; secret values are never copied).
 
 ## Validation
 
 ```bash
-sfi validate <file|dir>…              # kind detected automatically
-sfi validate setup/ --deep            # also run each tool's own checker, if it's installed
-sfi validate configs/ setup/ --strict # treat version-fit warnings as errors
-sfi validate configs/ setup/ --format github   # annotations on the PR
+facman validate <file|dir>…              # kind detected automatically
+facman validate setup/ --deep            # also run each tool's own checker, if it's installed
+facman validate configs/ setup/ --strict # treat version-fit warnings as errors
+facman validate configs/ setup/ --format github   # annotations on the PR
 ```
 
 What it checks:
@@ -36,25 +36,25 @@ Example output:
 
 ```
 setup/hermes/team.setup.yaml:14:5  error   configure[1].type: "file" is not one of files, env_file, command, json_merge
-configs/build-linux.sfi.yaml:22:7  error   packages[9]: choice group "container-runtime" needs choice: orbstack | colima | docker-desktop
+configs/build-linux.facman.yaml:22:7  error   packages[9]: choice group "container-runtime" needs choice: orbstack | colima | docker-desktop
 setup/t3/providers.setup.yaml:5:15 warning tool_version ">=0.1.9 <0.2" but catalog pins t3-code 0.2.1
 3 files, 2 errors, 1 warning
 ```
 
-`sfi apply` and `sfi setup` always validate first and stop on errors.
+`facman apply` and `facman setup` always validate first and stop on errors.
 
 ## Editor support (VS Code)
 
 Templates start with a schema header:
 
 ```yaml
-# yaml-language-server: $schema=https://<schemas-host>/sfi/tool-setup.v1.json
+# yaml-language-server: $schema=https://<schemas-host>/facman/tool-setup.v1.json
 ```
 
 With the **YAML** extension (Red Hat) installed, you get autocomplete, hover docs and red squiggles as you type. To map schemas for a whole repo:
 
 ```bash
-sfi schema export --vscode     # writes .vscode/settings.json yaml.schemas entries
+facman schema export --vscode     # writes .vscode/settings.json yaml.schemas entries
 ```
 
 ## In the TUI
@@ -78,9 +78,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: stable }
-      - run: go run github.com/<org>/software-factory-installer/cmd/sfi@v0.3.0 validate configs/ setup/ --strict --format github
+      - run: go run github.com/stainedhead/software-factory-manager/cmd/facman@v0.3.0 validate configs/ setup/ --strict --format github
 ```
 
 ## Why formats stay correct
 
-Each `sfi` release and each catalog bump runs **contract tests**. These install the pinned tool versions, apply known-good example files, and run each tool's own checker. If a vendor changes a format (T3 and Hermes are the likeliest), the build fails before you do. See the design doc, §7b.
+Each `facman` release and each catalog bump runs **contract tests**. These install the pinned tool versions, apply known-good example files, and run each tool's own checker. If a vendor changes a format (T3 and Hermes are the likeliest), the build fails before you do. See the design doc, §7b.

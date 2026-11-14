@@ -1,6 +1,6 @@
 # docs/design
 
-The working design for `sfi`, the software-factory installer. It is the detailed source that the product and technical docs in [`../`](../) summarize.
+The working design for `facman`, the software-factory installer. It is the detailed source that the product and technical docs in [`../`](../) summarize.
 
 | File | Purpose |
 |---|---|

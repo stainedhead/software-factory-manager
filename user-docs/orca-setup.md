@@ -17,14 +17,14 @@ So an Orca setup is mostly a **script of CLI commands**, plus optional files.
 ## Build one
 
 ```bash
-sfi template orca -o setup/orca/repos.setup.yaml
+facman template orca -o setup/orca/repos.setup.yaml
 ```
 
 ## Example
 
 ```yaml
-# yaml-language-server: $schema=https://<schemas-host>/sfi/tool-setup.v1.json
-apiVersion: sfi/v1
+# yaml-language-server: $schema=https://<schemas-host>/facman/tool-setup.v1.json
+apiVersion: facman/v1
 kind: ToolSetup
 tool: orca
 configure:
@@ -55,8 +55,8 @@ worktree:
 ## Apply
 
 ```bash
-sfi validate setup/orca/repos.setup.yaml
-sfi setup -os setup/orca/repos.setup.yaml
+facman validate setup/orca/repos.setup.yaml
+facman setup -os setup/orca/repos.setup.yaml
 ```
 
 - Orca is a desktop app, so this runs on macOS (and Linux desktops, ⚠ if supported). On WSL and headless CI it is reported as `unavailable-here`.

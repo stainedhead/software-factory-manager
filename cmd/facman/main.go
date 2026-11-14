@@ -1,4 +1,4 @@
-// Command software-factory-manager is the entry point for the software factory manager.
+// Command facman is the entry point for the software factory manager.
 package main
 
 import "fmt"
@@ -7,5 +7,5 @@ import "fmt"
 var version = "dev"
 
 func main() {
-	fmt.Println("software-factory-manager", version)
+	fmt.Println("facman", version)
 }

@@ -12,23 +12,23 @@ Hermes keeps everything as plain files in `~/.hermes/`, or in `$HERMES_HOME` for
 | `SOUL.md` | Agent identity, put first in the system prompt | ✅ yes |
 | `skills/` | Skills | ✅ yes |
 | `cron/` | Scheduled jobs | ✅ optional |
-| `.env` | API keys and tokens | ❌ **never**: `sfi` writes it from environment variables |
+| `.env` | API keys and tokens | ❌ **never**: `facman` writes it from environment variables |
 
 Precedence: CLI arguments, then `config.yaml`, then `.env`, then built-in defaults. You can also set single values with `hermes config set KEY VAL`.
 
 ## Build one
 
 ```bash
-sfi template hermes -o setup/hermes/team.setup.yaml
+facman template hermes -o setup/hermes/team.setup.yaml
 # writes setup/hermes/team.setup.yaml plus setup/hermes/assets/{config.yaml,SOUL.md,skills/}
-sfi template hermes --from-machine -o setup/hermes/team.setup.yaml   # start from your current ~/.hermes (secrets excluded)
+facman template hermes --from-machine -o setup/hermes/team.setup.yaml   # start from your current ~/.hermes (secrets excluded)
 ```
 
 ## Example
 
 ```yaml
-# yaml-language-server: $schema=https://<schemas-host>/sfi/tool-setup.v1.json
-apiVersion: sfi/v1
+# yaml-language-server: $schema=https://<schemas-host>/facman/tool-setup.v1.json
+apiVersion: facman/v1
 kind: ToolSetup
 tool: hermes-agent
 tool_version: ">=0.22 <0.23"          # the format this was written for
@@ -59,11 +59,11 @@ mcp_servers:
 ## Apply
 
 ```bash
-sfi validate setup/hermes/team.setup.yaml --deep   # --deep runs `hermes config check` in a sandbox HERMES_HOME
-sfi setup -hs setup/hermes/team.setup.yaml --dry-run
-sfi setup -hs setup/hermes/team.setup.yaml
+facman validate setup/hermes/team.setup.yaml --deep   # --deep runs `hermes config check` in a sandbox HERMES_HOME
+facman setup -hs setup/hermes/team.setup.yaml --dry-run
+facman setup -hs setup/hermes/team.setup.yaml
 ```
 
 - This works on any installed Hermes, including one you installed yourself with `brew install hermes-agent`.
-- **Your edits are safe.** If you change a file `sfi` wrote, `sfi` won't overwrite it next time. It flags the file and shows a diff.
+- **Your edits are safe.** If you change a file `facman` wrote, `facman` won't overwrite it next time. It flags the file and shows a diff.
 - If Hermes isn't installed, the TUI offers to install it. Non-interactive runs exit with code 3.

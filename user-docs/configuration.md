@@ -1,6 +1,6 @@
 # Configuration
 
-`sfi` reads its configuration from files you check into git. Each file has its own guide:
+`facman` reads its configuration from files you check into git. Each file has its own guide:
 
 | File | Flag | Guide |
 |---|---|---|
@@ -10,6 +10,6 @@
 | Orca setup | `--orca-setup` / `-os` | [orca-setup.md](orca-setup.md) |
 | T3 Code setup | `--t3-setup` / `-ts` | [t3-setup.md](t3-setup.md) |
 
-Templates, schemas and `sfi validate` are covered in [templates-and-validation.md](templates-and-validation.md). Environment variables such as `HTTPS_PROXY` and mirror overrides are described in the design doc, §9 (Fleet and lab considerations), and will be listed here once implemented.
+Templates, schemas and `facman validate` are covered in [templates-and-validation.md](templates-and-validation.md). Environment variables such as `HTTPS_PROXY` and mirror overrides are described in the design doc, §9 (Fleet and lab considerations), and will be listed here once implemented.
 
 Back to [user-docs](README.md).

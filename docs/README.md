@@ -8,6 +8,6 @@ Product and engineering documentation. For user-facing guides see [../user-docs/
 | [product-details.md](product-details.md) | Features, behaviour, and requirements | A feature is added, changed, or removed |
 | [technical-details.md](technical-details.md) | Components, data flow, interfaces, dependencies | Structure or interfaces change |
 | [architecture-decision-record.md](architecture-decision-record.md) | Dated log of architectural decisions | A significant design decision is made or reversed |
-| [design/](design/) | The full working design for `sfi` | The design evolves (see [design/README.md](design/README.md)) |
+| [design/](design/) | The full working design for `facman` | The design evolves (see [design/README.md](design/README.md)) |
 
 Back to the [root README](../README.md).

@@ -1,6 +1,6 @@
 # Paperclip setup (`--paperclip-setup` / `-ps`)
 
-Use a Paperclip setup to load a **company package** (the company, its agents, projects, skills and tasks) into a Paperclip instance that `sfi` runs as a service.
+Use a Paperclip setup to load a **company package** (the company, its agents, projects, skills and tasks) into a Paperclip instance that `facman` runs as a service.
 
 ## What Paperclip reads
 
@@ -31,14 +31,14 @@ paperclipai company export <company-id> --out ./setup/paperclip/company \
 Or start from a template:
 
 ```bash
-sfi template paperclip -o setup/paperclip/factory.setup.yaml   # also writes setup/paperclip/company/
+facman template paperclip -o setup/paperclip/factory.setup.yaml   # also writes setup/paperclip/company/
 ```
 
 ## Example
 
 ```yaml
-# yaml-language-server: $schema=https://<schemas-host>/sfi/tool-setup.v1.json
-apiVersion: sfi/v1
+# yaml-language-server: $schema=https://<schemas-host>/facman/tool-setup.v1.json
+apiVersion: facman/v1
 kind: ToolSetup
 tool: paperclip
 tool_version: ">=2026.7"
@@ -54,18 +54,18 @@ configure:
 **Shortcut:** `-ps` also accepts a package directly:
 
 ```bash
-sfi setup -ps ./setup/paperclip/company
-sfi setup -ps github.com/<org>/factory-companies/companies/agentic --ref v1.2.0
+facman setup -ps ./setup/paperclip/company
+facman setup -ps github.com/<org>/factory-companies/companies/agentic --ref v1.2.0
 ```
 
 ## Apply
 
 ```bash
-sfi validate setup/paperclip/factory.setup.yaml --deep   # --deep runs `paperclipai company import … --dry-run`
-sfi setup -ps setup/paperclip/factory.setup.yaml
+facman validate setup/paperclip/factory.setup.yaml --deep   # --deep runs `paperclipai company import … --dry-run`
+facman setup -ps setup/paperclip/factory.setup.yaml
 ```
 
-- `sfi` starts the Paperclip service first, because the import needs a running instance, and health-checks it afterwards.
+- `facman` starts the Paperclip service first, because the import needs a running instance, and health-checks it afterwards.
 - **Network exposure** is set in the configuration list or at install time, not in the setup file. The default is localhost only.
 - **Name clashes:** re-importing into an existing company uses Paperclip's conflict strategy (rename by default). To update agents in place, use `--target existing --company-id <id> --include agents` in the command.
-- **Back up** `~/.paperclip/instances/default/secrets/master.key`. `sfi` copies it before every upgrade.
+- **Back up** `~/.paperclip/instances/default/secrets/master.key`. `facman` copies it before every upgrade.

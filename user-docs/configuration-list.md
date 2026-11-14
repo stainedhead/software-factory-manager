@@ -1,34 +1,34 @@
 # Configuration lists (`--configuration-list` / `-cl`)
 
-A **configuration list** is a YAML file that records every answer `sfi` would otherwise ask for: which tools, which versions, which options, and how to treat tools already on the machine. Applying it asks no questions, which makes it the way to set up **build machines and CI runners**, or to make every developer machine in a factory identical.
+A **configuration list** is a YAML file that records every answer `facman` would otherwise ask for: which tools, which versions, which options, and how to treat tools already on the machine. Applying it asks no questions, which makes it the way to set up **build machines and CI runners**, or to make every developer machine in a factory identical.
 
 ## Build one
 
-**Option A: from the TUI (easiest).** Run `sfi`, pick your tools and options on the Plan screen, then press **`s`** and name the file. Nothing is installed.
+**Option A: from the TUI (easiest).** Run `facman`, pick your tools and options on the Plan screen, then press **`s`** and name the file. Nothing is installed.
 
 **Option B: from a template.**
 
 ```bash
-sfi template config-list --profile agentic-factory -o configs/build-linux.sfi.yaml
+facman template config-list --profile agentic-factory -o configs/build-linux.facman.yaml
 ```
 
 **Option C: copy a known-good machine.**
 
 ```bash
-sfi config export -o configs/clone-of-lab-07.sfi.yaml   # what this machine currently manages
+facman config export -o configs/clone-of-lab-07.facman.yaml   # what this machine currently manages
 ```
 
 ## File reference
 
 ```yaml
-# yaml-language-server: $schema=https://<schemas-host>/sfi/configuration-list.v1.json
-apiVersion: sfi/v1
+# yaml-language-server: $schema=https://<schemas-host>/facman/configuration-list.v1.json
+apiVersion: facman/v1
 kind: ConfigurationList
 metadata:
   name: build-linux                 # required, unique within the repo
   description: CI runners for the agentic factory
 catalog:
-  source: git+https://github.com/<org>/sfi-catalog.git
+  source: git+https://github.com/<org>/facman-catalog.git
   ref: v2026.11.1                   # required: pin a tag, never a branch
 platforms: [linux]                  # darwin | linux | wsl; refuses to run elsewhere
 packages:                           # required: what this machine gets
@@ -82,16 +82,16 @@ bootstrap:
 ## Validate, preview, apply
 
 ```bash
-sfi validate configs/build-linux.sfi.yaml
-sfi apply -cl configs/build-linux.sfi.yaml --dry-run      # see exactly what would happen
-sfi apply -cl configs/build-linux.sfi.yaml                # no prompts
-sfi apply -cl configs/build-linux.sfi.yaml --check        # CI gate: exit 2 if the machine differs
+facman validate configs/build-linux.facman.yaml
+facman apply -cl configs/build-linux.facman.yaml --dry-run      # see exactly what would happen
+facman apply -cl configs/build-linux.facman.yaml                # no prompts
+facman apply -cl configs/build-linux.facman.yaml --check        # CI gate: exit 2 if the machine differs
 ```
 
 Override one tool's setup for a single run:
 
 ```bash
-sfi apply -cl configs/build-linux.sfi.yaml -ps setup/paperclip/ci.setup.yaml
+facman apply -cl configs/build-linux.facman.yaml -ps setup/paperclip/ci.setup.yaml
 ```
 
 ## GitHub Actions example
@@ -106,7 +106,7 @@ jobs:
         with: { node-version: 24 }   # Paperclip needs >= 24.11; the runner default is 22
       - uses: actions/setup-go@v5
         with: { go-version: stable }
-      - run: go run github.com/<org>/software-factory-installer/cmd/sfi@v0.3.0 apply -cl configs/build-linux.sfi.yaml --json
+      - run: go run github.com/stainedhead/software-factory-manager/cmd/facman@v0.3.0 apply -cl configs/build-linux.facman.yaml --json
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -124,7 +124,7 @@ jobs:
 
 ## Troubleshooting
 
-- **"It seems there is already a Binary at /opt/homebrew/bin/…".** A file that Homebrew doesn't own (often a leftover npm global launcher) is in the way. Run `sfi doctor` to see what it is. Then either remove it through its owner (`npm uninstall -g …`), or set `policy.conflicts: move_aside` so `sfi` moves it to its backups folder before installing.
+- **"It seems there is already a Binary at /opt/homebrew/bin/…".** A file that Homebrew doesn't own (often a leftover npm global launcher) is in the way. Run `facman doctor` to see what it is. Then either remove it through its owner (`npm uninstall -g …`), or set `policy.conflicts: move_aside` so `facman` moves it to its backups folder before installing.
 - **"needs tap trust".** Add the item to `policy.tap_trust`, for example `cask:stablyai/orca/orca`.
 
 - **"Homebrew refuses to run as root".** Container jobs often run as root. Use a non-root user with passwordless sudo, or the `homebrew/brew` image.

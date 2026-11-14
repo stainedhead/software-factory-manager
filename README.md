@@ -4,7 +4,7 @@
 
 ## Overview
 
-`software-factory-manager` builds **`sfi`**, a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
+`software-factory-manager` builds **`facman`**, a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
 
 Start with [INTENT.md](INTENT.md) for purpose, scope and key decisions, then [docs/product-summary.md](docs/product-summary.md) and the full [design](docs/design/software-factory-installer-design.md).
 
@@ -15,7 +15,7 @@ Requires Go 1.22+.
 ```sh
 git clone https://github.com/stainedhead/software-factory-manager.git
 cd software-factory-manager
-make build   # binaries land in bin/
+make build   # builds bin/facman
 make test
 ```
 
@@ -40,7 +40,7 @@ make test
 | [Product details](docs/product-details.md) | Features, behaviour, and requirements |
 | [Technical details](docs/technical-details.md) | Components, data flow, and interfaces |
 | [Architecture decision record](docs/architecture-decision-record.md) | Key design decisions and their rationale |
-| [Design](docs/design/) | The full working design for `sfi` |
+| [Design](docs/design/) | The full working design for `facman` |
 
 Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/).
 
@@ -59,7 +59,7 @@ Contributor and AI-agent rules — architecture, TDD, and documentation standard
 ## Repository layout
 
 ```
-cmd/        entry points
+cmd/        entry points (cmd/facman builds the `facman` binary)
 internal/   domain, usecase, and adapter layers (Clean Architecture)
 docs/       product and technical documentation (docs/design/ holds the full design)
 user-docs/  user-facing guides: setup, configuration, adoption

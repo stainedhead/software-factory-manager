@@ -17,15 +17,15 @@ T3 has **no agent definitions of its own**. The agents are Claude Code, Codex an
 ## Build one
 
 ```bash
-sfi template t3 -o setup/t3/providers.setup.yaml      # also writes setup/t3/settings.fragment.json
-sfi template t3 --from-machine -o setup/t3/providers.setup.yaml
+facman template t3 -o setup/t3/providers.setup.yaml      # also writes setup/t3/settings.fragment.json
+facman template t3 --from-machine -o setup/t3/providers.setup.yaml
 ```
 
 ## Example
 
 ```yaml
-# yaml-language-server: $schema=https://<schemas-host>/sfi/tool-setup.v1.json
-apiVersion: sfi/v1
+# yaml-language-server: $schema=https://<schemas-host>/facman/tool-setup.v1.json
+apiVersion: facman/v1
 kind: ToolSetup
 tool: t3-code
 tool_version: ">=0.1.9 <0.2"
@@ -54,10 +54,10 @@ configure:
 ## Apply
 
 ```bash
-sfi validate setup/t3/providers.setup.yaml
-sfi setup -ts setup/t3/providers.setup.yaml
+facman validate setup/t3/providers.setup.yaml
+facman setup -ts setup/t3/providers.setup.yaml
 ```
 
-- `sfi` records exactly which keys it merged, so it can remove only those keys later. Your own settings are untouched.
+- `facman` records exactly which keys it merged, so it can remove only those keys later. Your own settings are untouched.
 - Quit T3 Code before applying. The app may rewrite the file on exit.
 - T3 Code is a GUI app. On WSL it runs on the Windows host, so this setup is report-only there.
