@@ -112,7 +112,7 @@ The TUI walks through five screens:
 | **Scan** | Read what was found: machine, Homebrew, Node, counts by state, and findings. Press `Enter`. |
 | **Plan** | Packages grouped by state. Missing required packages start ticked. Use `space` to tick or untick, `i` for details (source, which profile wants it, detections, conflict evidence), and `/` to filter. Press `Enter`. |
 | **Review** | Every exact command, in order, with the sudo, tap, trust and "unverified script" marks. **`Enter` here is your consent and the only key that gives it.** `Esc` goes back. |
-| **Run** | Progress for each command. A command that needs `sudo` gets the terminal so you can type your password into it directly. `Ctrl+C` asks, then stops after the current command. Commands are never killed midway. |
+| **Run** | Progress for each command. A command that needs `sudo` gets the terminal so you can type your password into it directly. `Ctrl+C` asks, then stops after the current command. `facman` never kills a running command; a `sudo` step that has the terminal receives `Ctrl+C` itself, like any program you run. |
 | **Summary** | What was installed, which tools need a sign-in, any line to add to your shell profile, and where the logs are. Press `q` to quit. |
 
 Review names the Homebrew it uses (`Homebrew: /opt/homebrew/bin/brew`): every `brew` command it lists runs that program, even if another `brew` comes first on your `PATH`.

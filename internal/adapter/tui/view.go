@@ -170,7 +170,7 @@ func (m *Model) helpBody() string {
 			"esc        back to Plan (your ticks are kept)",
 		}
 	case ScreenRun:
-		lines = []string{"ctrl+c     stop after the current command (asks first; never kills a command midway)"}
+		lines = []string{"ctrl+c     stop after the current command (asks first; a sudo step has the terminal and gets ctrl+c itself)"}
 	case ScreenSummary:
 		lines = []string{"esc        back to Review when nothing ran"}
 	}

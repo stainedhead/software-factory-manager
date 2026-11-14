@@ -243,17 +243,17 @@ func TestApplyNeedsTerminalAndPassesConsentAndProgress(t *testing.T) {
 		act := plan.Action{ID: 1, PackageID: "jq", Commands: []plan.Command{{Argv: []string{"brew", "install", "jq"}}}}
 		pr.ActionStarted(act)
 		pr.CommandOutput(act, "==> Installed jq")
+		sigs <- os.Interrupt // while jq's command runs
+		time.Sleep(50 * time.Millisecond)
 		pr.ActionFinished(act, execute.ActionResult{Status: execute.ActionSucceeded})
 		pr.ActionFinished(act, execute.ActionResult{Status: execute.ActionFailed, ExitCode: 1, Detail: "boom", LogPath: "/l"})
 		pr.ActionFinished(act, execute.ActionResult{Status: execute.ActionSkipped, Detail: "dep"})
-		sigs <- os.Interrupt
-		time.Sleep(50 * time.Millisecond)
 		return true, nil
 	}
 	if got := a.Execute(context.Background(), []string{"apply", "--profile", "p"}); got != 0 {
 		t.Fatalf("exit %d", got)
 	}
-	for _, s := range []string{"==> [1] jq: brew install jq", "    ==> Installed jq", "jq: done", "failed (exit 1): boom; log: /l", "skipped: dep", "stopping after the current command"} {
+	for _, s := range []string{"==> [1] jq: brew install jq", "    ==> Installed jq", "jq: done", "failed (exit 1): boom; log: /l", "skipped: dep", "stopping after the current command (brew install jq) finishes"} {
 		if !strings.Contains(out.String(), s) {
 			t.Errorf("progress output misses %q:\n%s", s, out.String())
 		}
@@ -464,5 +464,40 @@ func TestRenderPlanNamesInheritedHomebrewEnv(t *testing.T) {
 		if got != tt.want || (!tt.want && strings.Contains(out.String(), "inherits")) {
 			t.Errorf("env %v: output = %q", tt.env, out.String())
 		}
+	}
+}
+
+// Review FR-006 AC2: the first Ctrl+C says truthfully what happens to the
+// command that is running.
+func TestInterruptMessage(t *testing.T) {
+	jq := plan.Command{Argv: []string{"brew", "install", "jq"}}
+	sudo := plan.Command{Argv: []string{"brew", "install", "--cask", "zoom"}, NeedsSudo: true, Interactive: true}
+	tests := []struct {
+		name    string
+		started *plan.Action
+		want    string
+	}{
+		{"nothing running", nil, "\nfacman: stopping; nothing else will start"},
+		{"own process group", &plan.Action{ID: 1, PackageID: "jq", Commands: []plan.Command{jq}},
+			"\nfacman: stopping after the current command (brew install jq) finishes; it runs on its own and did not receive this interrupt"},
+		{"shares the terminal", &plan.Action{ID: 2, PackageID: "zoom", Commands: []plan.Command{sudo}},
+			"\nfacman: stopping after the current command (brew install --cask zoom); it shares your terminal, so it received this interrupt directly and may stop now"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &textProgress{w: io.Discard}
+			if tt.started != nil {
+				p.ActionStarted(*tt.started)
+			}
+			if got := interruptMessage(p.Running()); got != tt.want {
+				t.Errorf("message = %q\nwant      %q", got, tt.want)
+			}
+			if tt.started != nil {
+				p.ActionFinished(*tt.started, execute.ActionResult{Status: execute.ActionSucceeded})
+				if _, running := p.Running(); running {
+					t.Error("a finished action is still running")
+				}
+			}
+		})
 	}
 }

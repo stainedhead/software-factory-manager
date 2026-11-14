@@ -135,10 +135,33 @@ Every command except `--version`, `--about` and `--help` runs the same steps thr
 
 Go 1.27 (the `go` directive in `go.mod`). Binaries are static for darwin and linux, amd64 and arm64 (`make build-all`, GoReleaser).
 
+## Acceptance evidence
+
+Each Increment 1 acceptance criterion (archived [spec.md](../specs/archive/261114-software-factory-manager/spec.md), *Acceptance Criteria*) and what proves it. The e2e tests are in `cmd/facman/` and run on Linux and macOS in CI. Every e2e test also ends with the invocation-log safety check (`testkit.UnsafeReasons`: no `--force`, `-f` or `--overwrite`, no option from data on brew, no `upgrade`/`uninstall`/`untap`/`link`, no tap-trust bypass).
+
+| Criterion | Proof |
+|---|---|
+| I1-1 Identity | `TestVersionAboutAndNoCommand`, `TestVersionIsFast`; CI `make build` and the `make build-all` step, which checks the four binaries |
+| I1-2 Scan | `TestScanJSON` (schema v1, read-only fake `brew`, under 5 s) |
+| I1-3 Ownership states | `internal/domain/ownership` `TestClassify` (every state), `internal/adapter/detect` `TestPathDetectorOSProvenanceAndCLT` (no `/usr/bin/git` without CLT; "present (OS)") |
+| I1-4 Catalog and profiles | `TestCatalogDirAndProfileUnion`; `internal/adapter/catalogyaml` `TestEmbeddedCatalogContents`, `TestEmbeddedProfiles`, `TestDirSource*`; `internal/domain/catalog` validation tests |
+| I1-5 Bootstrap | `TestNoHomebrew` (installer first, temp file, unverified, decline changes nothing, consented install records `homebrew` with `bootstrap = 1`), `TestLinuxbrewOffPathAndGlibc`, `TestExitCodesAndUsage` (UID 0) |
+| I1-6 Plan and dry run | `TestPlanAndDryRun` |
+| I1-7 Apply and audit | `TestApplyAuditAndIdempotence`, `TestApplyDecline` |
+| I1-8 Hands off foreign | The invocation-log safety check at the end of every e2e test (`harness_test.go`) |
+| I1-9 Conflict refusal | `TestConflictRefusal`, `TestDoctorTapTrust` |
+| I1-10 Tap trust | `TestApplyAuditAndIdempotence` (separate tap and item-trust steps, `tap_trust` row), `TestDoctorTapTrust`, and the invocation-log safety check (no tap-trust bypass in any child environment) |
+| I1-11 Crash recovery | `TestCrashRecovery` (`crash_test.go`) |
+| I1-12 Exit codes and usage | `TestExitCodesAndUsage`, `internal/adapter/cli` `TestExitCodePrecedence` |
+| I1-13 TUI | `internal/adapter/tui` golden tests (`TestFullFlow`, `TestScanScreen`, `TestPlanScreen`, `TestReviewScreen`, ...), `TestTUIInstall`, `TestTUIQuitAndNoTerminal`, `TestHeadlessLinuxAndWSL` |
+| I1-14 Real Homebrew | `integration_test.go` (`TestIntegrationReadOnly`, `TestIntegrationApplyHello`) and `internal/adapter/brew` `TestIntegrationBrewContract`, in CI's `make integration` step on macOS (verbose, and a skip fails there) |
+| I1-15 Quality gates | `make check` (fmt, lint, archcheck, doccheck, test) and `make cover` in CI |
+| I1-16 Field check | Manual, handed to J: [user-docs/field-check.md](../user-docs/field-check.md) part 1 |
+
 ## Data formats
 
-- Catalog and profile YAML, `apiVersion: facman/v1`: [data dictionary §6](../specs/archive/261114-software-factory-manager/data-dictionary.md#6-catalog-and-profile-yaml-embedded-apiversion-facmanv1), and the user reference in [user-docs/configuration.md](../user-docs/configuration.md#catalog-directories).
+- Catalog and profile YAML, `apiVersion: facman/v1`, and the state DB tables: [catalog-format.md](catalog-format.md), and the user reference in [user-docs/configuration.md](../user-docs/configuration.md#catalog-directories).
 - Report schema v1 (`--json`): [internal/adapter/report/schema/report.v1.json](../internal/adapter/report/schema/report.v1.json) and [data dictionary §7](../specs/archive/261114-software-factory-manager/data-dictionary.md#7-report-schema-v1---json).
-- State DB tables (`meta`, `packages`, `operations`, `detections`, `tap_trust`, and `services`, which is reserved for Increment 2): [data dictionary](../specs/archive/261114-software-factory-manager/data-dictionary.md) and `internal/adapter/sqlite`.
+- State DB tables (`meta`, `packages`, `operations`, `detections`, `tap_trust`, and `services`, which is reserved for Increment 2): [catalog-format.md](catalog-format.md#state-database) and `internal/adapter/sqlite`.
 
 Back to [docs](README.md).

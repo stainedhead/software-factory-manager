@@ -301,13 +301,17 @@ func (a *App) run(ctx context.Context, cmd platform.Command, fl *flags) error {
 		done := make(chan struct{})
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { defer wg.Done(); watchSignals(sigs, done, cancel, out) }()
+		progress := &textProgress{w: out}
+		go func() {
+			defer wg.Done()
+			watchSignals(sigs, done, cancel, out, func() string { return interruptMessage(progress.Running()) })
+		}()
 		defer wg.Wait()
 		defer close(done)
 		// The command list and the prompt always go to stderr (R-8).
 		prompt = &Prompt{In: a.Stdio.In, Out: stderr}
 		req.Confirmer = prompt
-		req.Progress = &textProgress{w: out}
+		req.Progress = progress
 	}
 	res, err := a.Engine.Run(ctx, req)
 	if prompt != nil && !prompt.Agreed() && errors.Is(err, context.Canceled) {
@@ -341,7 +345,7 @@ func (a *App) run(ctx context.Context, cmd platform.Command, fl *flags) error {
 // watchSignals cancels on the first signal (execute then stops after the
 // current command) and swallows later ones, so the operations log stays
 // consistent.
-func watchSignals(sigs <-chan os.Signal, done <-chan struct{}, cancel context.CancelFunc, w io.Writer) {
+func watchSignals(sigs <-chan os.Signal, done <-chan struct{}, cancel context.CancelFunc, w io.Writer, message func() string) {
 	first := true
 	for {
 		select {
@@ -351,7 +355,7 @@ func watchSignals(sigs <-chan os.Signal, done <-chan struct{}, cancel context.Ca
 			if first {
 				first = false
 				cancel()
-				_, _ = fmt.Fprintln(w, "\nfacman: stopping after the current command finishes (it is never killed midway)")
+				_, _ = fmt.Fprintln(w, message())
 			}
 		}
 	}

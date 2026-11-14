@@ -76,7 +76,7 @@ Paperclip is in the profile but is `unavailable-here` until the npm backend ship
 - Install steps use the backends `brew-formula` and `brew-cask`. The `npm` backend is accepted in the file but planned only from Increment 2. `report` and `host-report` steps make an entry `unavailable-here` with a hint.
 - The report records the catalog revision as `dir:<absolute path>@<sha256 of the files>`. The built-in catalog is `embedded:<version>`.
 
-A minimal example is [testdata/catalogs/integration/](../testdata/catalogs/integration/), a one-entry catalog with GNU `hello`. The full format is in the [data dictionary, §6](../specs/archive/261114-software-factory-manager/data-dictionary.md#6-catalog-and-profile-yaml-embedded-apiversion-facmanv1) and in the built-in [catalog.yaml](../internal/adapter/catalogyaml/embedded/catalog.yaml).
+A minimal example is [testdata/catalogs/integration/](../testdata/catalogs/integration/), a one-entry catalog with GNU `hello`. The full format is in [docs/catalog-format.md](../docs/catalog-format.md) and in the built-in [catalog.yaml](../internal/adapter/catalogyaml/embedded/catalog.yaml).
 
 ## Environment variables
 

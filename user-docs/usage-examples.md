@@ -121,7 +121,7 @@ If a run is stopped by a reboot, a closed terminal or a crash, run the same comm
 facman apply --profile agentic-factory
 ```
 
-At startup, `facman` marks the interrupted operation in the audit log. It records the package as `managed` if the install actually finished, or proposes it again if it did not. `Ctrl+C` during a run never kills a command midway. `facman` stops after the current command and exits 1.
+At startup, `facman` marks the interrupted operation in the audit log. It records the package as `managed` if the install actually finished, or proposes it again if it did not. `Ctrl+C` during a run makes `facman` stop after the current command and exit 1; it says which command that is. `facman` never kills a running command. A `brew install` runs on its own and does not see the `Ctrl+C`; a `sudo` step shares your terminal, so it receives the `Ctrl+C` itself and may stop. A second `Ctrl+C` does nothing yet: to stop a hung command, end it from another terminal (see the PID with `ps`).
 
 ## Look at the audit trail
 
