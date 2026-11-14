@@ -1,7 +1,7 @@
 # Spec: software-factory-manager, Increment 1 (Phase 0 + Phase 1 MVP)
 
 **Feature:** software-factory-manager (`facman`, the Agentic Software Factory Manager)
-**Spec directory:** `specs/261114-software-factory-manager/`
+**Spec directory:** `specs/archive/261114-software-factory-manager/` (created as `specs/261114-software-factory-manager/`, archived 2026-11-14)
 **Created:** 2026-11-14
 **Source PRD:** [software-factory-manager-PRD.md](software-factory-manager-PRD.md) (reviewed 2026-11-14, Appendix L)
 **Status:** Reviewed (`/review-spec`, 2026-11-14): implementation-ready. See [Spec review log](#spec-review-log-2026-11-14).
@@ -249,7 +249,7 @@ Summary only; full design in [architecture.md](architecture.md).
 
 ## Success Criteria and Acceptance Criteria
 
-Increment 1 is done when every criterion I1-1 to I1-15 passes in CI and I1-16 is handed to J. They are copied from the PRD Delivery plan; clarifications from this spec are in brackets.
+Increment 1 is done when every criterion I1-1 to I1-15 passes in CI and I1-16 is handed to J. They are copied from the PRD Delivery plan; clarifications from this spec are in brackets. A ticked box means an automated test proves the criterion; the criterion-to-test mapping is the [acceptance evidence table](../../../docs/technical-details.md#acceptance-evidence) (verified in the Step 11 final quality pass, 2026-11-14). I1-16 can only be proven in J's field run and stays unticked; its procedure, together with the real-machine checks that fakes and CI cannot cover (clean-machine bootstrap, detection on lab Macs), is in [user-docs/field-check.md](../../../user-docs/field-check.md).
 
 - [x] **I1-1 Identity.** `facman --version` and `--about` print "Agentic Software Factory Manager". `make build` produces `bin/facman` with `CGO_ENABLED=0`, and `make build-all` produces darwin and linux binaries for amd64 and arm64 (FR-001 to FR-003).
 - [x] **I1-2 Scan.** `facman scan --json` against a fixture machine reports every catalog package with state, provenance, path and version, and validates against report schema v1. The fake `brew` records only read-only invocations. The scan finishes in under 5 s (FR-007, FR-010, FR-011).

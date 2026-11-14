@@ -120,7 +120,7 @@ Every command except `--version`, `--about` and `--help` runs the same steps thr
 | Integration | `cmd/facman/integration_test.go` (`integration` tag) | Real Homebrew. `scan`, `plan` and `doctor` run read-only with a temp state directory, and skip without brew or as root (they fail instead when `FACMAN_INTEGRATION_MUTATE=1`, and `make integration` is verbose so CI shows each PASS or SKIP). The GNU `hello` install through `testdata/catalogs/integration` runs only with `FACMAN_INTEGRATION_MUTATE=1`, which CI sets on macOS only. |
 | Performance smoke | `cmd/facman/perf_test.go`, `adapter/tui` | `--version` well under its budget, scan of the full catalog on the fake machine in about 0.5 s, and the first TUI frame in 20 to 52 ms. |
 
-`make cover` reports about 96% overall. CI runs `make cover`, `make integration`, `make build` and a `facman --version` smoke test on Linux and macOS (see [.github/README.md](../.github/README.md)).
+`make cover` reports 96.5% overall, 100% on every domain package and 97.4 to 100% on the use cases. CI runs the `go mod tidy` check, lint, `make archcheck`, `make doccheck`, `make cover`, `make integration`, `make build` and a `facman --version` smoke test on Linux and macOS, plus `make fuzz` and `make build-all` on Linux (see [.github/README.md](../.github/README.md)).
 
 ## Dependencies
 

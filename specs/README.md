@@ -6,9 +6,7 @@ Active feature specs live here; completed ones move to `specs/archive/` (via `/a
 
 ## Active specs
 
-| Spec | Scope | Status |
-|---|---|---|
-None. The next increment gets its own `YYMMDD-<feature>/` directory here.
+None. Increment 1 and its review fixes are both complete and archived under [archive/](archive/README.md). The next increment gets its own `YYMMDD-<feature>/` directory here.
 
 ## Archived specs
 
