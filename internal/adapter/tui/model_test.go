@@ -315,6 +315,24 @@ func TestReviewScreen(t *testing.T) {
 	}
 }
 
+// Review FR-001c: a control character in a command is shown escaped on the
+// consent screen, never raw.
+func TestReviewEscapesControlCharacters(t *testing.T) {
+	d := newDriver(t, &fakeEngine{boot: brewFound(), editPlan: func(p *plan.Plan) {
+		p.Actions[0].Commands[0].Argv = []string{"brew", "install", "jq\x1b7hidden"}
+	}})
+	d.key("enter", "enter")
+	raw := d.m.Render()
+	if strings.Contains(raw, "jq\x1b") {
+		t.Error("Review renders the raw ESC from the command")
+	}
+	s := d.screen()
+	if !strings.Contains(s, `brew install "jq\x1b7hidden"`) {
+		t.Errorf("Review does not show the escaped command:\n%s", s)
+	}
+	golden(t, "review-escaped", s)
+}
+
 func TestReviewHomebrewMissing(t *testing.T) {
 	boot := brewFound()
 	boot.Homebrew = platform.HomebrewInfo{}

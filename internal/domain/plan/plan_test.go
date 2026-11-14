@@ -30,6 +30,38 @@ func TestCommandString(t *testing.T) {
 	}
 }
 
+// Review FR-001c: every control character is escaped, metacharacters or not,
+// so data can never hide or rewrite text on the consent screen.
+func TestCommandStringEscapesControls(t *testing.T) {
+	tests := []struct {
+		arg, want string
+	}{
+		{"a\x1bb", `"a\x1bb"`},
+		{"x\x1b[2K", `"x\x1b[2K"`},
+		{"line\nbreak", `"line\nbreak"`},
+		{"tab\tx", `"tab\tx"`},
+		{"nul\x00", `"nul\x00"`},
+		{"c1\u009b2K", `"c1\u009b2K"`},
+		{"bidi\u202eevil", `"bidi\u202eevil"`},
+		{"bad\xffutf8", `"bad\xffutf8"`},
+		{"plain", "plain"},
+		{"node@24", "node@24"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := Command{Argv: []string{"brew", "install", tt.arg}}.String()
+			if got != "brew install "+tt.want {
+				t.Errorf("String() = %s, want brew install %s", got, tt.want)
+			}
+			for _, r := range got {
+				if r < 0x20 || r == 0x7f || (r >= 0x80 && r < 0xa0) {
+					t.Errorf("String() has a raw control character %U", r)
+				}
+			}
+		})
+	}
+}
+
 func TestPlanHelpers(t *testing.T) {
 	p := Plan{Actions: []Action{
 		{ID: 1, PackageID: "jq", Commands: []Command{brew("install", "jq")}},
@@ -92,6 +124,62 @@ func TestValidate(t *testing.T) {
 			}
 			if err == nil || !errors.Is(err, ErrInvariant) || !strings.Contains(err.Error(), tt.want) {
 				t.Errorf("Validate = %v, want %q", err, tt.want)
+			}
+		})
+	}
+}
+
+// Review FR-001b: no option from data reaches brew argv. Only --cask and
+// --formula on install and trust are allowed after the subcommand, and no
+// program gets any short or long form of --force or --overwrite.
+func TestValidateOptions(t *testing.T) {
+	tests := []struct {
+		name string
+		argv []string
+		want string // "" means valid
+	}{
+		{"install formula", []string{"brew", "install", "jq"}, ""},
+		{"install cask", []string{"brew", "install", "--cask", "foo"}, ""},
+		{"install formula flag", []string{"brew", "install", "--formula", "foo"}, ""},
+		{"trust cask item", []string{"brew", "trust", "--cask", "a/b/c"}, ""},
+		{"trust formula item", []string{"brew", "trust", "--formula", "a/b/c"}, ""},
+		{"tap", []string{"brew", "tap", "a/b"}, ""},
+		{"absolute brew", []string{"/opt/homebrew/bin/brew", "install", "--cask", "foo"}, ""},
+		{"installer", []string{"/bin/bash", "/tmp/facman-install-123.sh"}, ""},
+		{"short force", []string{"brew", "install", "-f", "jq"}, "forbidden option -f"},
+		{"short force after item", []string{"brew", "install", "jq", "-f"}, "forbidden option -f"},
+		{"long force", []string{"brew", "install", "--force", "jq"}, "forbidden"},
+		{"force bottle", []string{"brew", "install", "--force-bottle", "jq"}, "forbidden"},
+		{"abbreviated force", []string{"brew", "install", "--forc", "jq"}, "forbidden option --forc"},
+		{"build from source", []string{"brew", "install", "-s", "jq"}, "forbidden option -s"},
+		{"head", []string{"brew", "install", "--HEAD", "jq"}, "forbidden option --HEAD"},
+		{"overwrite", []string{"brew", "install", "--overwrite", "jq"}, "forbidden"},
+		{"ignore dependencies", []string{"brew", "install", "--ignore-dependencies", "jq"}, "forbidden option --ignore-dependencies"},
+		{"cask with value", []string{"brew", "install", "--cask=x"}, "forbidden option --cask=x"},
+		{"cask on tap", []string{"brew", "tap", "--cask", "a/b"}, "forbidden option --cask"},
+		{"tap force auto update", []string{"brew", "tap", "--force-auto-update", "a/b"}, "forbidden"},
+		{"trust with tap flag", []string{"brew", "trust", "--tap", "a/b"}, "forbidden option --tap"},
+		{"option before subcommand", []string{"brew", "-f", "install", "jq"}, "forbidden"},
+		{"end of options marker", []string{"brew", "install", "--", "jq"}, "forbidden option --"},
+		{"bare dash", []string{"brew", "install", "-", "jq"}, "forbidden option -"},
+		{"non-brew short force", []string{"/bin/bash", "-f", "/tmp/x"}, "forbidden flag -f"},
+		{"non-brew short cluster", []string{"/usr/bin/curl", "-fsSL", "/tmp/x"}, "forbidden flag -fsSL"},
+		{"non-brew abbreviated force", []string{"npm", "i", "--forc"}, "forbidden flag --forc"},
+		{"non-brew abbreviated overwrite", []string{"npm", "i", "--overw"}, "forbidden flag --overw"},
+		{"non-brew force uppercase", []string{"npm", "i", "--FORCE"}, "forbidden flag --FORCE"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Plan{Actions: []Action{{ID: 1, PackageID: "x", Commands: []Command{{Argv: tt.argv, Mutating: true}}}}}
+			err := p.Validate(allAbsent)
+			if tt.want == "" {
+				if err != nil {
+					t.Fatalf("Validate(%q) = %v", tt.argv, err)
+				}
+				return
+			}
+			if err == nil || !errors.Is(err, ErrInvariant) || !strings.Contains(err.Error(), tt.want) {
+				t.Errorf("Validate(%q) = %v, want %q", tt.argv, err, tt.want)
 			}
 		})
 	}

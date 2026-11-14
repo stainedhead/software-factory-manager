@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -18,9 +19,40 @@ const TapTrustEnvPrefix = "HOMEBREW_NO_REQUIRE_TAP_TRUST"
 // allowedBrewSubcommands are the only brew subcommands a plan may run.
 var allowedBrewSubcommands = map[string]bool{"install": true, "tap": true, "trust": true}
 
+// allowedBrewOptions are the only options a plan may pass after a brew
+// subcommand (review FR-001b). Everything else that starts with "-" could
+// change the reviewed command (-f, -s, --HEAD, --ignore-dependencies ...),
+// and Homebrew accepts abbreviated long options, so the list is exact.
+var allowedBrewOptions = map[string][]string{
+	"install": {"--cask", "--formula"},
+	"trust":   {"--cask", "--formula"},
+}
+
+// forceLike reports whether a is any short or long form of --force or
+// --overwrite: a long option whose name (case-insensitive, before any "=")
+// starts with, or abbreviates, force or overwrite; or a short-option
+// cluster that contains f (-f, -fsSL).
+func forceLike(a string) bool {
+	if name, ok := strings.CutPrefix(a, "--"); ok {
+		name, _, _ = strings.Cut(strings.ToLower(name), "=")
+		for _, w := range []string{"force", "overwrite"} {
+			if strings.HasPrefix(name, w) || (name != "" && strings.HasPrefix(w, name)) {
+				return true
+			}
+		}
+		return false
+	}
+	if letters, ok := strings.CutPrefix(a, "-"); ok {
+		return strings.ContainsRune(letters, 'f') && strings.Trim(letters, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") == ""
+	}
+	return false
+}
+
 // Validate checks the safety invariants (data-dictionary §2.8). absent
 // reports whether a package is in the absent state; every action must be for
-// an absent package. It rejects: --force or --overwrite in any argv; brew
+// an absent package. It rejects: any short or long form of --force or
+// --overwrite in any argv; any option after a brew subcommand other than
+// --cask or --formula on install and trust (FR-001b); brew
 // subcommands other than install, tap and trust (so no upgrade, uninstall,
 // untap, untrust or link); a brew trust whose target is not a full item path
 // (whole-tap trust); HOMEBREW_NO_REQUIRE_TAP_TRUST* in any command's env;
@@ -71,7 +103,7 @@ func commandProblems(c Command) []string {
 		problems = append(problems, "plan command not marked mutating")
 	}
 	for _, a := range c.Argv {
-		if strings.HasPrefix(a, "--force") || strings.HasPrefix(a, "--overwrite") {
+		if forceLike(a) {
 			problems = append(problems, fmt.Sprintf("forbidden flag %s", a))
 		}
 	}
@@ -89,6 +121,11 @@ func commandProblems(c Command) []string {
 	sub := c.Argv[1]
 	if !allowedBrewSubcommands[sub] {
 		return append(problems, fmt.Sprintf("forbidden brew subcommand %s", sub))
+	}
+	for _, a := range c.Argv[2:] {
+		if strings.HasPrefix(a, "-") && !slices.Contains(allowedBrewOptions[sub], a) {
+			problems = append(problems, fmt.Sprintf("forbidden option %s (no option from data reaches brew)", a))
+		}
 	}
 	if sub == "trust" {
 		items := 0

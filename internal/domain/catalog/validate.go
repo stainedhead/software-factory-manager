@@ -11,7 +11,9 @@ import (
 )
 
 // Validate checks the whole catalog and returns one failure.Validation error
-// listing every problem found, or nil. It checks: apiVersion, duplicate IDs,
+// listing every problem found, or nil. It checks: the value allow-lists for
+// package IDs, brew and npm IDs, taps, detect commands and the version probe
+// program, and control characters in every displayed text (FR-001a); apiVersion, duplicate IDs,
 // missing or unknown kind, unknown backends, trust other than "item", unknown
 // platform keys, unknown requires, requires cycles, unknown or nested choice
 // members, unknown profile packages and includes, and include cycles.
@@ -29,7 +31,7 @@ func (c Catalog) Validate() error {
 			continue
 		}
 		if seen[e.ID] {
-			add("packages.%s: duplicate id", e.ID)
+			add("packages.%s: duplicate id", safeLabel(e.ID))
 		}
 		seen[e.ID] = true
 	}
@@ -59,7 +61,10 @@ func (c Catalog) revisionLabel() string {
 func (c Catalog) entryProblems(e Entry, ids map[string]bool) []string {
 	var problems []string
 	add := func(format string, args ...any) {
-		problems = append(problems, fmt.Sprintf("packages.%s: ", e.ID)+fmt.Sprintf(format, args...))
+		problems = append(problems, fmt.Sprintf("packages.%s: ", safeLabel(e.ID))+fmt.Sprintf(format, args...))
+	}
+	for _, p := range valueProblems(e) {
+		add("%s", p)
 	}
 	if e.IsChoice() {
 		if e.Kind != "" && e.Kind != KindCLI && e.Kind != KindGUI {
@@ -86,16 +91,11 @@ func (c Catalog) entryProblems(e Entry, ids map[string]bool) []string {
 		}
 	}
 	problems = append(problems, keyProblems("packages."+e.ID+".platforms", e.Platforms)...)
-	keys := make([]string, 0, len(e.Install))
-	for k := range e.Install {
-		keys = append(keys, string(k))
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		if !platform.Key(k).Valid() {
+	for _, k := range sortedInstallKeys(e) {
+		if !k.Valid() {
 			add("unknown install platform %q", k)
 		}
-		for i, s := range e.Install[platform.Key(k)] {
+		for i, s := range e.Install[k] {
 			if !s.Backend.Known() {
 				add("install.%s[%d]: unknown backend %q", k, i, s.Backend)
 			}
@@ -129,6 +129,16 @@ func (c Catalog) entryProblems(e Entry, ids map[string]bool) []string {
 		}
 	}
 	return problems
+}
+
+// sortedInstallKeys returns the entry's install platform keys sorted.
+func sortedInstallKeys(e Entry) []platform.Key {
+	keys := make([]platform.Key, 0, len(e.Install))
+	for k := range e.Install {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return keys
 }
 
 func keyProblems(field string, keys []platform.Key) []string {
@@ -187,6 +197,7 @@ func (c Catalog) profileProblems(ids map[string]bool) []string {
 	var problems []string
 	for _, name := range c.ProfileNames() {
 		p := c.Profiles[name]
+		problems = append(problems, profileValueProblems(name, p)...)
 		for _, inc := range p.Include {
 			if _, ok := c.Profiles[inc]; !ok {
 				problems = append(problems, fmt.Sprintf("profiles/%s: unknown include %q", name, inc))

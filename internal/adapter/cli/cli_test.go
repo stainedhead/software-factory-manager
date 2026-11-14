@@ -325,6 +325,19 @@ func TestRenderEveryCommand(t *testing.T) {
 	}
 }
 
+// Review FR-001c: the headless plan list escapes control characters.
+func TestRenderPlanEscapesControlCharacters(t *testing.T) {
+	p := &plan.Plan{Profiles: []string{"p"}, Actions: []plan.Action{
+		{ID: 1, PackageID: "jq", Commands: []plan.Command{{Argv: []string{"brew", "install", "jq\x1b7x"}}}}}}
+	var out bytes.Buffer
+	if err := render(&out, platform.CommandPlan, session.Request{}, session.Result{Plan: p}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "\x1b") || !strings.Contains(out.String(), `brew install "jq\x1b7x"`) {
+		t.Errorf("plan output = %q", out.String())
+	}
+}
+
 func TestJSONOutputAndWriteFailures(t *testing.T) {
 	e := &fakeEngine{res: session.Result{Bootstrap: boot()}, err: failure.Bootstrap("root").WithFix("do not use sudo")}
 	a, out, errOut := newApp(e)

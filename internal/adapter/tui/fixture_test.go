@@ -203,6 +203,8 @@ type fakeSteps struct {
 	planned []catalog.Selection
 	// block, when set, makes Execute wait for it before running.
 	block chan struct{}
+	// editPlan, when set, changes the built plan (to inject hostile argv).
+	editPlan func(*plan.Plan)
 }
 
 func newSteps(req session.Request, boot platform.BootstrapReport) *fakeSteps {
@@ -240,6 +242,9 @@ func (f *fakeSteps) PlanSelection(ctx context.Context, sel catalog.Selection) er
 	svc := planning.Service{Backends: map[catalog.BackendID]planning.Backend{catalog.BackendBrewFormula: brewLike{}, catalog.BackendBrewCask: brewLike{}},
 		InstallerCommand: plan.Command{Argv: []string{"/bin/bash", session.ReviewInstallerPath}}}
 	p, err := svc.Build(ctx, planning.Input{Catalog: *f.res.Catalog, Desired: d, Statuses: f.res.Scan.StatusMap(), Bootstrap: *f.res.Bootstrap})
+	if f.editPlan != nil {
+		f.editPlan(&p)
+	}
 	f.res.Plan = &p
 	return err
 }
@@ -285,6 +290,8 @@ type fakeEngine struct {
 	steps   *fakeSteps
 	planErr error
 	block   chan struct{}
+	// editPlan is passed to the steps.
+	editPlan func(*plan.Plan)
 	// wait, when set, makes Start wait for it (first-frame test).
 	wait chan struct{}
 }
@@ -294,7 +301,7 @@ func (e *fakeEngine) Start(_ context.Context, req session.Request) (Steps, error
 		<-e.wait
 	}
 	e.steps = newSteps(req, e.boot)
-	e.steps.planErr, e.steps.block = e.planErr, e.block
+	e.steps.planErr, e.steps.block, e.steps.editPlan = e.planErr, e.block, e.editPlan
 	if e.err != nil {
 		e.steps.res.Scan = nil
 		return e.steps, e.err

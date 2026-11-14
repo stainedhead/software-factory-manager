@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -137,13 +138,17 @@ func (f *Fake) Log(t testing.TB) []fakeworld.Invocation {
 // forbiddenBrew are brew subcommands facman must never run in Increment 1.
 var forbiddenBrew = []string{"upgrade", "uninstall", "remove", "rm", "reinstall", "untap", "untrust", "link", "unlink", "cleanup", "autoremove"}
 
+// shortForce matches a short-option cluster that contains -f (review FR-001b).
+var shortForce = regexp.MustCompile(`^-[A-Za-z]*f[A-Za-z]*$`)
+
 // UnsafeReasons returns why an invocation is unsafe, or nil. It flags
-// --force/--overwrite in any argv, brew upgrade/uninstall/untap/untrust/link
+// --force/--overwrite and any short cluster with -f in any argv, any option
+// other than --cask/--formula on brew install, tap or trust, brew upgrade/uninstall/untap/untrust/link
 // and similar, whole-tap trust, and HOMEBREW_NO_REQUIRE_TAP_TRUST* in env.
 func UnsafeReasons(inv fakeworld.Invocation) []string {
 	var reasons []string
 	for _, a := range inv.Argv {
-		if strings.HasPrefix(a, "--force") || strings.HasPrefix(a, "--overwrite") {
+		if strings.HasPrefix(a, "--force") || strings.HasPrefix(a, "--overwrite") || shortForce.MatchString(a) {
 			reasons = append(reasons, "forbidden flag "+a)
 		}
 	}
@@ -156,6 +161,13 @@ func UnsafeReasons(inv fakeworld.Invocation) []string {
 		sub := inv.Argv[1]
 		if slices.Contains(forbiddenBrew, sub) {
 			reasons = append(reasons, "forbidden brew subcommand "+sub)
+		}
+		if slices.Contains([]string{"install", "tap", "trust"}, sub) {
+			for _, a := range inv.Argv[2:] {
+				if strings.HasPrefix(a, "-") && (sub == "tap" || (a != "--cask" && a != "--formula")) {
+					reasons = append(reasons, "option "+a+" on brew "+sub)
+				}
+			}
 		}
 		if sub == "trust" {
 			for _, a := range inv.Argv[2:] {

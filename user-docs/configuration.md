@@ -67,6 +67,12 @@ Paperclip is in the profile but is `unavailable-here` until the npm backend ship
 - Each profile file must be named after its `profile:` value. Only `*.yaml` files in `profiles/` are read.
 - Profile `packages` entries are a bare ID or `{<id>: {optional: true, version: "x"}}`.
 - Decoding is strict. An unknown key, a wrong type, an unknown backend, a `requires` cycle or a profile that names an unknown package is exit 3, with every problem listed as `file:line:col`. Unknown keys are tolerated only under `service:` and `policy:`, which later increments use.
+- Values are checked against strict allow-lists, because a catalog is input that can come from another factory. Breaking one is exit 3, naming the field:
+  - package IDs and profile names: lowercase letters, digits and `. _ + @ -`, starting with a letter or digit (`node`, `docker-compose`);
+  - brew `id`: `name` or `user/repo/name` (letters, digits and `. _ + @ -`; never starting with `-`), and a step with a `tap` must name an item of that tap (`stablyai/orca/orca` for tap `stablyai/orca`);
+  - `tap`: `user/repo`;
+  - `detect.commands`: bare executable names (no `/`, no `..`, no leading `-` or `.`), and `detect.version.cmd` must start with one of them;
+  - no control character (escape, newline, tab and the like) anywhere in display text, hints, versions, globs or IDs.
 - Install steps use the backends `brew-formula` and `brew-cask`. The `npm` backend is accepted in the file but planned only from Increment 2. `report` and `host-report` steps make an entry `unavailable-here` with a hint.
 - The report records the catalog revision as `dir:<absolute path>@<sha256 of the files>`. The built-in catalog is `embedded:<version>`.
 

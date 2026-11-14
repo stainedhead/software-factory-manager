@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/platform"
 )
@@ -66,16 +67,27 @@ type Command struct {
 	Mutating bool
 }
 
-// String renders argv for display, quoting arguments that need it.
+// String renders argv for display, quoting arguments that need it. An
+// argument with a shell metacharacter, a control or other non-printable
+// character (ESC, newline, C1 controls, bidi overrides) or invalid UTF-8 is
+// shown Go-quoted, so the escape is visible and never reaches the terminal
+// raw (review FR-001c). Every consent and progress screen renders commands
+// through String.
 func (c Command) String() string {
 	parts := make([]string, len(c.Argv))
 	for i, a := range c.Argv {
-		if a == "" || strings.ContainsAny(a, " \t\n\"'\\$`*?[]{}()<>|&;#~") {
+		if needsQuote(a) {
 			a = strconv.Quote(a)
 		}
 		parts[i] = a
 	}
 	return strings.Join(parts, " ")
+}
+
+func needsQuote(a string) bool {
+	return a == "" || !utf8.ValidString(a) ||
+		strings.ContainsAny(a, " \t\n\"'\\$`*?[]{}()<>|&;#~") ||
+		strings.IndexFunc(a, func(r rune) bool { return !strconv.IsPrint(r) }) >= 0
 }
 
 // TapTrustStep describes a tap or item-trust step for a third-party tap item.

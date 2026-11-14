@@ -28,8 +28,8 @@ Pure logic with no I/O. Every safety rule lives here, as a function or an invari
 | `appinfo` | The name (`facman`), title ("Agentic Software Factory Manager") and the version and about text. It is the only place the name is written. |
 | `version` | Parsing and comparing versions and constraints. |
 | `platform` | `Platform` (OS, arch, WSL, display, glibc, distro, UID), bootstrap `Finding`s with `Severity` and `BlocksApply`, and the `Command`s that decide fatality. |
-| `catalog` | `Catalog`, `Entry`, `Profile`, `Validate` (every problem in one error), `Resolve`/`ResolveSelection` (profile union, pins, `--with`, choice groups, transitive `requires`), `SelectInstall` (per-platform install step), and provenance glob expansion and matching. |
-| `plan` | `Command` (argv only), `Action`, `Plan`, `Conflict`, consent, `OrderPackages` (stable requires-first order), `Validate` (allows only `brew install`/`tap`/`trust`; never `--force` or `link`), and `ExcludeWithDependents`. |
+| `catalog` | `Catalog`, `Entry`, `Profile`, `Validate` (every problem in one error, including the value allow-lists for IDs, taps, detect commands and control characters), `Resolve`/`ResolveSelection` (profile union, pins, `--with`, choice groups, transitive `requires`), `SelectInstall` (per-platform install step), and provenance glob expansion and matching. |
+| `plan` | `Command` (argv only), `Action`, `Plan`, `Conflict`, consent, `OrderPackages` (stable requires-first order), `Validate` (allows only `brew install`/`tap`/`trust`, no option after the subcommand but `--cask`/`--formula`, and no short or long form of `--force`/`--overwrite` anywhere; never `link`); `Command.String` escapes control characters for every consent screen, and `ExcludeWithDependents`. |
 | `inventory` | `Record` (managed or adopted), `Operation` (the audit row), tap-trust grants, statuses, and `InstallRef` parsing. |
 | `ownership` | `Detection`, `PackageStatus`, `Classify`: absent, managed, adopted, foreign, drifted, duplicate, conflict, unavailable-here, with incomplete detection and OS-bundled rules. |
 | `failure` | Typed errors (usage, bootstrap, validation, operation, drift) with a fix and details, mapped to exit codes 64, 4, 3, 1 and 2, and `Worst` for precedence. |
@@ -100,7 +100,8 @@ Every command except `--version`, `--about` and `--help` runs the same steps thr
 | Property | Enforced in |
 |---|---|
 | Nothing mutating runs without consent that names the exact commands | `execute` (consent on every row), `tui` consent equality check, `cli` prompt |
-| No `--force`, no `brew link`, only `install`/`tap`/`trust` | `plan.Validate`. The e2e tests also assert on every recorded invocation (`testkit.AssertSafeInvocations`). |
+| Catalog values cannot inject options, paths or terminal escapes | `catalog.Validate` allow-lists at load (exit 3); `plan.Validate` as the second line; `Command.String` escapes control characters |
+| No `--force` (or `-f`, or any brew option from data), no `brew link`, only `install`/`tap`/`trust` | `plan.Validate`. The e2e tests also assert on every recorded invocation (`testkit.AssertSafeInvocations`). |
 | No shell strings, and no inherited tap-trust bypass | `execrunner` (argv only; `HOMEBREW_NO_REQUIRE_TAP_TRUST*` removed) |
 | Detection makes no network calls | `scan` env (`HOMEBREW_NO_AUTO_UPDATE=1`, `HOMEBREW_NO_ENV_HINTS=1`). `brew info --installed` is local. |
 | Never install over files `facman` does not own | `conflicts` pre-flight, then `ownership.Classify` (`conflict`), then `planning` exclusion |
