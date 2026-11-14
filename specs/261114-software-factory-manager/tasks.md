@@ -6,7 +6,7 @@
 
 ## Progress Summary
 
-**0 / 52 tasks complete** (A 0/11, B 0/4, C 0/5, D 0/8, E 0/9, F 0/6, G 0/5, H 0/4)
+**12 / 52 tasks complete** (A 11/11, B 0/4, C 0/5, D 0/8, E 1/9, F 0/6, G 0/5, H 0/4)
 
 Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the failing test to write before any code) · **Done when** (acceptance). Every task also updates the README of each folder it creates or changes, and `status.md` when it completes (mandatory). Estimates are focused engineering hours. Workstreams, order and parallelism are in [plan.md](plan.md#phase-breakdown-workstreams).
 
@@ -14,47 +14,47 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream A — Foundation (sequential, first)
 
-**T-A1 — Makefile targets.** *Depends:* — · *Est:* 0.5 h
+**✅ T-A1 — Makefile targets.** *Depends:* — · *Est:* 0.5 h
 - **Test first:** a `cmd/facman` test (or script in CI) is not practical for make targets; verify by running the targets. Add `build: CGO_ENABLED=0 go build …`, `build-all` (darwin/linux × amd64/arm64 into `bin/<os>-<arch>/facman`), `integration` (`go test -race -tags integration ./...`).
 - **Done when:** `make build`, `make build-all`, `make integration` work locally; `file bin/linux-amd64/facman` shows a static binary; root README and AGENTS-mirrored command table in README updated.
 
-**T-A2 — `domain/version`.** *Depends:* — · *Est:* 1 h
+**✅ T-A2 — `domain/version`.** *Depends:* — · *Est:* 1 h
 - **Test first:** table tests for `Parse` (`2.1.4`, `v24.11.0`, `1.7.1-rc1`, `aws-cli/2.17.0` after regex, garbage), `Compare`, `AtLeast` (unknown never satisfies).
 - **Done when:** 100% coverage; README.
 
-**T-A3 — `domain/platform`.** *Depends:* T-A2 · *Est:* 1.5 h
+**✅ T-A3 — `domain/platform`.** *Depends:* T-A2 · *Est:* 1.5 h
 - **Test first:** `Key()` for darwin/linux/wsl; `GlibcBelow("2.39")` for 2.35/2.39/nil; `BootstrapReport.Fatal(cmd)` returns the fatal findings per command (UID 0 fatal for all; `linux-prereqs` and `brew-prefix-owner` fatal for `apply`/TUI Run only).
 - **Done when:** types per data-dictionary §2.2 and §2.9; README.
 
-**T-A4 — `domain/failure`.** *Depends:* — · *Est:* 1 h
+**✅ T-A4 — `domain/failure`.** *Depends:* — · *Est:* 1 h
 - **Test first:** `ExitCode()` for each kind (64, 3, 4, 1, 2); `Worst(errs…)` precedence usage > bootstrap > validation > operation; `errors.As` through wrapping.
 - **Done when:** README.
 
-**T-A5 — `domain/catalog` model and `Validate`.** *Depends:* T-A3, T-A4 · *Est:* 3 h
+**✅ T-A5 — `domain/catalog` model and `Validate`.** *Depends:* T-A3, T-A4 · *Est:* 3 h
 - **Test first:** table tests: duplicate IDs, unknown `requires`, unknown choice member, missing `kind`, unknown backend, `trust` ≠ `item`, requires cycle (`a→b→a`), all reported together as one validation error.
 - **Done when:** types per data-dictionary §2.3–2.4; README.
 
-**T-A6 — `domain/catalog` install selection.** *Depends:* T-A5 · *Est:* 2 h
+**✅ T-A6 — `domain/catalog` install selection.** *Depends:* T-A5 · *Est:* 2 h
 - **Test first:** `SelectInstall(entry, platform, implemented)`: darwin cask; linux cask; wsl cli inherits linux; wsl gui → `unavailable-here` + winget hint; linux gui without display → `unavailable-here`; `platforms: [darwin]` on linux → not offered (excluded, not shown as wanted); `npm` only → `unavailable-here` "needs the npm backend (Increment 2)"; `report` → `unavailable-here` with hint.
 - **Done when:** README updated.
 
-**T-A7 — `domain/catalog` profile resolution.** *Depends:* T-A5 · *Est:* 3 h
+**✅ T-A7 — `domain/catalog` profile resolution.** *Depends:* T-A5 · *Est:* 3 h
 - **Test first:** `Resolve`: `agentic-factory` includes `base-dev`; include cycle → validation error; two profiles union; required beats optional; same pin twice OK; different pins → error naming both profiles; `--with` optional selects; `--with` unknown → error; `--with container-runtime` → error listing members; `--with colima` picks the member; two members of one group → error; `FromProfiles` populated.
 - **Done when:** README updated.
 
-**T-A8 — `domain/plan` model, ordering and invariants.** *Depends:* T-A5 · *Est:* 3 h
+**✅ T-A8 — `domain/plan` model, ordering and invariants.** *Depends:* T-A5 · *Est:* 3 h
 - **Test first:** topological order (requires first, ties by catalog order, deterministic); `Validate` rejects argv with `--force`/`--overwrite`, `brew trust stablyai/orca` (whole tap), `upgrade`/`uninstall`/`untap`/`untrust`, any action for a non-`absent` package; `Consent.String()` = `user@2026-11-14T19:00:00Z`; `ExcludeWithDependents` removes a package and its transitive dependents with reasons.
 - **Done when:** types per data-dictionary §2.8; README.
 
-**T-A9 — `domain/inventory`.** *Depends:* T-A8 · *Est:* 1 h
+**✅ T-A9 — `domain/inventory`.** *Depends:* T-A8 · *Est:* 1 h
 - **Test first:** status transitions allowed (`in_progress → succeeded|failed|interrupted`, nothing out of terminal states); `Record` validation (`state` only managed/adopted).
 - **Done when:** README.
 
-**T-A10 — `domain/ownership` classification.** *Depends:* T-A6, T-A8, T-A9 · *Est:* 4 h
+**✅ T-A10 — `domain/ownership` classification.** *Depends:* T-A6, T-A8, T-A9 · *Est:* 4 h
 - **Test first (I1-3):** one table producing every state: `absent`, `foreign` (brew install, no record), `foreign` + `OSBundled` (`/usr/bin/jq`), `managed` (record + detected via recorded backend), `adopted` (record state adopted), `drifted` (record, not found; record brew-cask, found native), `duplicate` (brew + native claude, winner = first on PATH), `conflict` (absent + conflict), `unavailable-here`; `satisfies_if` node 24.11 via nvm → `foreign` satisfying; node 22 via nvm → `foreign` not satisfying (shown, never planned in Increment 1, hint to install `node@24`); `reject_if` awscli 1.x → `foreign` not satisfying; `Incomplete` when a relevant detector is `unknown`; same file seen by PATH and brew detectors is not a duplicate.
 - **Done when:** 100% branch coverage; README.
 
-**T-A11 — `fakecmd` and `internal/testkit`.** *Depends:* — · *Est:* 4 h
+**✅ T-A11 — `fakecmd` and `internal/testkit`.** *Depends:* — · *Est:* 4 h
 - **Test first:** `testkit` tests: building `fakecmd`, linking it as `brew`, running `brew info --json=v2 --installed` returns the fixture; `brew install jq` adds `jq` to state and later `brew info` reflects it; a fixture rule can set exit code, stdout, stderr, sleep; every call appends `{argv, env_names, cwd}` to the log; `testkit.AssertSafeInvocations(t, log)` fails on `--force`, `--overwrite`, `upgrade`, `uninstall`, whole-tap trust, or `HOMEBREW_NO_REQUIRE_TAP_TRUST` in env.
 - **Done when:** `testdata/fakecmd/main.go` builds with `go build` (Go ignores `testdata` for `./...`, so it is not part of the product); `internal/testkit/README.md` says it is test-only.
 
@@ -142,7 +142,7 @@ Format: **ID — title** · *Depends on* · *Estimate* · **Test first** (the fa
 
 ## Workstream E — Use cases (parallel with B, C, D; start first after A)
 
-**T-E1 — Ports and fakes.** *Depends:* T-A2–T-A10 · *Est:* 2 h · **Lands in workstream A's commit (R-5)** so B, C, D and E can start in parallel against fixed ports.
+**✅ T-E1 — Ports and fakes.** *Depends:* T-A2–T-A10 · *Est:* 2 h · **Lands in workstream A's commit (R-5)** so B, C, D and E can start in parallel against fixed ports.
 - **Test first:** compile-time checks that the in-memory fakes in each use case's `_test.go` satisfy the ports (data-dictionary §3).
 - **Done when:** port interfaces declared in their consuming packages; `internal/usecase/README.md` lists them.
 

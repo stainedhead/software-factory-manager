@@ -2,7 +2,7 @@
 
 **Agentic Software Factory Manager** — the home of `facman`.
 
-> **Status:** design complete in draft (v0.3); Increment 1 (MVP) is specified in [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/) and implementation has not started. Sections marked _TBD_ are filled in as the product takes shape.
+> **Status:** design complete in draft (v0.3); Increment 1 (MVP) is specified in [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/) and in implementation: the domain model, use case ports and test harness are in place. Sections marked _TBD_ are filled in as the product takes shape.
 
 ## Overview
 
@@ -52,8 +52,10 @@ Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](sp
 
 | Command | Purpose |
 |---|---|
-| `make build` | Compile binaries into `bin/` |
+| `make build` | Compile a static (`CGO_ENABLED=0`) `bin/facman` |
+| `make build-all` | Cross-compile darwin and linux, amd64 and arm64, into `bin/<os>-<arch>/facman` |
 | `make test` | Run tests with the race detector |
+| `make integration` | Run tests including the `integration` build tag (real Homebrew; skips when absent) |
 | `make lint` | Run golangci-lint |
 | `make cover` | Tests with a coverage report |
 | `make check` | fmt + lint + test (run before every commit) |
@@ -68,6 +70,7 @@ internal/   domain, usecase, and adapter layers (Clean Architecture)
 docs/       product and technical documentation (docs/design/ holds the full design)
 user-docs/  user-facing guides: setup, configuration, adoption
 specs/      feature specifications (active and archived)
+testdata/   test-only fixtures and the fake command used by tests
 ```
 
 Each folder has its own `README.md` describing its purpose and contents.
