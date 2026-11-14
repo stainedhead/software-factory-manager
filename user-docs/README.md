@@ -9,6 +9,7 @@ User-facing documentation for `facman`, the **Agentic Software Factory Manager**
 | Install `facman`, or run it straight from the repo, and do a first scan, plan and install | [Getting started](getting-started.md) |
 | Find a worked example: `--json` scripting, optional packages, custom catalogs, conflicts, Linux and WSL | [Usage examples](usage-examples.md) |
 | Look up a flag, environment variable, state path or exit code | [Configuration](configuration.md) |
+| Check detection on real lab Macs (I1-16), run the clean-machine bootstrap, or capture real `brew` output | [Field check](field-check.md) |
 | *(Increment 3)* Make a machine (or CI runner) get the same tools every time | [Configuration lists (`-cl`)](configuration-list.md) |
 | *(Increment 5)* Set up Hermes Agent: model, tools, MCP servers, identity, skills | [Hermes setup (`-hs`)](hermes-setup.md) |
 | *(Increment 5)* Load Paperclip with a company, agents, projects and skills | [Paperclip setup (`-ps`)](paperclip-setup.md) |

@@ -52,6 +52,7 @@ Every command except `--version` and `--about` also takes `--catalog <dir>` to u
 | [Getting started](user-docs/getting-started.md) | Build or run `facman`, first scan, plan, apply and the TUI |
 | [Usage examples](user-docs/usage-examples.md) | Common tasks: scripting with `--json`, optional packages, custom catalogs, conflicts, diagnosis |
 | [Configuration](user-docs/configuration.md) | Every flag, `--catalog`, `--profile`, `--with`, environment variables, state paths and exit codes |
+| [Field check](user-docs/field-check.md) | Check detection on real lab Macs (I1-16), run the clean-machine bootstrap, and capture real `brew` output |
 | [Configuration lists (`-cl`)](user-docs/configuration-list.md) | *Increment 3:* the same tools on every machine, with no prompts |
 | [Templates and validation](user-docs/templates-and-validation.md) | *Increment 4:* templates, schemas and `facman validate` |
 | [Hermes setup (`-hs`)](user-docs/hermes-setup.md), [Paperclip setup (`-ps`)](user-docs/paperclip-setup.md), [Orca setup (`-os`)](user-docs/orca-setup.md), [T3 Code setup (`-ts`)](user-docs/t3-setup.md) | *Increment 5:* per-tool setup files |

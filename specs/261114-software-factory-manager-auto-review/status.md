@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md, plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 26 tasks (T-1a to T-19) |
-| 5 | Implementation | In Progress | 4 / 26 tasks closed (done or deferred) |
+| 5 | Implementation | In Progress | 5 / 26 tasks closed (done or deferred) |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -34,7 +34,7 @@
 | T-1b | FR-001b | P1 | ✅ Done | Brew option allow-list and `forceLike` in `plan.Validate`; testkit oracle hardened (RF-4) |
 | T-1c | FR-001c | P1 | ✅ Done | `Command.String` escapes non-printables; TUI golden `review-escaped`, headless test (RF-5) |
 | T-2 | FR-002 | P1 | ✅ Done | Relative/empty PATH entries skipped in `execrunner`, `detect` and `brew.Locate`; `path-relative-entry` warning; e2e `TestRelativePathEntryNeverRuns` (RF-6, RF-7) |
-| T-3 | FR-003 | P1 | ⬜ Not started | |
+| T-3 | FR-003 | P1 | 🟡 Partial (rest deferred) | Shape checker + read-only real-brew contract test (CI logs, `FACMAN_CAPTURE_DIR`); `user-docs/field-check.md` clean-machine and capture steps. Container bootstrap job and captured fixtures deferred (RF-8, RF-9) |
 | T-1d | FR-001d | P2 | ⬜ Not started | |
 | T-4 | FR-004 | P2 | ⬜ Not started | |
 | T-5a | FR-005a | P2 | ⬜ Not started | |
@@ -63,7 +63,7 @@ None.
 
 ## Open Items
 
-None yet.
+- **FR-003 (J):** clean-machine bootstrap on a macOS VM and real `brew` output capture: [user-docs/field-check.md](../../user-docs/field-check.md) parts 2 and 3; record the run in implementation-notes.md, *macOS clean-machine run*.
 
 ## Recent Activity
 
