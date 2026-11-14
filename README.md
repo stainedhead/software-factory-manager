@@ -2,7 +2,7 @@
 
 **Agentic Software Factory Manager** — the home of `facman`.
 
-> **Status:** design complete in draft (v0.3), implementation not started. Sections marked _TBD_ are filled in as the product takes shape.
+> **Status:** design complete in draft (v0.3); Increment 1 (MVP) is specified in [specs/261114-software-factory-manager/](specs/261114-software-factory-manager/) and implementation has not started. Sections marked _TBD_ are filled in as the product takes shape.
 
 ## Overview
 
@@ -46,7 +46,7 @@ make test
 | [Architecture decision record](docs/architecture-decision-record.md) | Key design decisions and their rationale |
 | [Design](docs/design/) | The full working design for `facman` |
 
-Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/).
+Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/). The active spec is [Increment 1 (MVP)](specs/261114-software-factory-manager/spec.md), and the product PRD now lives with it at [specs/261114-software-factory-manager/software-factory-manager-PRD.md](specs/261114-software-factory-manager/software-factory-manager-PRD.md).
 
 ## Development
 
