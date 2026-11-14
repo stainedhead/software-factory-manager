@@ -74,6 +74,7 @@ func (*PathDetector) ID() ownership.DetectorID { return ownership.DetectorPath }
 // /usr/bin/git is never run and not reported.
 func (d *PathDetector) Detect(ctx context.Context, entries []catalog.Entry, env scan.Env) ([]ownership.Detection, error) {
 	loc := catalog.Locations{BrewPrefix: env.BrewPrefix, NPMPrefix: env.NPMPrefix, Home: env.Home}
+	resolvedLoc := loc.Resolve(filepath.EvalSymlinks)
 	results := make([][]ownership.Detection, len(entries))
 	sem := make(chan struct{}, parallelism)
 	var wg sync.WaitGroup
@@ -86,7 +87,7 @@ func (d *PathDetector) Detect(ctx context.Context, entries []catalog.Entry, env 
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			results[i] = d.entry(ctx, e, env, loc)
+			results[i] = d.entry(ctx, e, env, loc, resolvedLoc)
 		}()
 	}
 	wg.Wait()
@@ -100,7 +101,9 @@ func (d *PathDetector) Detect(ctx context.Context, entries []catalog.Entry, env 
 	return out, nil
 }
 
-func (d *PathDetector) entry(ctx context.Context, e catalog.Entry, env scan.Env, loc catalog.Locations) []ownership.Detection {
+// entry finds one entry. A resolved path is classified against the
+// resolved locations, the PATH path against the locations as given.
+func (d *PathDetector) entry(ctx context.Context, e catalog.Entry, env scan.Env, loc, resolvedLoc catalog.Locations) []ownership.Detection {
 	var out []ownership.Detection
 	seen := map[string]bool{}
 	for _, name := range e.Detect.Commands {
@@ -120,7 +123,10 @@ func (d *PathDetector) entry(ctx context.Context, e catalog.Entry, env scan.Env,
 			if d.cltShim(env, name, resolved) {
 				continue
 			}
-			prov := catalog.ProvenanceOf(e, resolved, loc)
+			prov := catalog.ProvenanceOf(e, resolved, resolvedLoc)
+			if prov == catalog.ProvUnknown {
+				prov = catalog.ProvenanceOf(e, resolved, loc)
+			}
 			if prov == catalog.ProvUnknown {
 				prov = catalog.ProvenanceOf(e, p, loc)
 			}
@@ -144,7 +150,15 @@ func (d *PathDetector) cltShim(env scan.Env, name, resolved string) bool {
 	if env.Platform.OS != "darwin" || (env.CLT != nil && *env.CLT) {
 		return false
 	}
-	return slices.Contains(cltShims, name) && filepath.Dir(resolved) == filepath.Clean(d.opts.ShimDir)
+	if !slices.Contains(cltShims, name) {
+		return false
+	}
+	dir := filepath.Dir(resolved)
+	if dir == filepath.Clean(d.opts.ShimDir) {
+		return true
+	}
+	shim, err := filepath.EvalSymlinks(d.opts.ShimDir)
+	return err == nil && dir == shim
 }
 
 // probeVersion runs the entry's version probe against the install at p

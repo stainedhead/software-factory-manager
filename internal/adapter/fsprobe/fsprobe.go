@@ -179,16 +179,27 @@ func (p *Probe) Owner(_ context.Context, path string, entry catalog.Entry) (plan
 		}
 		resolved = r
 	}
+	// resolved is compared with the locations resolved the same way
+	// (macOS /var -> /private/var, symlinked prefixes), then as given.
 	loc := p.opts.Locations()
-	if class, detail, ok := brewOwner(resolved, loc.BrewPrefix, entry); ok {
-		return class, detail, nil
-	}
-	for _, prefix := range []string{loc.BrewPrefix, loc.NPMPrefix} {
-		if pkg, ok := npmPackage(resolved, prefix); ok {
-			return plan.OwnerNPM, "npm " + pkg, nil
+	locs := []catalog.Locations{loc.Resolve(filepath.EvalSymlinks), loc}
+	for _, l := range locs {
+		if class, detail, ok := brewOwner(resolved, l.BrewPrefix, entry); ok {
+			return class, detail, nil
 		}
 	}
-	switch prov := catalog.ProvenanceOf(entry, resolved, loc); prov {
+	for _, l := range locs {
+		for _, prefix := range []string{l.BrewPrefix, l.NPMPrefix} {
+			if pkg, ok := npmPackage(resolved, prefix); ok {
+				return plan.OwnerNPM, "npm " + pkg, nil
+			}
+		}
+	}
+	prov := catalog.ProvenanceOf(entry, resolved, locs[0])
+	if prov == catalog.ProvUnknown {
+		prov = catalog.ProvenanceOf(entry, resolved, loc)
+	}
+	switch prov {
 	case catalog.ProvUnknown, catalog.ProvBrew, catalog.ProvBrewCask, catalog.ProvNPM:
 	case catalog.ProvOS:
 		return plan.OwnerOtherInstaller, "the operating system (" + resolved + ")", nil

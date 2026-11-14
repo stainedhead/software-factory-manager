@@ -1,6 +1,9 @@
 package catalog
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestExpandGlob(t *testing.T) {
 	l := Locations{BrewPrefix: "/opt/homebrew", NPMPrefix: "/usr/local", Home: "/Users/j"}
@@ -24,6 +27,19 @@ func TestExpandGlob(t *testing.T) {
 		if got != tt.want || ok != tt.ok {
 			t.Errorf("ExpandGlob(%q) = %q, %v", tt.glob, got, ok)
 		}
+	}
+}
+
+func TestLocationsResolve(t *testing.T) {
+	eval := func(p string) (string, error) {
+		if p == "/var/brew" {
+			return "/private/var/brew", nil
+		}
+		return "", errors.New("no such file")
+	}
+	got := Locations{BrewPrefix: "/var/brew", NPMPrefix: "/missing", Home: ""}.Resolve(eval)
+	if got != (Locations{BrewPrefix: "/private/var/brew", NPMPrefix: "/missing"}) {
+		t.Errorf("Resolve = %+v", got)
 	}
 }
 

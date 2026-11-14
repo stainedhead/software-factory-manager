@@ -16,6 +16,24 @@ type Locations struct {
 	Home string
 }
 
+// Resolve returns the locations with each non-empty path passed through
+// eval (filepath.EvalSymlinks in adapters), keeping a path as is when eval
+// fails. Paths resolved through symlinks must be compared with resolved
+// locations: on macOS /var is a symlink to /private/var, and a Homebrew
+// prefix or home can be a symlink too.
+func (l Locations) Resolve(eval func(string) (string, error)) Locations {
+	r := func(p string) string {
+		if p == "" {
+			return ""
+		}
+		if v, err := eval(p); err == nil {
+			return v
+		}
+		return p
+	}
+	return Locations{BrewPrefix: r(l.BrewPrefix), NPMPrefix: r(l.NPMPrefix), Home: r(l.Home)}
+}
+
 // ExpandGlob fills in {brew_prefix}, {npm_prefix} and a leading ~. It
 // reports false when the glob needs a location that is unknown.
 func (l Locations) ExpandGlob(glob string) (string, bool) {

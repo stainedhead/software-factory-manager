@@ -70,7 +70,12 @@ func cli(id string, cmds []string, version *catalog.VersionProbe, prov map[catal
 }
 
 func TestPathDetector(t *testing.T) {
-	root := t.TempDir()
+	for name, root := range fixtureRoots(t) {
+		t.Run(name, func(t *testing.T) { pathDetectorAt(t, root) })
+	}
+}
+
+func pathDetectorAt(t *testing.T, root string) {
 	home := filepath.Join(root, "home")
 	prefix := filepath.Join(root, "brew")
 	npmPrefix := filepath.Join(root, "npm")
@@ -183,7 +188,12 @@ func TestPathDetectorOSProvenanceAndCLT(t *testing.T) {
 	root := t.TempDir()
 	// A fake git in the shim dir; the fake world answers its version.
 	f := testkit.NewFake(t, fakeworld.World{Rules: []fakeworld.Rule{{Cmd: "git", Stdout: "git version 2.39.5 (Apple Git-154)\n"}}}, "git")
-	shimDir := f.Dir
+	// The shim dir is reached through a symlinked directory, as on macOS
+	// (/var -> /private/var).
+	shimDir := filepath.Join(root, "shims")
+	if err := os.Symlink(f.Dir, shimDir); err != nil {
+		t.Fatal(err)
+	}
 	entries := []catalog.Entry{cli("git", []string{"git"}, &catalog.VersionProbe{Cmd: []string{"git", "--version"}, Regex: `git version (\S+)`}, nil)}
 	yes, no := true, false
 	tests := []struct {
@@ -429,4 +439,16 @@ func TestNPMDetector(t *testing.T) {
 	if noPrefix[1].Path != "" {
 		t.Errorf("no npm prefix gives no path: %+v", noPrefix[1])
 	}
+}
+
+// fixtureRoots returns a plain temp root and one reached through a
+// symlinked directory, as macOS TMPDIR is (/var -> /private/var).
+func fixtureRoots(t *testing.T) map[string]string {
+	t.Helper()
+	target := t.TempDir()
+	linked := filepath.Join(t.TempDir(), "var")
+	if err := os.Symlink(target, linked); err != nil {
+		t.Fatal(err)
+	}
+	return map[string]string{"plain": t.TempDir(), "behind symlinked dir": linked}
 }

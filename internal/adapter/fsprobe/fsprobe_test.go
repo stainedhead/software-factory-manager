@@ -50,7 +50,12 @@ var ghEntry = catalog.Entry{ID: "gh", Kind: catalog.KindCLI,
 	Install: map[platform.Key][]catalog.InstallStep{platform.Darwin: {{Backend: catalog.BackendBrewFormula, ID: "gh"}}}}
 
 func TestProbe(t *testing.T) {
-	root := t.TempDir()
+	for name, root := range fixtureRoots(t) {
+		t.Run(name, func(t *testing.T) { probeFixtureAt(t, root) })
+	}
+}
+
+func probeFixtureAt(t *testing.T, root string) {
 	prefix := filepath.Join(root, "brew")
 	npm := filepath.Join(root, "npm")
 	home := filepath.Join(root, "home")
@@ -201,4 +206,16 @@ func TestInspectUnreadable(t *testing.T) {
 	if _, err := p.Inspect(context.Background(), filepath.Join(locked, "x")); err == nil {
 		t.Error("unreadable directory must be an error")
 	}
+}
+
+// fixtureRoots returns a plain temp root and one reached through a
+// symlinked directory, as macOS TMPDIR is (/var -> /private/var).
+func fixtureRoots(t *testing.T) map[string]string {
+	t.Helper()
+	target := t.TempDir()
+	linked := filepath.Join(t.TempDir(), "var")
+	if err := os.Symlink(target, linked); err != nil {
+		t.Fatal(err)
+	}
+	return map[string]string{"plain": t.TempDir(), "behind symlinked dir": linked}
 }
