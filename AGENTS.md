@@ -75,7 +75,7 @@ Documentation is part of the change. A change is not done until the affected doc
 
 ## Git workflow
 
-- Never push directly to `main`; open a pull request.
+- Direct pushes to `main` are allowed; a pull request is optional. Run `make check` before pushing.
 - Small, focused commits with imperative-mood messages.
 
 ## Dev-Flow Skills
