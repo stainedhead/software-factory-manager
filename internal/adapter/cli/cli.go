@@ -27,6 +27,7 @@ import (
 	"github.com/stainedhead/software-factory-manager/internal/domain/appinfo"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
 	"github.com/stainedhead/software-factory-manager/internal/domain/platform"
+	"github.com/stainedhead/software-factory-manager/internal/usecase/execute"
 )
 
 // DefaultProfile is the profile the TUI starts with (R-6).
@@ -278,6 +279,7 @@ func (a *App) run(ctx context.Context, cmd platform.Command, fl *flags) error {
 	if fl.json {
 		out = stderr // human text goes to stderr; stdout carries only the report (R-8)
 	}
+	var prompt *Prompt
 	if cmd == platform.CommandApply && !fl.dryRun {
 		if !isTerminal(a.Stdio.In) {
 			return failure.Usage("facman apply asks for consent on the terminal, and stdin is not a terminal").
@@ -295,10 +297,16 @@ func (a *App) run(ctx context.Context, cmd platform.Command, fl *flags) error {
 		defer wg.Wait()
 		defer close(done)
 		// The command list and the prompt always go to stderr (R-8).
-		req.Confirmer = &Prompt{In: a.Stdio.In, Out: stderr}
+		prompt = &Prompt{In: a.Stdio.In, Out: stderr}
+		req.Confirmer = prompt
 		req.Progress = &textProgress{w: out}
 	}
 	res, err := a.Engine.Run(ctx, req)
+	if prompt != nil && !prompt.Agreed() && errors.Is(err, context.Canceled) {
+		// Ctrl+C before consent (during the scan or planning): nothing
+		// ran, so it is a decline like Ctrl+C at the prompt (D-5, I-54).
+		err, res.Outcome = nil, &execute.Outcome{Declined: true}
+	}
 	err = asTyped(err)
 	if fl.json {
 		doc := report.Build(reportInput(cmd, a.Version, a.now(), res, err))

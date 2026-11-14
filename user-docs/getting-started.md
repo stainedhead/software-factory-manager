@@ -140,7 +140,7 @@ Add to your shell profile:
   export PATH="/opt/homebrew/opt/node@24/bin:$PATH"
 ```
 
-The default is No. An empty line, `n`, end of input or `Ctrl+C` at the prompt changes nothing and exits 0. There is no `--yes`. `apply` needs a terminal on stdin and exits 64 otherwise. Prompt-free runs for build machines arrive with [configuration lists (`-cl`)](configuration-list.md) in Increment 3. Use `facman apply --profile base-dev --dry-run` to print the plan anywhere, change nothing, and skip the prompt.
+The default is No. An empty line, `n`, end of input or `Ctrl+C` at the prompt, or `Ctrl+C` while the scan or plan is still running, changes nothing and exits 0. There is no `--yes`. `apply` needs a terminal on stdin and exits 64 otherwise. Prompt-free runs for build machines arrive with [configuration lists (`-cl`)](configuration-list.md) in Increment 3. Use `facman apply --profile base-dev --dry-run` to print the plan anywhere, change nothing, and skip the prompt.
 
 Run the same `apply` again and it finds nothing to do (`Nothing to install.`, exit 0). If a run was interrupted, the next one finishes the remaining work.
 

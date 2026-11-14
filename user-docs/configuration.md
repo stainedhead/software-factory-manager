@@ -114,7 +114,7 @@ What `facman` sets for the commands it runs:
 
 | Code | Meaning |
 |---|---|
-| 0 | Success, nothing to do, or declined at the prompt |
+| 0 | Success, nothing to do, or declined (`n`, empty line, end of input, or `Ctrl+C` at any point before you consent) |
 | 1 | An install failed, or a wanted package was skipped (conflict, failed dependency, incomplete detection) or cancelled |
 | 2 | `doctor` only: something needs fixing (a conflict, or an untrusted tap a catalog item needs) |
 | 3 | Validation: the catalog, a profile, `--profile` or `--with` is wrong |

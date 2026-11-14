@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -355,5 +357,51 @@ func TestJSONOutputAndWriteFailures(t *testing.T) {
 	stop()
 	if ch == nil {
 		t.Error("default signals")
+	}
+}
+
+// I-54: a cancel before consent (Ctrl+C during the scan or planning) is a
+// decline, exit 0; a cancel after consent keeps the run's exit code.
+func TestApplyCancelBeforeConsentIsDecline(t *testing.T) {
+	tests := []struct {
+		name     string
+		answer   string // typed at the prompt; "" means the prompt is never reached
+		err      error
+		want     int
+		wantText string
+	}{
+		{"cancel during scan", "", fmt.Errorf("scanning: %w", context.Canceled), 0, "Nothing was changed."},
+		{"bootstrap failure is not a cancel", "", failure.Bootstrap("no HOME"), 4, ""},
+		{"cancel after consent", "y\n", failure.Operation("running: %w", context.Canceled), 1, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ptmx, tty, err := pty.Open()
+			if err != nil {
+				t.Skip(err)
+			}
+			defer func() { _ = ptmx.Close(); _ = tty.Close() }()
+			go func() { _, _ = io.Copy(io.Discard, ptmx) }()
+			if tt.answer != "" {
+				if _, err := ptmx.WriteString(tt.answer); err != nil {
+					t.Fatal(err)
+				}
+			}
+			e := &fakeEngine{err: tt.err}
+			if tt.answer != "" {
+				e.confirm = func(req session.Request) (bool, error) {
+					return req.Confirmer.Confirm(context.Background(), plan.Plan{Profiles: []string{"p"}})
+				}
+			}
+			a, out, _ := newApp(e)
+			a.Stdio.In = tty
+			a.Signals = func() (<-chan os.Signal, func()) { return make(chan os.Signal), func() {} }
+			if got := a.Execute(context.Background(), []string{"apply", "--profile", "p"}); got != tt.want {
+				t.Fatalf("exit %d, want %d\n%s", got, tt.want, out.String())
+			}
+			if tt.wantText != "" && !strings.Contains(out.String(), tt.wantText) {
+				t.Errorf("output misses %q:\n%s", tt.wantText, out.String())
+			}
+		})
 	}
 }

@@ -288,15 +288,59 @@ func TestApplyDecline(t *testing.T) {
 	}
 	t.Run("ctrl-c", func(t *testing.T) {
 		f := newFixture(t, machine{})
+		// Send the signal only once the prompt is on screen, so the test
+		// does not depend on how fast the scan is (it raced on macOS CI).
+		prompted := &notifyWriter{w: &f.stderr, want: "Proceed? [y/N]", hit: make(chan struct{})}
+		f.o.Stderr = prompted
 		go func() {
-			time.Sleep(200 * time.Millisecond)
-			f.sigs <- syscall.SIGINT
+			select {
+			case <-prompted.hit:
+				f.sigs <- syscall.SIGINT
+			case <-time.After(30 * time.Second):
+			}
 		}()
 		f.want(0, f.runTTY("", "apply", "--profile", "agentic-factory"))
 		if len(f.operations()) != 0 || len(f.mutating()) != 0 {
 			t.Error("Ctrl+C at the prompt changed something")
 		}
 	})
+	// Regression (I-54): Ctrl+C before the prompt, while the machine is
+	// still being checked or scanned, is a decline too, not exit 4.
+	t.Run("ctrl-c before the prompt", func(t *testing.T) {
+		f := newFixture(t, machine{})
+		f.sigs <- syscall.SIGINT // delivered as soon as apply starts watching
+		f.want(0, f.runTTY("", "apply", "--profile", "agentic-factory"))
+		if len(f.operations()) != 0 || len(f.mutating()) != 0 {
+			t.Error("Ctrl+C before the prompt changed something")
+		}
+		if !strings.Contains(f.stdout.String(), "Nothing was changed") {
+			t.Errorf("stdout:\n%s", f.stdout.String())
+		}
+	})
+}
+
+// notifyWriter closes hit the first time want has been written to w.
+type notifyWriter struct {
+	mu   sync.Mutex
+	w    io.Writer
+	buf  []byte
+	want string
+	hit  chan struct{}
+	done bool
+}
+
+func (n *notifyWriter) Write(p []byte) (int, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	written, err := n.w.Write(p)
+	if !n.done {
+		n.buf = append(n.buf, p...)
+		if bytes.Contains(n.buf, []byte(n.want)) {
+			n.done = true
+			close(n.hit)
+		}
+	}
+	return written, err
 }
 
 // R-8: apply --json keeps the prompt and command list on stderr.

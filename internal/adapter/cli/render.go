@@ -220,6 +220,9 @@ func ids(deps []int) string {
 
 func applyText(ew *errWriter, req session.Request, res session.Result) {
 	switch {
+	case res.Outcome != nil && res.Outcome.Declined:
+		ew.printf("Nothing was changed.\n")
+		return
 	case res.Plan == nil:
 		return
 	case res.Outcome == nil || res.Outcome.DryRun || req.DryRun:
@@ -227,9 +230,6 @@ func applyText(ew *errWriter, req session.Request, res session.Result) {
 		if !res.Plan.Empty() {
 			ew.printf("\nDry run: nothing was changed.\n")
 		}
-		return
-	case res.Outcome.Declined:
-		ew.printf("Nothing was changed.\n")
 		return
 	case res.Plan.Empty() && res.Outcome.Consent.At.IsZero():
 		ew.err = firstErr(ew.err, writePlan(ew.w, *res.Plan))

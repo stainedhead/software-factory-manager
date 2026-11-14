@@ -19,7 +19,13 @@ type Prompt struct {
 	In io.Reader
 	// Out receives the command list and the prompt (stderr).
 	Out io.Writer
+	// agreed records a yes, so the caller can tell a cancel before
+	// consent (nothing ran) from one during the run.
+	agreed bool
 }
+
+// Agreed reports whether Confirm returned true.
+func (pr *Prompt) Agreed() bool { return pr.agreed }
 
 var _ execute.Confirmer = (*Prompt)(nil)
 
@@ -46,6 +52,7 @@ func (pr *Prompt) Confirm(ctx context.Context, p plan.Plan) (bool, error) {
 		}
 		switch strings.ToLower(strings.TrimSpace(line)) {
 		case "y", "yes":
+			pr.agreed = true
 			return true, nil
 		}
 		return false, nil
