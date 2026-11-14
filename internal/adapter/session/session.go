@@ -501,7 +501,7 @@ func (r *Run) Execute(ctx context.Context) error {
 		runner = r.req.Runner
 	}
 	ex := &execute.Service{Runner: runner, Inventory: r.state.Inventory, Installer: d.Installer, State: r.state.Dir, Clock: d.Clock,
-		User: d.User, Progress: r.req.Progress, Confirmer: r.req.Confirmer, Env: d.Machine.Env(),
+		User: d.User, Progress: r.req.Progress, Confirmer: r.req.Confirmer, Env: d.Machine.Env(), Brew: d.Machine.Brew().Path,
 		Replanner: &Replanner{Session: r.s, Catalog: *r.res.Catalog, State: r.state}}
 	out, err := ex.Apply(ctx, *r.res.Plan, execute.Options{DryRun: r.req.DryRun})
 	r.res.Outcome = &out
@@ -558,7 +558,7 @@ func (rp *Replanner) AfterBootstrap(ctx context.Context, remaining plan.Plan) (e
 	if err != nil {
 		return execute.Replan{}, fmt.Errorf("scanning again: %w", err)
 	}
-	out := execute.Replan{Env: maps.Clone(env), Conflicts: map[string]*plan.Conflict{}, Incomplete: map[string]string{}}
+	out := execute.Replan{Env: maps.Clone(env), Brew: rep.Homebrew.Path, Conflicts: map[string]*plan.Conflict{}, Incomplete: map[string]string{}}
 	statuses := sr.StatusMap()
 	var ids []string
 	for _, a := range remaining.Actions {

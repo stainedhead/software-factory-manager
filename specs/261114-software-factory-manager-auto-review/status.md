@@ -16,7 +16,7 @@
 | 2 | Research & data modeling | Complete | research.md, data-dictionary.md |
 | 3 | Architecture & planning | Complete | architecture.md, plan.md |
 | 4 | Task breakdown | Complete | tasks.md: 26 tasks (T-1a to T-19) |
-| 5 | Implementation | In Progress | 14 / 26 tasks closed (done or deferred) |
+| 5 | Implementation | In Progress | 16 / 26 tasks closed (done or deferred) |
 | 6 | Completion & archival | Not Started | |
 
 ## Phase 0 Checklist
@@ -48,8 +48,8 @@
 | T-10b | FR-010b | P2 | ⬜ Not started | |
 | T-10c | FR-010c | P2 | ⬜ Not started | |
 | T-11 | FR-011 | P2 | ✅ Done | planning and cli never print an invalid plan |
-| T-12 | FR-012 | P2 | ⬜ Not started | |
-| T-13 | FR-013 | P2 | ⬜ Not started | |
+| T-12 | FR-012 | P2 | ✅ Done | located brew runs by absolute path; Review names it |
+| T-13 | FR-013 | P2 | ✅ Done | inherited HOMEBREW_* names in Review, header, JSON, logs; homebrew-cask-opts warning |
 | T-14 | FR-014 | P2 | ⬜ Not started | |
 | T-15 | FR-015 | P2 | ⬜ Not started | |
 | T-16 | FR-016 | P2 | ✅ Done | Paperclip hint removed; e2e TestPaperclipReasonOnce |

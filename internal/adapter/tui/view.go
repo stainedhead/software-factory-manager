@@ -238,6 +238,9 @@ func machineText(r platform.BootstrapReport) string {
 	default:
 		s += "Homebrew: " + h.Path + " (not on PATH; used through brew shellenv)\n"
 	}
+	if len(h.InheritedEnv) > 0 {
+		s += "          brew inherits from your environment: " + strings.Join(h.InheritedEnv, " ") + "\n"
+	}
 	n := r.Node
 	if n.Found {
 		s += "Node:     " + joinNonEmpty(n.Version, n.Provenance) + "\n"
@@ -505,6 +508,16 @@ func (m *Model) plan() *plan.Plan {
 	return m.result().Plan
 }
 
+// runsBrew reports whether any command of p starts with a bare "brew".
+func runsBrew(p *plan.Plan) bool {
+	for _, c := range p.Commands() {
+		if len(c.Argv) > 0 && c.Argv[0] == "brew" {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *Model) reviewBody() string {
 	p := m.plan()
 	if p == nil {
@@ -520,6 +533,13 @@ func (m *Model) reviewBody() string {
 	if p.Empty() {
 		b.WriteString("Nothing to install.\n")
 	} else {
+		if bs := m.result().Bootstrap; bs != nil && bs.Homebrew.Found && runsBrew(p) {
+			// The plan names brew; this is the one it runs (review FR-012).
+			b.WriteString("Homebrew: " + plan.Command{Argv: []string{bs.Homebrew.Path}}.String() + " (every brew command below runs this one)\n")
+			if env := bs.Homebrew.InheritedEnv; len(env) > 0 {
+				b.WriteString("          and inherits from your environment: " + strings.Join(env, " ") + "\n")
+			}
+		}
 		fmt.Fprintf(&b, "These %d command(s) run in this order, and nothing else. Nothing has run yet.\n\n", len(p.Commands()))
 		for _, a := range p.Actions {
 			for _, c := range a.Commands {

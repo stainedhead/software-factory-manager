@@ -91,6 +91,7 @@ A minimal example is [testdata/catalogs/integration/](../testdata/catalogs/integ
 | `DISPLAY`, `WAYLAND_DISPLAY` | Linux: whether GUI apps (casks) are offered. |
 | `WSL_DISTRO_NAME` | Detecting WSL, together with `/proc/version`. |
 | `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` | Downloading the Homebrew installer. Homebrew itself also honors them. |
+| `HOMEBREW_*` (yours) | Passed to every `brew` command unchanged, because they are your settings, but they can change what a reviewed install does (`HOMEBREW_CASK_OPTS`, `HOMEBREW_NO_INSTALL_FROM_API`). Review, the `plan`/`apply` header (`brew inherits from your environment: …`), `bootstrap.homebrew.inherited_env` in `--json`, and every operation log (`# inherited HOMEBREW_*: …`) name them, never their values. `HOMEBREW_CASK_OPTS` containing `--no-quarantine` is a `homebrew-cask-opts` warning on `scan`, `plan`, `apply` and `doctor`: unset it for the run (`env -u HOMEBREW_CASK_OPTS facman …`). `HOMEBREW_NO_REQUIRE_TAP_TRUST*` is the exception: it is stripped (see below). |
 
 What `facman` sets for the commands it runs:
 

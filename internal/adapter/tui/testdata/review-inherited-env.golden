@@ -1,0 +1,24 @@
+facman · Agentic Software Factory Manager
+Profile: agentic-factory   Scan > Plan > [Review] > Run > Summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Homebrew: /opt/homebrew/bin/brew (every brew command below runs this one)
+          and inherits from your environment: HOMEBREW_CASK_OPTS HOMEBREW_NO_INSTALL_FROM_API
+These 5 command(s) run in this order, and nothing else. Nothing has run yet.
+
+   1. jq                     brew install jq
+   2. codex                  brew install --cask codex
+   3. orca                   brew tap stablyai/orca
+      [adds the third-party tap stablyai/orca]
+   4. orca                   brew trust --cask stablyai/orca/orca
+      [trusts only stablyai/orca/orca, not the whole tap; after 3]
+   5. orca                   brew install --cask stablyai/orca/orca
+      [may ask for your sudo password: the terminal is handed to it; after 4]
+
+Not installed:
+  awscli: detection-incomplete; detection incomplete: brew timed out after 10s
+  claude-code: conflict; /opt/homebrew/bin/claude is held by orphan (); remove the dangling link yo…
+  paperclip: unavailable-here; needs the npm backend (Increment 2)
+
+Pressing enter is your consent. It is recorded as j with the time.
+────────────────────────────────────────────────────────────────────────────────────────────────────
+enter: consent and install · esc: back to Plan · ?: help · q: quit (nothing changes)

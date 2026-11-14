@@ -404,11 +404,11 @@ func TestTUISteps(t *testing.T) {
 	if err := r.Execute(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if len(wrap.runs) != 1 || strings.Join(wrap.runs[0], " ") != "brew install jq" {
-		t.Errorf("plan commands went to %v, want the request's runner", wrap.runs)
+	if len(wrap.runs) != 1 || strings.Join(wrap.runs[0], " ") != "/p/bin/brew install jq" {
+		t.Errorf("plan commands went to %v, want the request's runner running the located brew", wrap.runs)
 	}
 	for _, argv := range h.run.runs {
-		if argv[0] == "brew" {
+		if argv[0] == "brew" || argv[0] == "/p/bin/brew" && len(argv) > 1 && argv[1] == "install" {
 			t.Errorf("plan command ran on the base runner: %v", argv)
 		}
 	}

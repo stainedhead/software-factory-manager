@@ -278,3 +278,52 @@ func TestChildEnv(t *testing.T) {
 		})
 	}
 }
+
+// TestInheritedHomebrewEnv: the names (never the values) of inherited
+// HOMEBREW_* variables are reported, and HOMEBREW_CASK_OPTS with
+// --no-quarantine is a warning (review FR-013).
+func TestInheritedHomebrewEnv(t *testing.T) {
+	tests := []struct {
+		name     string
+		environ  []string
+		wantEnv  []string
+		wantWarn bool
+	}{
+		{"none", []string{"PATH=/usr/bin", "HOME=/Users/j"}, nil, false},
+		{"names sorted, tap-trust bypass left out", []string{"HOMEBREW_NO_INSTALL_FROM_API=1", "HOMEBREW_CASK_OPTS=--appdir=~/Apps", "HOMEBREW_NO_REQUIRE_TAP_TRUST=1", "PATH=/usr/bin"},
+			[]string{"HOMEBREW_CASK_OPTS", "HOMEBREW_NO_INSTALL_FROM_API"}, false},
+		{"no-quarantine", []string{"HOMEBREW_CASK_OPTS=--appdir=/Applications --no-quarantine"}, []string{"HOMEBREW_CASK_OPTS"}, true},
+		{"no-quarantine alone", []string{"HOMEBREW_CASK_OPTS=--no-quarantine"}, []string{"HOMEBREW_CASK_OPTS"}, true},
+		{"other variable mentions it", []string{"HOMEBREW_GITHUB_API_TOKEN=--no-quarantine"}, []string{"HOMEBREW_GITHUB_API_TOKEN"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{Probe: probe{p: darwin}, Homebrew: brewOK, Runner: &runner{}, Look: look{}, Home: "/Users/j",
+				Environ: func() []string { return tt.environ }}
+			r, err := s.Check(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(r.Homebrew.InheritedEnv, tt.wantEnv) {
+				t.Errorf("InheritedEnv = %v, want %v", r.Homebrew.InheritedEnv, tt.wantEnv)
+			}
+			var warn *platform.Finding
+			for i, f := range r.Findings {
+				if f.Code == platform.CodeHomebrewCaskOpts {
+					warn = &r.Findings[i]
+				}
+			}
+			if (warn != nil) != tt.wantWarn {
+				t.Fatalf("homebrew-cask-opts finding = %+v, want %v", warn, tt.wantWarn)
+			}
+			if warn != nil && (warn.Severity != platform.SeverityWarning || !strings.Contains(warn.Message, "HOMEBREW_CASK_OPTS") || !strings.Contains(warn.Fix, "unset HOMEBREW_CASK_OPTS")) {
+				t.Errorf("finding = %+v", warn)
+			}
+			for _, f := range r.Findings {
+				if strings.Contains(f.Message+f.Fix, "~/Apps") || strings.Contains(f.Message+f.Fix, "/Applications") {
+					t.Errorf("a finding shows a value: %+v", f)
+				}
+			}
+		})
+	}
+}

@@ -659,3 +659,16 @@ func TestSpinnerTicks(t *testing.T) {
 		}
 	}
 }
+
+// Review FR-013: Review names the HOMEBREW_* variables brew inherits.
+func TestReviewNamesInheritedHomebrewEnv(t *testing.T) {
+	boot := brewFound()
+	boot.Homebrew.InheritedEnv = []string{"HOMEBREW_CASK_OPTS", "HOMEBREW_NO_INSTALL_FROM_API"}
+	d := newDriver(t, &fakeEngine{boot: boot})
+	d.key("enter", "enter")
+	s := d.screen()
+	if !strings.Contains(s, "and inherits from your environment: HOMEBREW_CASK_OPTS HOMEBREW_NO_INSTALL_FROM_API") {
+		t.Errorf("Review:\n%s", s)
+	}
+	golden(t, "review-inherited-env", s)
+}

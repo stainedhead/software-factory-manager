@@ -138,6 +138,9 @@ const (
 	// CodePathRelativeEntry is a scan warning: PATH has a relative or empty
 	// entry, which facman ignores when it looks for programs (review FR-002).
 	CodePathRelativeEntry = "path-relative-entry"
+	// CodeHomebrewCaskOpts is a warning: the inherited HOMEBREW_CASK_OPTS
+	// contains --no-quarantine (review FR-013).
+	CodeHomebrewCaskOpts = "homebrew-cask-opts"
 )
 
 // Finding is one bootstrap or doctor observation.
@@ -174,6 +177,10 @@ type HomebrewInfo struct {
 	PrefixOwnedByOther bool
 	// Version is brew's version, "" when unknown.
 	Version string
+	// InheritedEnv are the sorted names (never the values) of the
+	// HOMEBREW_* variables every brew command inherits from the user's
+	// environment, the tap-trust bypass excepted (it is stripped).
+	InheritedEnv []string
 }
 
 // NodeInfo is the Node.js runtime found during bootstrap.

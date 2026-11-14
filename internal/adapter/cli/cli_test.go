@@ -445,3 +445,24 @@ func TestApplyCancelBeforeConsentIsDecline(t *testing.T) {
 		})
 	}
 }
+
+// Review FR-013: the plan header names the inherited HOMEBREW_* variables.
+func TestRenderPlanNamesInheritedHomebrewEnv(t *testing.T) {
+	for _, tt := range []struct {
+		env  []string
+		want bool
+	}{{nil, false}, {[]string{"HOMEBREW_CASK_OPTS", "HOMEBREW_NO_INSTALL_FROM_API"}, true}} {
+		b := boot()
+		b.Homebrew.InheritedEnv = tt.env
+		p := &plan.Plan{Profiles: []string{"p"}, Actions: []plan.Action{
+			{ID: 1, PackageID: "jq", Commands: []plan.Command{{Argv: []string{"brew", "install", "jq"}}}}}}
+		var out bytes.Buffer
+		if err := render(&out, platform.CommandPlan, session.Request{}, session.Result{Bootstrap: b, Plan: p}); err != nil {
+			t.Fatal(err)
+		}
+		got := strings.Contains(out.String(), "brew inherits from your environment: HOMEBREW_CASK_OPTS HOMEBREW_NO_INSTALL_FROM_API\n")
+		if got != tt.want || (!tt.want && strings.Contains(out.String(), "inherits")) {
+			t.Errorf("env %v: output = %q", tt.env, out.String())
+		}
+	}
+}

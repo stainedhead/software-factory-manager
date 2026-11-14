@@ -470,3 +470,36 @@ func TestSignalName(t *testing.T) {
 		}
 	}
 }
+
+// TestLogHeaderNamesInheritedHomebrewEnv: the log header names the
+// HOMEBREW_* variables the command inherits, never their values; one the
+// command overrides is listed once, under env (review FR-013).
+func TestLogHeaderNamesInheritedHomebrewEnv(t *testing.T) {
+	tests := []struct {
+		name  string
+		extra []string
+		want  string
+	}{
+		{"none", nil, "# inherited HOMEBREW_*: none\n"},
+		{"names sorted", []string{"HOMEBREW_NO_INSTALL_FROM_API=1", "HOMEBREW_CASK_OPTS=--no-quarantine", "HOMEBREW_NO_REQUIRE_TAP_TRUST=1"},
+			"# inherited HOMEBREW_*: HOMEBREW_CASK_OPTS HOMEBREW_NO_INSTALL_FROM_API\n"},
+		{"override not inherited", []string{"HOMEBREW_PREFIX=/old"}, "# inherited HOMEBREW_*: none\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var log bytes.Buffer
+			cmd := helperCmd("echo", "x", "")
+			cmd.Env["HOMEBREW_PREFIX"] = "/opt/homebrew"
+			cmd.Log = &log
+			if _, err := newRunner(tt.extra...).Run(context.Background(), cmd); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(log.String(), tt.want) {
+				t.Errorf("log %q does not contain %q", log.String(), tt.want)
+			}
+			if strings.Contains(log.String(), "--no-quarantine") || strings.Contains(log.String(), "/old") {
+				t.Errorf("log shows a value: %q", log.String())
+			}
+		})
+	}
+}

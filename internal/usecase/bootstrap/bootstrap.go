@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/stainedhead/software-factory-manager/internal/domain/catalog"
 	"github.com/stainedhead/software-factory-manager/internal/domain/failure"
+	"github.com/stainedhead/software-factory-manager/internal/domain/plan"
 	"github.com/stainedhead/software-factory-manager/internal/domain/platform"
 	"github.com/stainedhead/software-factory-manager/internal/domain/version"
 	"github.com/stainedhead/software-factory-manager/internal/usecase/process"
@@ -40,6 +42,9 @@ type Service struct {
 	Look PathLookup
 	// Home is the user's home directory (Node provenance).
 	Home string
+	// Environ returns the base environment as NAME=value pairs; only the
+	// names of HOMEBREW_* variables are kept (nil means none).
+	Environ func() []string
 }
 
 // linuxPrereqs maps each program Homebrew needs to the apt and dnf
@@ -79,6 +84,7 @@ func (s *Service) Check(ctx context.Context) (platform.BootstrapReport, error) {
 	if err := s.checkHomebrew(ctx, &r); err != nil {
 		return r, err
 	}
+	s.checkHomebrewEnv(&r)
 	s.checkNode(ctx, &r)
 	return r, nil
 }
@@ -170,6 +176,41 @@ func (s *Service) checkHomebrew(ctx context.Context, r *platform.BootstrapReport
 	r.ShellEnv = env
 	return nil
 }
+
+// checkHomebrewEnv records the names of the HOMEBREW_* variables every
+// brew command inherits (they can change what a reviewed install does) and
+// warns about HOMEBREW_CASK_OPTS with --no-quarantine, which skips the
+// macOS Gatekeeper check for every cask (review FR-013). Values are never
+// kept: they are the developer's own and may be secrets (a GitHub token).
+// The tap-trust bypass is left out: facman strips it from every child.
+func (s *Service) checkHomebrewEnv(r *platform.BootstrapReport) {
+	if s.Environ == nil {
+		return
+	}
+	var names []string
+	noQuarantine := false
+	for _, kv := range s.Environ() {
+		k, v, _ := strings.Cut(kv, "=")
+		if !envNameRe.MatchString(k) || strings.HasPrefix(k, plan.TapTrustEnvPrefix) {
+			continue
+		}
+		names = append(names, k)
+		if k == "HOMEBREW_CASK_OPTS" && slices.Contains(strings.Fields(v), "--no-quarantine") {
+			noQuarantine = true
+		}
+	}
+	slices.Sort(names)
+	r.Homebrew.InheritedEnv = slices.Compact(names)
+	if noQuarantine {
+		r.Findings = append(r.Findings, platform.Finding{Code: platform.CodeHomebrewCaskOpts, Severity: platform.SeverityWarning,
+			Message: "HOMEBREW_CASK_OPTS contains --no-quarantine, so every cask facman installs skips the macOS Gatekeeper check",
+			Fix:     "unset HOMEBREW_CASK_OPTS for the run (env -u HOMEBREW_CASK_OPTS facman ...), or remove --no-quarantine from it"})
+	}
+}
+
+// envNameRe matches the HOMEBREW_* names that are reported; a name with
+// any other character is left out so it cannot reach the terminal.
+var envNameRe = regexp.MustCompile(`^HOMEBREW_[A-Za-z0-9_]*$`)
 
 var nodeVersionRe = regexp.MustCompile(`v?(\d+\.\d+\.\d+\S*)`)
 

@@ -1,6 +1,7 @@
 facman · Agentic Software Factory Manager
 Profile: agentic-factory   Scan > Plan > [Review] > Run > Summary
 ────────────────────────────────────────────────────────────────────────────────────────────────────
+Homebrew: /opt/homebrew/bin/brew (every brew command below runs this one)
 These 5 command(s) run in this order, and nothing else. Nothing has run yet.
 
    1. jq                     brew install "jq\x1b7hidden"

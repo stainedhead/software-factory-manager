@@ -158,3 +158,77 @@ func TestSignalKilledInstallIsRecorded(t *testing.T) {
 		t.Errorf("log:\n%s", b)
 	}
 }
+
+// TestInstallRunsLocatedBrew: when the child PATH puts another brew first
+// (here a shellenv that prepends a second Homebrew), the consented install
+// still goes to the brew that was located and scanned (review FR-012).
+func TestInstallRunsLocatedBrew(t *testing.T) {
+	other, marker := t.TempDir(), filepath.Join(t.TempDir(), "ran")
+	mustWrite(t, filepath.Join(other, "brew"), "#!/bin/sh\necho \"$0 $*\" >> "+marker+"\n")
+	if err := os.Chmod(filepath.Join(other, "brew"), 0o755); err != nil { //nolint:gosec // test executable
+		t.Fatal(err)
+	}
+	f := newFixture(t, machine{}, func(w *fakeworld.World) {
+		w.Rules = append([]fakeworld.Rule{{Cmd: "brew", Args: []string{"shellenv", "bash"},
+			Stdout: "export HOMEBREW_PREFIX=\"" + w.Brew.Prefix + "\";\nexport PATH=\"" + other + ":" + w.Brew.Prefix + "/bin${PATH+:$PATH}\";\n"}}, w.Rules...)
+	})
+	f.want(0, f.runTTY("y\n", "apply", "--profile", "e2e", "--catalog", "../../testdata/catalogs/e2e"))
+	if b, err := os.ReadFile(marker); err == nil {
+		t.Errorf("the other brew ran:\n%s", b)
+	}
+	located := filepath.Join(f.prefix, "bin", "brew")
+	var installs int
+	for _, inv := range f.fake.Log(t) {
+		if len(inv.Argv) > 1 && inv.Argv[1] == "install" {
+			installs++
+			if inv.Path != located {
+				t.Errorf("install ran %q, want the located %s", inv.Path, located)
+			}
+		}
+	}
+	if installs == 0 {
+		t.Fatalf("no install ran:\n%s\n%s", f.stdout.String(), f.stderr.String())
+	}
+	if !strings.Contains(f.stderr.String(), "brew install jq") {
+		t.Errorf("Review must keep showing the consented command:\n%s", f.stderr.String())
+	}
+}
+
+// TestHomebrewCaskOptsWarning: plan and doctor warn about an inherited
+// HOMEBREW_CASK_OPTS with --no-quarantine and name, never show, the
+// inherited HOMEBREW_* variables (review FR-013).
+func TestHomebrewCaskOptsWarning(t *testing.T) {
+	for _, args := range [][]string{{"plan", "--json", "--profile", "e2e", "--catalog", "../../testdata/catalogs/e2e"}, {"doctor", "--json"}} {
+		t.Run(args[0], func(t *testing.T) {
+			f := newFixture(t, machine{})
+			f.o.Environ = append(f.o.Environ, "HOMEBREW_CASK_OPTS=--appdir=/secret/Apps --no-quarantine")
+			code := f.run(args...)
+			if code != 0 && (args[0] != "doctor" || code != 2) {
+				t.Fatalf("exit %d\n%s", code, f.stderr.String())
+			}
+			doc := f.doc()
+			if strings.Contains(f.stdout.String(), "/secret/Apps") {
+				t.Errorf("a variable's value reached the output:\n%s", f.stdout.String())
+			}
+			hb := doc["bootstrap"].(map[string]any)["homebrew"].(map[string]any)
+			if env, _ := hb["inherited_env"].([]any); len(env) != 1 || env[0] != "HOMEBREW_CASK_OPTS" {
+				t.Errorf("inherited_env = %v", hb["inherited_env"])
+			}
+			if !strings.Contains(f.stdout.String(), `"code": "homebrew-cask-opts"`) && !strings.Contains(f.stdout.String(), `"code":"homebrew-cask-opts"`) {
+				t.Errorf("no homebrew-cask-opts finding:\n%s", f.stdout.String())
+			}
+		})
+	}
+}
+
+func TestHomebrewCaskOptsWarningText(t *testing.T) {
+	f := newFixture(t, machine{})
+	f.o.Environ = append(f.o.Environ, "HOMEBREW_CASK_OPTS=--no-quarantine", "HOMEBREW_NO_INSTALL_FROM_API=1")
+	f.want(0, f.run("plan", "--profile", "e2e", "--catalog", "../../testdata/catalogs/e2e"))
+	out := f.stdout.String() + f.stderr.String()
+	for _, want := range []string{"brew inherits from your environment: HOMEBREW_CASK_OPTS HOMEBREW_NO_INSTALL_FROM_API", "HOMEBREW_CASK_OPTS contains --no-quarantine", "unset HOMEBREW_CASK_OPTS"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("plan output lacks %q:\n%s", want, out)
+		}
+	}
+}

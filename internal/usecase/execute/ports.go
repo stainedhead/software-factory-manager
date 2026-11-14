@@ -73,6 +73,9 @@ type Replan struct {
 	// Env is the new child environment (brew shellenv plus the node@24 keg
 	// on PATH); it replaces the environment of every later command.
 	Env map[string]string
+	// Brew is the absolute path of the brew the bootstrap installed; later
+	// commands run it (see Service.Brew).
+	Brew string
 	// Present are packages now found present: their actions are dropped.
 	Present []string
 	// Conflicts by package ID: these and their dependents are excluded.

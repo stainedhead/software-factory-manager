@@ -118,6 +118,9 @@ type Homebrew struct {
 	OnPath             bool   `json:"on_path"`
 	Version            string `json:"version,omitempty"`
 	PrefixOwnedByOther bool   `json:"prefix_owned_by_other,omitempty"`
+	// InheritedEnv names (never values) the HOMEBREW_* variables brew
+	// inherits from the user's environment (review FR-013).
+	InheritedEnv []string `json:"inherited_env,omitempty"`
 }
 
 // Node is the Node.js runtime.
@@ -386,7 +389,7 @@ func platformOf(p platform.Platform) *Platform {
 func bootstrapOf(r platform.BootstrapReport) *Bootstrap {
 	h := r.Homebrew
 	return &Bootstrap{
-		Homebrew: Homebrew{Found: h.Found, Path: h.Path, Prefix: h.Prefix, OnPath: h.OnPATH, Version: h.Version, PrefixOwnedByOther: h.PrefixOwnedByOther},
+		Homebrew: Homebrew{Found: h.Found, Path: h.Path, Prefix: h.Prefix, OnPath: h.OnPATH, Version: h.Version, PrefixOwnedByOther: h.PrefixOwnedByOther, InheritedEnv: h.InheritedEnv},
 		CLT:      r.CLT,
 		Node:     Node{Found: r.Node.Found, Version: r.Node.Version, Provenance: r.Node.Provenance, Satisfies: r.Node.Satisfies, NPM: r.Node.NPM},
 		Findings: findingList(r.Findings, nil),

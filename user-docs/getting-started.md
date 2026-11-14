@@ -115,6 +115,8 @@ The TUI walks through five screens:
 | **Run** | Progress for each command. A command that needs `sudo` gets the terminal so you can type your password into it directly. `Ctrl+C` asks, then stops after the current command. Commands are never killed midway. |
 | **Summary** | What was installed, which tools need a sign-in, any line to add to your shell profile, and where the logs are. Press `q` to quit. |
 
+Review names the Homebrew it uses (`Homebrew: /opt/homebrew/bin/brew`): every `brew` command it lists runs that program, even if another `brew` comes first on your `PATH`.
+
 `?` shows help on every screen. `q` quits with nothing changed at any point before Review. When stdout is not a terminal (for example `facman | cat`), `facman` prints its about text and exits 0 instead of opening the TUI.
 
 ### Headless `apply`

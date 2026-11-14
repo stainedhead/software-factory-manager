@@ -48,7 +48,8 @@
             "prefix": { "type": "string" },
             "on_path": { "type": "boolean" },
             "version": { "type": "string" },
-            "prefix_owned_by_other": { "type": "boolean" }
+            "prefix_owned_by_other": { "type": "boolean" },
+            "inherited_env": { "type": "array", "items": { "type": "string", "pattern": "^HOMEBREW_[A-Za-z0-9_]*$" } }
           }
         },
         "clt": { "type": "boolean" },

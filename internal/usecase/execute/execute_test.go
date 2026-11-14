@@ -767,3 +767,45 @@ func TestDescribe(t *testing.T) {
 		t.Error("describe")
 	}
 }
+
+// TestRunsLocatedBrew: a plan's bare "brew" runs as the brew that was
+// located and scanned, never whatever brew is first on PATH (review
+// FR-012). The operation record keeps the consented argv.
+func TestRunsLocatedBrew(t *testing.T) {
+	tests := []struct {
+		name, brew, want string
+	}{
+		{"located", "/opt/homebrew/bin/brew", "/opt/homebrew/bin/brew install gh"},
+		{"not located", "", "brew install gh"},
+		{"relative ignored", "bin/brew", "brew install gh"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newHarness()
+			h.svc.Brew = tt.brew
+			if _, err := h.svc.Run(context.Background(), basePlan(), consent); err != nil {
+				t.Fatal(err)
+			}
+			if got := h.runner.argvs()[0]; got != tt.want {
+				t.Errorf("ran %q, want %q", got, tt.want)
+			}
+			if got := h.inv.ops[1].Commands[0].Argv[0]; got != "brew" {
+				t.Errorf("recorded argv[0] = %q, want the consented brew", got)
+			}
+		})
+	}
+}
+
+func TestReplanSetsLocatedBrew(t *testing.T) {
+	h := newHarness()
+	h.svc.Replanner = replanFunc(func(context.Context, plan.Plan) (Replan, error) {
+		return Replan{Env: map[string]string{"PATH": "/opt/homebrew/bin:/usr/bin"}, Brew: "/opt/homebrew/bin/brew"}, nil
+	})
+	if _, err := h.svc.Run(context.Background(), bootstrapPlan(), consent); err != nil && failure.ExitCode(err) != 1 {
+		t.Fatal(err)
+	}
+	got := h.runner.argvs()
+	if len(got) < 2 || !strings.HasPrefix(got[1], "/opt/homebrew/bin/brew install") {
+		t.Errorf("after the bootstrap ran %v", got)
+	}
+}

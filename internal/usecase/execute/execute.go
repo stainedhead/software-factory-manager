@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"path/filepath"
 	"slices"
 	"sync"
 
@@ -49,6 +50,12 @@ type Service struct {
 	// Env is the child environment (shellenv, node@24 bin on PATH) passed
 	// to every command; the bootstrap re-plan replaces it.
 	Env map[string]string
+	// Brew is the absolute path of the brew that was located and scanned.
+	// A plan command whose argv[0] is "brew" runs as this program, so the
+	// install goes to the Homebrew that was reviewed even when another one
+	// is first on PATH (review FR-012). "" (or a relative path) leaves the
+	// bare name to the runner's PATH lookup; the bootstrap re-plan sets it.
+	Brew string
 }
 
 // Options change how Apply behaves.
@@ -149,7 +156,7 @@ func (s *Service) Apply(ctx context.Context, p plan.Plan, opts Options) (Outcome
 // skips the actions that depend on it and nothing is retried. The returned
 // error is Outcome.Err.
 func (s *Service) Run(ctx context.Context, p plan.Plan, consent plan.Consent) (Outcome, error) {
-	r := &run{s: s, out: Outcome{Plan: p, Consent: consent, Env: s.Env}, preset: map[int]ActionResult{}, status: map[int]ActionStatus{}}
+	r := &run{s: s, out: Outcome{Plan: p, Consent: consent, Env: s.Env}, preset: map[int]ActionResult{}, status: map[int]ActionStatus{}, brew: s.Brew}
 	for i, a := range p.Actions {
 		if res, ok := r.preset[a.ID]; ok {
 			r.finish(a, res)
@@ -187,6 +194,7 @@ type run struct {
 	out    Outcome
 	preset map[int]ActionResult // results decided by the re-plan
 	status map[int]ActionStatus
+	brew   string // the located brew (Service.Brew, then the re-plan's)
 }
 
 func (r *run) finish(a plan.Action, res ActionResult) {
@@ -334,7 +342,7 @@ func (r *run) withEnvNames(cmds []plan.Command) []plan.Command {
 func (r *run) command(ctx context.Context, a plan.Action, c plan.Command, log io.Writer) (process.Result, error) {
 	lines := &lineWriter{emit: func(line string) { r.s.output(a, line) }}
 	res, err := r.s.Runner.Run(context.WithoutCancel(ctx), process.Cmd{
-		Argv: c.Argv, Env: maps.Clone(r.out.Env), Interactive: c.NeedsSudo || c.Interactive,
+		Argv: runArgv(c.Argv, r.brew), Env: maps.Clone(r.out.Env), Interactive: c.NeedsSudo || c.Interactive,
 		Log: io.MultiWriter(log, lines),
 	})
 	lines.flush()
@@ -342,6 +350,17 @@ func (r *run) command(ctx context.Context, a plan.Action, c plan.Command, log io
 		res.ExitCode = NotRunExitCode
 	}
 	return res, err
+}
+
+// runArgv is the argv that runs for a consented command: a leading bare
+// "brew" becomes the located brew's absolute path. Nothing else changes.
+func runArgv(argv []string, brew string) []string {
+	if len(argv) == 0 || argv[0] != "brew" || !filepath.IsAbs(brew) {
+		return argv
+	}
+	out := slices.Clone(argv)
+	out[0] = brew
+	return out
 }
 
 func commandDetail(c plan.Command, res process.Result, err error) string {
@@ -415,6 +434,9 @@ func (r *run) replan(ctx context.Context, rest []plan.Action) {
 	}
 	if rp.Env != nil {
 		r.out.Env = rp.Env
+		if rp.Brew != "" {
+			r.brew = rp.Brew
+		}
 	}
 	for _, a := range rest {
 		if slices.Contains(rp.Present, a.PackageID) {

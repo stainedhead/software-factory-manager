@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -172,7 +173,7 @@ func (r *Runner) Run(ctx context.Context, cmd process.Cmd) (process.Result, erro
 	log := io.Discard
 	if cmd.Log != nil {
 		log = &lockedWriter{w: cmd.Log}
-		if err := writeHeader(log, cmd); err != nil {
+		if err := writeHeader(log, cmd, r.inheritedBrewEnv(cmd.Env)); err != nil {
 			return process.Result{ExitCode: -1}, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
 		}
 	}
@@ -290,7 +291,7 @@ func (r *Runner) Handoff(cmd process.Cmd) (c *exec.Cmd, finish func(runErr error
 	if cmd.Log != nil {
 		log = &lockedWriter{w: cmd.Log}
 		cmd.Interactive = true
-		if err := writeHeader(log, cmd); err != nil {
+		if err := writeHeader(log, cmd, r.inheritedBrewEnv(cmd.Env)); err != nil {
 			return nil, nil, fmt.Errorf("writing log for %s: %w", cmd.Argv[0], err)
 		}
 	}
@@ -323,7 +324,27 @@ func (r *Runner) Handoff(cmd process.Cmd) (c *exec.Cmd, finish func(runErr error
 
 // writeHeader logs the argv and the names (never values) of the variables
 // set for the command.
-func writeHeader(w io.Writer, cmd process.Cmd) error {
+// inheritedBrewEnv returns the sorted names of the HOMEBREW_* variables a
+// command inherits from the base environment (not overridden, and not the
+// stripped tap-trust bypass). They can change what a reviewed brew command
+// does, so the log names them (review FR-013).
+// brewEnvName matches the names inheritedBrewEnv reports; any other
+// character keeps a name out of the log.
+var brewEnvName = regexp.MustCompile(`^HOMEBREW_[A-Za-z0-9_]*$`)
+
+func (r *Runner) inheritedBrewEnv(overrides map[string]string) []string {
+	var names []string
+	for k := range r.base {
+		if _, over := overrides[k]; over || !brewEnvName.MatchString(k) || strings.HasPrefix(k, plan.TapTrustEnvPrefix) {
+			continue
+		}
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func writeHeader(w io.Writer, cmd process.Cmd, inherited []string) error {
 	quoted := make([]string, len(cmd.Argv))
 	for i, a := range cmd.Argv {
 		quoted[i] = strconv.Quote(a)
@@ -336,6 +357,11 @@ func writeHeader(w io.Writer, cmd process.Cmd) error {
 	}
 	sort.Strings(names)
 	header := "$ " + strings.Join(quoted, " ") + "\n# env: " + strings.Join(names, " ") + "\n"
+	if len(inherited) == 0 {
+		header += "# inherited HOMEBREW_*: none\n"
+	} else {
+		header += "# inherited HOMEBREW_*: " + strings.Join(inherited, " ") + "\n"
+	}
 	if cmd.Interactive {
 		header += "# interactive: output went to the terminal\n"
 	}

@@ -139,6 +139,7 @@ func newApp(o options) *cli.App {
 			OSReleasePath: o.OSReleasePath, Getenv: env, UID: o.UID}),
 		Homebrew: brew.NewLocator(runner, brew.LocatorOptions{KnownPrefixes: o.KnownPrefixes, Getenv: env, UID: o.UID, OwnerUID: o.OwnerUID}),
 		Runner:   runner, Look: runner, Home: home,
+		Environ: func() []string { return o.Environ },
 	}
 	clk := clock(o.Now)
 	sess := session.New(session.Deps{

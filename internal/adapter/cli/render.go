@@ -81,6 +81,10 @@ func machine(ew *errWriter, r platform.BootstrapReport, cmd platform.Command) {
 	default:
 		ew.printf("Homebrew: %s (not on PATH; used through brew shellenv)\n", h.Path)
 	}
+	if len(h.InheritedEnv) > 0 {
+		// Names only: these change what brew does, and their values are the user's (review FR-013).
+		ew.printf("          brew inherits from your environment: %s\n", strings.Join(h.InheritedEnv, " "))
+	}
 	// Plan and apply show the warnings with the plan, doctor with its
 	// findings; a fatal finding is the error facman ends with.
 	if cmd == platform.CommandScan || cmd == platform.CommandStatus {

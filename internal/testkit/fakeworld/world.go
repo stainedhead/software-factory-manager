@@ -130,6 +130,9 @@ type Installed struct {
 type Invocation struct {
 	// Argv starts with the program's base name.
 	Argv []string `json:"argv"`
+	// Path is argv[0] as the program was started (absolute when the
+	// caller ran it by path).
+	Path string `json:"path,omitempty"`
 	// EnvNames are the sorted names of every environment variable.
 	EnvNames []string `json:"env_names"`
 	// Cwd is the working directory.

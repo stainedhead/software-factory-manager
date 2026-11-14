@@ -102,6 +102,8 @@ Every command except `--version`, `--about` and `--help` runs the same steps thr
 | Nothing mutating runs without consent that names the exact commands | `execute` (consent on every row), `tui` consent equality check, `cli` prompt |
 | Catalog values cannot inject options, paths or terminal escapes | `catalog.Validate` allow-lists at load (exit 3); `plan.Validate` as the second line; `Command.String` escapes control characters |
 | No `--force` (or `-f`, or any brew option from data), no `brew link`, only `install`/`tap`/`trust` | `plan.Validate`. The e2e tests also assert on every recorded invocation (`testkit.AssertSafeInvocations`). |
+| Installs go to the Homebrew that was scanned | `execute.Service.Brew` (and the bootstrap re-plan's `Replan.Brew`): a consented `brew …` runs as the located brew's absolute path, whatever is first on the child `PATH`. Review and the consent string keep `brew …`; the TUI Review names the path once |
+| Inherited Homebrew settings are visible | `bootstrap` records the names of inherited `HOMEBREW_*` variables (`HomebrewInfo.InheritedEnv`) and warns `homebrew-cask-opts` for `--no-quarantine`; Review, the headless header, `--json` and each log header name them, never their values |
 | No program from the current directory | `execrunner.lookPath`, the PATH detector and `brew.Locate` skip relative and empty PATH entries; `scan` warns `path-relative-entry` |
 | No shell strings, and no inherited tap-trust bypass | `execrunner` (argv only; `HOMEBREW_NO_REQUIRE_TAP_TRUST*` removed) |
 | Detection makes no network calls | `scan` env (`HOMEBREW_NO_AUTO_UPDATE=1`, `HOMEBREW_NO_ENV_HINTS=1`). `brew info --installed` is local. |

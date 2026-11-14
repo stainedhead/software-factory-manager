@@ -30,7 +30,7 @@ func run() int {
 	name := filepath.Base(os.Args[0])
 	args := os.Args[1:]
 	cwd, _ := os.Getwd()
-	inv := fakeworld.Invocation{Argv: append([]string{name}, args...), EnvNames: envNames(), Cwd: cwd}
+	inv := fakeworld.Invocation{Argv: append([]string{name}, args...), Path: os.Args[0], EnvNames: envNames(), Cwd: cwd}
 
 	var rule fakeworld.Rule
 	var matched bool
