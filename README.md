@@ -80,7 +80,7 @@ Upgrades, uninstall, adoption, the npm backend, configuration lists, templates, 
 
 ## Tools managed by facman
 
-The built-in catalog covers the tools below. The `agentic-factory` profile selects them: those marked **Default** start ticked, and those marked *Optional* start unticked (name one headlessly with `--with <id>`). Install sources are for macOS and Linux through Homebrew unless noted. A tool that cannot be installed on the current platform is shown as `unavailable-here` with the reason, and never blocks a run. Catalog and profile syntax is in [Catalog format](docs/catalog-format.md), and the reasoning behind each choice is in the [design](docs/design/software-factory-installer-design.md) (package research).
+The built-in catalog covers the tools below. The `agentic-factory` profile selects them: those marked **Default** start ticked, and those marked *Optional* start unticked (name one headlessly with `--with <id>`). Install sources are for macOS and Linux through Homebrew unless noted. A tool that cannot be installed on the current platform is shown as `unavailable-here` with the reason, and never blocks a run. The catalog is not fixed: you can maintain your own copy and point `facman` at it, as described in [Customizing the catalog](#customizing-the-catalog). Catalog and profile syntax is in [Catalog format](docs/catalog-format.md), and the reasoning behind each choice is in the [design](docs/design/software-factory-installer-design.md) (package research).
 
 ### AI agents and agent tooling
 
@@ -144,6 +144,29 @@ The container runtime is a choice group: if any member is already present the gr
 | Docker Desktop | `docker-desktop` | Cask `docker-desktop`; on WSL it is reported on the Windows host |
 
 Tools already on the machine are detected first and left alone. Ownership states, conflict handling and adoption are described in [Technical details](docs/technical-details.md).
+
+### Customizing the catalog
+
+The list above is the **built-in catalog**, a `catalog.yaml` and a `profiles/` folder compiled into the binary from [internal/adapter/catalogyaml/embedded/](internal/adapter/catalogyaml/embedded/). Teams can add, remove or change tools with a catalog of their own, without rebuilding `facman`:
+
+```sh
+cp -r internal/adapter/catalogyaml/embedded ./my-catalog     # start from the built-in catalog
+$EDITOR my-catalog/catalog.yaml my-catalog/profiles/agentic-factory.yaml
+bin/facman plan --catalog ./my-catalog --profile agentic-factory     # preview: read-only
+bin/facman      --catalog ./my-catalog --profile agentic-factory     # the TUI, on your catalog
+```
+
+What to know before you edit:
+
+- **Your catalog replaces the built-in one; it is not merged with it.** Copy the whole directory, then edit. A directory needs one `catalog.yaml` and a `profiles/` folder with one `<name>.yaml` per profile, and each file must be named after its `profile:` value.
+- **Pass `--catalog <dir>` on every run.** Every command and the TUI accept it. `facman` has no setting that remembers a catalog, and it never writes to one. Only a local directory works today; a git URL exits 64 and arrives in a later increment.
+- **A mistake is caught before anything runs.** Decoding is strict, so an unknown key, a wrong type, an unknown backend, a dependency cycle or a profile that names an unknown package exits 3 with every problem listed as `file:line:col`. IDs, brew names, taps and commands are checked against allow-lists, because a catalog is input that can come from another factory.
+- **Editing the built-in files in a checkout changes the default only after `make build`.** Use `--catalog` for anything you want to apply without rebuilding.
+- **Review a catalog like code.** It decides which commands `facman` proposes. Check it into git and change it by pull request. Trust for a third-party tap is always granted for the single item an entry names, never for a whole tap, and you still see every command on Review before you consent.
+- **The report names the catalog it used.** The `--json` output of the commands records `dir:<absolute path>@<sha256 of the files>`, so you can tell exactly which revision produced a result. The built-in catalog is recorded as `embedded:<version>`.
+- **The `npm` backend is not usable yet.** An `npm` install step is accepted in the file, but it is planned only from Increment 2. `report` and `host-report` steps mark an entry `unavailable-here` with your hint.
+
+A minimal working example is [testdata/catalogs/integration/](testdata/catalogs/integration/). The full field reference is [Catalog format](docs/catalog-format.md), and the rules and exit codes are in [Configuration: catalog directories](user-docs/configuration.md#catalog-directories).
 
 ## Documentation
 
