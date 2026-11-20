@@ -2,23 +2,40 @@
 
 **Agentic Software Factory Manager** — the home of `facman`.
 
-> **Status:** Increment 1 (MVP) is built: the TUI (`facman`) and the headless commands `scan`, `plan`, `apply`, `status` and `doctor`, each with `--json`, on macOS, Linux and WSL 2 through Homebrew. Upgrades, uninstall, adoption, the npm backend, configuration lists (`-cl`), templates and per-tool setup flags arrive in later increments; see [What works today](#what-works-today). The spec is [specs/archive/261114-software-factory-manager/](specs/archive/261114-software-factory-manager/).
+[![CI](https://github.com/stainedhead/software-factory-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/stainedhead/software-factory-manager/actions/workflows/ci.yml)
 
-![The facman Review screen: the header "facman · Agentic Software Factory Manager", the step bar Scan > Plan > [Review] > Run > Summary, the Homebrew path, and the 20 numbered brew commands it will run in order, with notes on the third-party tap, the single-cask trust and the sudo prompt, then "Pressing enter is your consent"](docs/images/facman-review.png)
-
-*The TUI's Review screen: every command it will run, in order, before you consent. Rendered from the real binary against a simulated Homebrew; see [docs/images](docs/images/).*
+> **Status:** Increment 1 (MVP) is built: the TUI (`facman`) and the headless commands `scan`, `plan`, `apply`, `status` and `doctor`, each with `--json`, on macOS, Linux and WSL 2 through Homebrew. Upgrades, uninstall, adoption, the npm backend, configuration lists (`-cl`), templates and per-tool setup flags arrive in later increments; see [What works today](#what-works-today). The Increment 1 spec is archived at [specs/archive/261114-software-factory-manager/](specs/archive/261114-software-factory-manager/).
 
 ## Overview
 
-`software-factory-manager` builds **`facman`**, the **Agentic Software Factory Manager**: a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories. It detects what is already installed, proposes only what is missing, asks before changing anything, installs through Homebrew (macOS, Linux, WSL) and npm, and then manages only what it installed. Build machines get the same tools with no prompts from a checked-in configuration list.
+`software-factory-manager` builds **`facman`**, the **Agentic Software Factory Manager**: a terminal UI and headless CLI that gives lab machines and CI runners a consistent toolset for working in software factories.
 
-The repo is named for what it is, a software factory manager. The binary is `facman`, and `facman --version` and `facman --about` both show the full name, "Agentic Software Factory Manager".
+`facman` is built on four principles:
 
-Start with [INTENT.md](INTENT.md) for purpose, scope and key decisions, then [docs/product-summary.md](docs/product-summary.md) and the full [design](docs/design/software-factory-installer-design.md).
+- **Detect first.** It finds what is already installed, and how it got there (Homebrew, a vendor installer, npm, the OS, a version manager).
+- **Propose only what is missing.** Existing installations are respected, never overwritten.
+- **Ask before changing anything.** Every command is shown in full, in order, before you consent.
+- **Manage only what it installed.** Each package has an explicit ownership state, and tools it did not install are reported, not changed, unless you adopt them.
+
+It installs through Homebrew (macOS, Linux and WSL 2) and, in a later increment, npm. Build machines get the same tools with no prompts from a checked-in configuration list.
+
+The repository is named for what the product is, a software factory manager. The binary is `facman`, and both `facman --version` and `facman --about` print the full name, "Agentic Software Factory Manager". For purpose, audience, scope and key decisions, read [INTENT.md](INTENT.md).
+
+## A first look
+
+`facman` walks through five steps: **Scan → Plan → Review → Run → Summary**. The screenshots below come from the real binary, run against a simulated Homebrew on an empty machine (see [docs/images](docs/images/README.md) for how they were made).
+
+![The Plan screen: 18 of 23 missing packages ticked, grouped as a choose-one container runtime, absent packages marked required or optional, and Paperclip greyed out as unavailable here](docs/images/facman-plan.png)
+
+*Plan: every catalog package with its ownership state. Required packages start ticked and optional ones do not. Packages that cannot be installed on this machine are shown greyed out with the reason.*
+
+![The Review screen: the header "facman · Agentic Software Factory Manager", the step bar Scan > Plan > [Review] > Run > Summary, the Homebrew path, and the 20 numbered brew commands it will run in order, with notes on the third-party tap, the single-cask trust and the sudo prompt, then "Pressing enter is your consent"](docs/images/facman-review.png)
+
+*Review: the exact commands `facman` will run, in order, before you consent. Nothing changes on the machine until you press `Enter`.*
 
 ## Quick start
 
-Requires the latest stable Go (1.27+), and a normal user account (`facman` refuses to run as root, as Homebrew does).
+Requires the latest stable Go (1.27+) and a normal user account. `facman` refuses to run as root, as Homebrew does.
 
 ```sh
 git clone https://github.com/stainedhead/software-factory-manager.git
@@ -30,7 +47,21 @@ bin/facman plan --profile agentic-factory    # the exact commands it would run (
 bin/facman                                   # the TUI: Scan → Plan → Review → Run → Summary
 ```
 
-Nothing changes on the machine until you consent: press `Enter` on the TUI's Review screen, or answer `y` to `apply`'s `Proceed? [y/N]`. The full walk-through is in [Getting started](user-docs/getting-started.md).
+Nothing changes on the machine until you consent: press `Enter` on the TUI's Review screen, or answer `y` to the `Proceed? [y/N]` prompt of `apply`. The full walk-through is in [Getting started](user-docs/getting-started.md).
+
+## Where to begin
+
+| I want to… | Start here |
+|---|---|
+| Install `facman` and do a first scan, plan and install | [Getting started](user-docs/getting-started.md) |
+| See worked examples: `--json` scripting, optional packages, custom catalogs, conflicts, Linux and WSL | [Usage examples](user-docs/usage-examples.md) |
+| Look up a flag, environment variable, state path or exit code | [Configuration](user-docs/configuration.md) |
+| See which tools `facman` manages | [Tools managed by facman](#tools-managed-by-facman) |
+| Define my own catalog or profile | [Catalog format](docs/catalog-format.md) |
+| Verify detection on real lab machines | [Field check](user-docs/field-check.md) |
+| Understand what the product is for | [INTENT.md](INTENT.md), then [Product summary](docs/product-summary.md) |
+| Understand how it works inside | [Technical details](docs/technical-details.md) and the [design](docs/design/software-factory-installer-design.md) |
+| Contribute code or documentation | [Contributing](#contributing) and [AGENTS.md](AGENTS.md) |
 
 ## What works today
 
@@ -41,15 +72,84 @@ Nothing changes on the machine until you consent: press `Enter` on the TUI's Rev
 | `facman plan --profile P [--with X] [--json]` | Prints the exact, ordered commands that would install what profile `P` is missing | No |
 | `facman apply --profile P [--with X] [--dry-run] [--json]` | Shows the plan, asks `Proceed? [y/N]` on the terminal, runs it, records every step | Yes, after `y` |
 | `facman status [--json]` | Lists managed, adopted, foreign, drifted and duplicate packages | No |
-| `facman doctor [--json]` | Checks the whole catalog for link conflicts and untrusted taps; exit 2 when something needs fixing | No |
+| `facman doctor [--json]` | Checks the whole catalog for link conflicts and untrusted taps; exits 2 when something needs fixing | No |
 
 Every command except `--version` and `--about` also takes `--catalog <dir>` to use a catalog directory instead of the built-in one. Flags, exit codes and state paths are in [Configuration](user-docs/configuration.md); worked examples are in [Usage examples](user-docs/usage-examples.md).
 
+Upgrades, uninstall, adoption, the npm backend, configuration lists, templates, `facman validate` and per-tool setup are designed and documented, and they arrive in later increments. Using one of those flags today exits 64 and names the increment that delivers it. The full roadmap is in the [design](docs/design/software-factory-installer-design.md) (phased plan).
+
+## Tools managed by facman
+
+The built-in catalog covers the tools below. The `agentic-factory` profile selects them: those marked **Default** start ticked, and those marked *Optional* start unticked (name one headlessly with `--with <id>`). Install sources are for macOS and Linux through Homebrew unless noted. A tool that cannot be installed on the current platform is shown as `unavailable-here` with the reason, and never blocks a run. Catalog and profile syntax is in [Catalog format](docs/catalog-format.md), and the reasoning behind each choice is in the [design](docs/design/software-factory-installer-design.md) (package research).
+
+### AI agents and agent tooling
+
+| Tool | Catalog ID | Kind | Install source | Selection |
+|---|---|---|---|---|
+| Claude Code | `claude-code` | CLI | Cask `claude-code` | Default |
+| GitHub Copilot CLI | `copilot-cli` | CLI | Cask `copilot-cli` | Default |
+| Google Antigravity CLI (`agy`) | `antigravity-cli` | CLI | Cask `antigravity-cli` | Default |
+| OpenAI Codex CLI | `codex` | CLI | Cask `codex` | Default |
+| Hermes Agent (Nous Research) | `hermes-agent` | CLI | Formula `hermes-agent` | Default |
+| Claude desktop | `claude-desktop` | App | Cask `claude`; macOS only | Default |
+| Orca (Stably AI) | `orca` | App | Tap cask `stablyai/orca/orca` (item-level trust); macOS only | Default |
+| GitHub Copilot app | `github-copilot-app` | App | Cask `github-copilot-app` | *Optional* |
+| T3 Code (beta) | `t3-code` | App | Cask `t3-code` | *Optional* |
+| Paperclip (agent orchestration server) | `paperclip` | Server | npm `paperclipai`, run as a managed service; arrives with the npm backend (Increment 2) | Default |
+
+Gemini CLI (`gemini-cli`) is in the catalog for detection only. It is superseded by Antigravity CLI, so `facman` reports an existing install and never installs it.
+
+### Developer basics
+
+| Tool | Catalog ID | Install source | Selection |
+|---|---|---|---|
+| git | `git` | Formula `git` | Default |
+| GitHub CLI | `gh` | Formula `gh` | Default |
+| tmux | `tmux` | Formula `tmux` | Default |
+| SQLite CLI | `sqlite` | Formula `sqlite` | Default |
+| uv (Astral) | `uv` | Formula `uv` | Default |
+| jq | `jq` | Formula `jq` | Default |
+| ripgrep | `ripgrep` | Formula `ripgrep` | Default |
+
+### Editor and terminal
+
+| Tool | Catalog ID | Install source | Selection |
+|---|---|---|---|
+| Visual Studio Code | `visual-studio-code` | Cask `visual-studio-code`; on Linux and WSL it is reported with an install hint | Default |
+| iTerm2 | `iterm2` | Cask `iterm2`; macOS only | Default |
+
+### Runtime
+
+| Tool | Catalog ID | Install source | Selection |
+|---|---|---|---|
+| Node.js (LTS 24) | `node` | Formula `node@24`; a Node from nvm, fnm, asdf or Volta at 24.11 or newer also satisfies it | Default |
+
+### Cloud
+
+| Tool | Catalog ID | Install source | Selection |
+|---|---|---|---|
+| AWS CLI v2 | `awscli` | Formula `awscli` | Default |
+| AWS Session Manager plugin | `session-manager-plugin` | Cask `session-manager-plugin`; macOS only | *Optional* |
+| Google Cloud CLI | `gcloud-cli` | Cask `gcloud-cli` | *Optional* |
+| Azure CLI | `azure-cli` | Formula `azure-cli` | *Optional* |
+
+### Containers (choose one, or none)
+
+The container runtime is a choice group: if any member is already present the group counts as satisfied, and `facman` never installs a second runtime. It is off by default.
+
+| Tool | Catalog ID | Install source |
+|---|---|---|
+| OrbStack | `orbstack` | Cask `orbstack`; macOS only |
+| Colima | `colima` | Formula `colima`, with the Docker CLI (`docker`) and Docker Compose (`docker-compose`) as helper entries; macOS and Linux |
+| Docker Desktop | `docker-desktop` | Cask `docker-desktop`; on WSL it is reported on the Windows host |
+
+Tools already on the machine are detected first and left alone. Ownership states, conflict handling and adoption are described in [Technical details](docs/technical-details.md).
+
 ## Documentation
 
-[INTENT.md](INTENT.md) is the one-page statement of what we are building and why.
+The [user guides](user-docs/README.md) and the [engineering docs](docs/README.md) each have an index with a "you want to…" table.
 
-**For users and operators** — [user-docs/](user-docs/)
+### For users and operators — [user-docs/](user-docs/README.md)
 
 | Guide | What it covers |
 |---|---|
@@ -59,28 +159,52 @@ Every command except `--version` and `--about` also takes `--catalog <dir>` to u
 | [Field check](user-docs/field-check.md) | Check detection on real lab Macs (I1-16), run the clean-machine bootstrap, and capture real `brew` output |
 | [Configuration lists (`-cl`)](user-docs/configuration-list.md) | *Increment 3:* the same tools on every machine, with no prompts |
 | [Templates and validation](user-docs/templates-and-validation.md) | *Increment 4:* templates, schemas and `facman validate` |
-| [Hermes setup (`-hs`)](user-docs/hermes-setup.md), [Paperclip setup (`-ps`)](user-docs/paperclip-setup.md), [Orca setup (`-os`)](user-docs/orca-setup.md), [T3 Code setup (`-ts`)](user-docs/t3-setup.md) | *Increment 5:* per-tool setup files |
+| [Hermes setup (`-hs`)](user-docs/hermes-setup.md) | *Increment 5:* model, tools, MCP servers, identity and skills for Hermes Agent |
+| [Paperclip setup (`-ps`)](user-docs/paperclip-setup.md) | *Increment 5:* a company, agents, projects and skills for Paperclip |
+| [Orca setup (`-os`)](user-docs/orca-setup.md) | *Increment 5:* repos, automations and skills in Orca |
+| [T3 Code setup (`-ts`)](user-docs/t3-setup.md) | *Increment 5:* agent binaries and models for T3 Code |
 
-**For contributors and maintainers** — [docs/](docs/)
+### For contributors and maintainers — [docs/](docs/README.md)
 
 | Document | What it covers |
 |---|---|
+| [INTENT.md](INTENT.md) | One page: what we are building, for whom, why, key decisions and non-goals |
 | [Product summary](docs/product-summary.md) | What the product is and why it exists |
-| [Product details](docs/product-details.md) | Features, behaviour, and requirements |
-| [Technical details](docs/technical-details.md) | Components, data flow, and interfaces |
-| [Architecture decision record](docs/architecture-decision-record.md) | Key design decisions and their rationale |
-| [Design](docs/design/) | The full working design for `facman` |
+| [Product details](docs/product-details.md) | Features, behaviour and requirements |
+| [Technical details](docs/technical-details.md) | Components, data flow, interfaces, dependencies and the acceptance evidence table |
+| [Catalog format](docs/catalog-format.md) | The catalog and profile YAML (`facman/v1`) and the state database tables |
+| [Architecture decision record](docs/architecture-decision-record.md) | Dated log of architectural decisions and their rationale |
+| [Design](docs/design/software-factory-installer-design.md) | The full working design: research, ownership states, architecture, formats, TUI flow and the phased plan. See also [how design changes land](docs/design/README.md) |
+| [Screenshots](docs/images/README.md) | The TUI images used in the docs, and how to retake them |
 
-Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](specs/archive/). The [Increment 1 (MVP) spec](specs/archive/261114-software-factory-manager/spec.md) is complete and archived; the product PRD is archived with it at [specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md](specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md). The code review's fixes have their own spec, archived inside it: [specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/](specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/).
+### Project records
 
-## Development
+| Record | What it holds |
+|---|---|
+| [specs/](specs/README.md) | Active feature specs, and the spec workflow |
+| [specs/archive/](specs/archive/README.md) | Completed specs. The [Increment 1 spec](specs/archive/261114-software-factory-manager/spec.md), the [product PRD](specs/archive/261114-software-factory-manager/software-factory-manager-PRD.md) and the [review-fix spec](specs/archive/261114-software-factory-manager/261114-software-factory-manager-auto-review/) are archived there |
+| [AGENTS.md](AGENTS.md) | Architecture, TDD, documentation and CI/CD rules for contributors and AI agents |
+| [.github/](.github/README.md) | The CI and release workflows |
+
+## Contributing
+
+Contributions follow the standards in [AGENTS.md](AGENTS.md). In short:
+
+1. **Read first.** [INTENT.md](INTENT.md), this README, the README of each folder you touch, and [Technical details](docs/technical-details.md). The [design](docs/design/software-factory-installer-design.md) is the detailed source.
+2. **Respect the architecture.** The code follows Clean Architecture: `domain` imports nothing, `usecase` imports `domain` only, and `adapter` and `cmd` depend inward. `make archcheck` enforces the rules.
+3. **Work test-first.** Write a failing test, make it pass, then refactor. Every bug fix starts with a regression test.
+4. **Keep documentation current.** Update the affected docs, the folder READMEs and the user guides in the same change as the code. `make doccheck` checks part of this.
+5. **Run `make check` before every commit**, and keep CI green. A red `main` is fixed before any other work.
+6. **Plan larger features as specs.** Features follow the PRD → spec → implementation flow in [specs/](specs/README.md).
+
+### Development commands
 
 | Command | Purpose |
 |---|---|
 | `make build` | Compile a static (`CGO_ENABLED=0`) `bin/facman` |
 | `make build-all` | Cross-compile darwin and linux, amd64 and arm64, into `bin/<os>-<arch>/facman` |
 | `make test` | Run tests with the race detector |
-| `make integration` | The `TestIntegration*` tests with the `integration` build tag, verbose: read-only checks against real Homebrew (skip without it or as root); `FACMAN_INTEGRATION_MUTATE=1` runs the GNU `hello` install and turns those skips into failures |
+| `make integration` | The `TestIntegration*` tests with the `integration` build tag, verbose: read-only checks against real Homebrew (skipped without it or as root); `FACMAN_INTEGRATION_MUTATE=1` runs the GNU `hello` install and turns those skips into failures |
 | `make lint` | Run golangci-lint |
 | `make cover` | Tests with a coverage report (target ≥ 80% overall; Increment 1 is at about 96%) |
 | `make fmt` | `gofmt -w .` |
@@ -89,21 +213,24 @@ Feature specs live in [specs/](specs/); finished ones are in [specs/archive/](sp
 | `make fuzz` | Fuzz the parsers of external input, 10 s each (`FUZZTIME=…` to change) |
 | `make check` | fmt + lint + archcheck + doccheck + test (run before every commit) |
 
-Contributor and AI-agent rules — architecture, TDD, and documentation standards — are in [AGENTS.md](AGENTS.md).
+### Continuous integration and releases
+
+Every pull request and every push to `main` runs the pipeline on Linux and macOS. It covers the tidy check, lint, architecture and documentation checks, tests with coverage, integration tests, the build and a smoke test, with fuzzing and the cross-build on Linux. A `v*` tag runs `make check` and then publishes binaries with checksums to GitHub Releases through GoReleaser. Details are in [.github/](.github/README.md) and the CI/CD section of [AGENTS.md](AGENTS.md).
 
 ## Repository layout
 
 ```
-cmd/        entry points (cmd/facman builds the `facman` binary)
-internal/   domain, usecase, and adapter layers (Clean Architecture)
-docs/       product and technical documentation (docs/design/ holds the full design)
-user-docs/  user-facing guides: setup, configuration, adoption
-specs/      feature specifications (active and archived)
-testdata/   test-only fixtures and the fake command used by tests
-scripts/    repo checks run by make (archcheck, doccheck); not shipped
+cmd/facman/   entry point for the `facman` binary (thin: flags and wiring only)
+internal/     Clean Architecture layers: domain, usecase, adapter, plus test helpers
+docs/         product and technical documentation, the design, and TUI screenshots
+user-docs/    user-facing guides: setup, configuration, adoption
+specs/        feature specifications (active) and specs/archive/ (completed)
+testdata/     test-only fixtures, including the fake Homebrew command used by tests
+scripts/      repo checks run by make (archcheck, doccheck); not shipped
+.github/      CI and release workflows
 ```
 
-Each folder has its own `README.md` describing its purpose and contents.
+Each folder has its own `README.md` describing its purpose, contents and place in the architecture. Start with [cmd/](cmd/README.md) and [internal/](internal/README.md), the [domain](internal/domain/README.md), [usecase](internal/usecase/README.md) and [adapter](internal/adapter/README.md) layers, and the [test kit](internal/testkit/README.md).
 
 ## License
 
